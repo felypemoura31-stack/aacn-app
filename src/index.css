@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+.input {
+  @apply w-full rounded-md border border-slate-300 px-3 py-2 text-sm;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: #f4f5f7;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-card,
+  #print-card * {
+    visibility: visible;
+  }
+  #print-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

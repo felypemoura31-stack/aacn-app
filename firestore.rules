@@ -1,0 +1,83 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isRepresentativeOfTeam(timeId) {
+      return isSignedIn() && timeId != null &&
+        get(/databases/$(database)/documents/teams/$(timeId)).data.representanteUid == request.auth.uid;
+    }
+
+    // Perfis dos jogadores. Só o próprio jogador ou um admin pode ler/editar
+    // livremente. Um representante de time pode APENAS aprovar/recusar a
+    // entrada de um jogador no seu time (campo timeAprovado), nada mais.
+    match /players/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+
+      allow create: if isOwner(uid);
+
+      allow update: if isOwner(uid) || isAdmin() || (
+        isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['timeAprovado', 'atualizadoEm']) &&
+        isRepresentativeOfTeam(resource.data.timeId)
+      );
+
+      allow delete: if false;
+    }
+
+    // Espelho público e mínimo (sem endereço/contato de emergência/condições
+    // médicas), lido sem login pela página de verificação via QR code.
+    match /publicCards/{uid} {
+      allow read: if true;
+
+      allow write: if isSignedIn() &&
+        request.resource.data.status == get(/databases/$(database)/documents/players/$(uid)).data.status && (
+          isOwner(uid) ||
+          isAdmin() ||
+          isRepresentativeOfTeam(get(/databases/$(database)/documents/players/$(uid)).data.timeId)
+        );
+    }
+
+    // Times: qualquer associado logado pode ver a lista (para escolher seu
+    // time). Só admin cria/edita times e define o representante.
+    match /teams/{teamId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Pedidos de entrada em time: o próprio jogador cria o pedido; o
+    // representante do time ou um admin pode ler e resolver (aprovar/recusar).
+    match /teamJoinRequests/{requestId} {
+      allow read: if isAdmin() ||
+        resource.data.jogadorUid == request.auth.uid ||
+        isRepresentativeOfTeam(resource.data.timeId);
+
+      allow create: if isSignedIn() && request.resource.data.jogadorUid == request.auth.uid;
+
+      allow update: if isAdmin() || isRepresentativeOfTeam(resource.data.timeId);
+
+      allow delete: if false;
+    }
+
+    // Fila de e-mails consumida pela extensão "Trigger Email" (Firebase
+    // Extensions). O backend da extensão usa Admin SDK e ignora estas regras;
+    // aqui só liberamos a criação pelo cliente.
+    match /mail/{mailId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if false;
+    }
+  }
+}

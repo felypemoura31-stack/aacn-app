@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "teamJoinRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "timeId", "order": "ASCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
