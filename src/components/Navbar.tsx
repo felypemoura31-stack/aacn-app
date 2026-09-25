@@ -32,6 +32,9 @@ export function Navbar() {
             <NavLink to="/admin/times" className={linkClass}>
               Admin: Times
             </NavLink>
+            <NavLink to="/admin/pagamentos" className={linkClass}>
+              Admin: Pagamentos
+            </NavLink>
           </>
         )}
         <button

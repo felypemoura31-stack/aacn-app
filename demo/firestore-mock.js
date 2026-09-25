@@ -8,6 +8,8 @@ const store = {
   teams: {},
   teamJoinRequests: {},
   mail: {},
+  config: {},
+  payments: {},
 }
 
 function player(uid, nome, email, extra = {}) {
@@ -25,6 +27,8 @@ function player(uid, nome, email, extra = {}) {
     timeNome: null,
     timeAprovado: false,
     status: 'pago',
+    vencimento: now + 20 * day,
+    ultimoPagamento: now - 10 * day,
     role: 'player',
     criadoEm: now - 30 * day,
     atualizadoEm: now - day,
@@ -40,11 +44,14 @@ const seedPlayers = [
     timeAprovado: true,
   }),
   player('u-marcos', 'Marcos Lima', 'marcos@teste.com', {
-    status: 'inadimplente',
+    status: 'pago',
+    vencimento: now - 5 * day,
+    ultimoPagamento: now - 35 * day,
     condicoesMedicas: 'Alergia a picada de abelha',
   }),
   player('u-ana', 'Ana Souza', 'ana@teste.com', {
     status: 'inativo',
+    vencimento: now - 40 * day,
     timeId: 't-bravo',
     timeNome: 'Bravo Company',
     timeAprovado: true,
@@ -63,6 +70,7 @@ for (const p of seedPlayers) {
     fotoUrl: null,
     timeNome: p.timeAprovado ? p.timeNome : null,
     status: p.status,
+    vencimento: p.vencimento,
     atualizadoEm: now,
   }
 }
@@ -89,6 +97,23 @@ store.teamJoinRequests['r-1'] = {
   status: 'pendente',
   criadoEm: now - 2 * day,
   resolvidoEm: null,
+}
+
+store.config.pix = {
+  chave: 'demo@aacn.org.br',
+  nome: 'AACN Caldas Novas',
+  cidade: 'Caldas Novas',
+  valor: 5,
+}
+store.payments['pg-1'] = {
+  uid: 'u-marcos',
+  jogadorNome: 'Marcos Lima',
+  valor: 5,
+  txid: 'AACNUMARCOSDEMO1',
+  status: 'pendente',
+  criadoEm: now - day,
+  confirmadoEm: null,
+  dataPagamento: null,
 }
 
 const listeners = new Set()

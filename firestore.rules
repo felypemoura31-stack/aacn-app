@@ -27,9 +27,22 @@ service cloud.firestore {
     match /players/{uid} {
       allow read: if isOwner(uid) || isAdmin();
 
-      allow create: if isOwner(uid);
+      // Cadastro novo: sempre jogador, inadimplente, sem vencimento e sem time aprovado.
+      allow create: if isOwner(uid) &&
+        request.resource.data.role == 'player' &&
+        request.resource.data.status == 'inadimplente' &&
+        request.resource.data.vencimento == null &&
+        request.resource.data.timeAprovado == false;
 
-      allow update: if isOwner(uid) || isAdmin() || (
+      // O próprio jogador NÃO pode mexer em papel, status, vencimento, e-mail
+      // nem se aprovar em um time; isso é só do admin/representante.
+      allow update: if isAdmin() || (
+        isOwner(uid) &&
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['role', 'status', 'vencimento', 'ultimoPagamento', 'uid', 'email']) &&
+        (request.resource.data.timeAprovado == resource.data.timeAprovado ||
+         request.resource.data.timeAprovado == false)
+      ) || (
         isSignedIn() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['timeAprovado', 'atualizadoEm']) &&
         isRepresentativeOfTeam(resource.data.timeId)
@@ -44,7 +57,8 @@ service cloud.firestore {
       allow read: if true;
 
       allow write: if isSignedIn() &&
-        request.resource.data.status == get(/databases/$(database)/documents/players/$(uid)).data.status && (
+        request.resource.data.status == get(/databases/$(database)/documents/players/$(uid)).data.status &&
+        request.resource.data.vencimento == get(/databases/$(database)/documents/players/$(uid)).data.vencimento && (
           isOwner(uid) ||
           isAdmin() ||
           isRepresentativeOfTeam(get(/databases/$(database)/documents/players/$(uid)).data.timeId)
@@ -69,6 +83,23 @@ service cloud.firestore {
 
       allow update: if isAdmin() || isRepresentativeOfTeam(resource.data.timeId);
 
+      allow delete: if false;
+    }
+
+    // Chave Pix e valor da mensalidade: todos leem, só admin altera.
+    match /config/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Cobranças Pix: o jogador só cria a própria, sempre como "pendente";
+    // só o admin confirma (isso é o que libera o status "adimplente").
+    match /payments/{paymentId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn() &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.status == 'pendente';
+      allow update: if isAdmin();
       allow delete: if false;
     }
 

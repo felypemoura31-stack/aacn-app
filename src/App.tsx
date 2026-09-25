@@ -11,6 +11,7 @@ import { RepresentativeRequests } from './pages/RepresentativeRequests'
 import { AdminDashboard } from './pages/admin/AdminDashboard'
 import { AdminPlayerDetail } from './pages/admin/AdminPlayerDetail'
 import { AdminTeams } from './pages/admin/AdminTeams'
+import { AdminPayments } from './pages/admin/AdminPayments'
 
 function App() {
   return (
@@ -73,6 +74,15 @@ function App() {
           element={
             <AdminRoute>
               <AdminTeams />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/pagamentos"
+          element={
+            <AdminRoute>
+              <AdminPayments />
             </AdminRoute>
           }
         />

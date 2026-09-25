@@ -1,6 +1,7 @@
 import QRCode from 'react-qr-code'
 import { useAuth } from '../contexts/AuthContext'
-import { STATUS_COLORS, STATUS_LABELS } from '../lib/status'
+import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../lib/status'
+import { PagamentoPix } from '../components/PagamentoPix'
 
 export function Card() {
   const { currentUser, player } = useAuth()
@@ -8,6 +9,7 @@ export function Card() {
   if (!currentUser || !player) return null
 
   const verifyUrl = `${window.location.origin}/verificar/${player.uid}`
+  const status = statusEfetivo(player)
   const faltamDados = !player.endereco || !player.dataNascimento
 
   return (
@@ -66,11 +68,14 @@ export function Card() {
               <p className="text-xs text-mute">
                 Nasc.: {player.dataNascimento || '—'}
               </p>
+              <p className="text-xs text-mute">
+                Válida até: {formatarData(player.vencimento)}
+              </p>
             </div>
             <span
-              className={`mt-2 w-fit rounded-full border px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[player.status]}`}
+              className={`mt-2 w-fit rounded-full border px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[status]}`}
             >
-              {STATUS_LABELS[player.status]}
+              {STATUS_LABELS[status]}
             </span>
           </div>
         </div>
@@ -91,6 +96,8 @@ export function Card() {
       >
         Imprimir carteirinha
       </button>
+
+      <PagamentoPix player={player} />
     </div>
   )
 }

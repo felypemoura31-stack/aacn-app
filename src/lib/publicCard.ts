@@ -4,7 +4,7 @@ import type { Player } from '../types'
 
 type PublicCardSource = Pick<
   Player,
-  'uid' | 'nomeCompleto' | 'fotoUrl' | 'timeNome' | 'timeAprovado' | 'status'
+  'uid' | 'nomeCompleto' | 'fotoUrl' | 'timeNome' | 'timeAprovado' | 'status' | 'vencimento'
 >
 
 /**
@@ -19,6 +19,7 @@ export async function sincronizarCartaoPublico(player: PublicCardSource) {
     fotoUrl: player.fotoUrl,
     timeNome: player.timeAprovado ? player.timeNome : null,
     status: player.status,
+    vencimento: player.vencimento ?? null,
     atualizadoEm: serverTimestamp(),
   })
 }

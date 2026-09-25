@@ -124,12 +124,22 @@ necessidade de login) que mostra nome, foto, time e status de pagamento —
 essa é a página que o comerciante parceiro abre ao escanear o código para
 validar se o associado está em dia e pode receber desconto.
 
-## Forma de pagamento
+## Mensalidade por Pix
 
-Ainda não definida pela associação. Por enquanto, o status de pagamento
-(`pago` / `inadimplente` / `inativo`) é alterado manualmente pelo admin em
-**Admin: Jogadores**. Quando a forma de cobrança for escolhida (Pix, cartão,
-boleto etc.), dá para automatizar essa mudança de status.
+- O admin cadastra a chave Pix, o nome/cidade do recebedor e o valor (ex: R$ 5,00)
+  em **Admin: Pagamentos**.
+- O jogador vê **Mensalidade** na tela da carteirinha, toca em "Gerar Pix" e recebe um
+  QR code + "copia e cola" com o valor fixo.
+- Quando o dinheiro cair na conta, o admin confirma em **Admin: Pagamentos** (informando
+  a data do pagamento). O sistema define o vencimento para **30 dias depois do pagamento**
+  (se pagou adiantado, conta a partir do vencimento atual, sem perder dias).
+- O status é calculado pelo vencimento: passou da data = **inadimplente** automaticamente
+  (não precisa de rotina agendada). **Inativo** é decisão manual do admin.
+- A página pública do QR (`/verificar/:uid`) mostra o status e o vencimento.
+
+**Limitação atual:** o app não detecta o pagamento sozinho, o admin confirma manualmente.
+A confirmação automática exige um provedor de Pix (Mercado Pago, Efí etc.) e um servidor
+para receber o aviso de pagamento.
 
 ## Ícones do app
 

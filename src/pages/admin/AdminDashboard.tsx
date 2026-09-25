@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { db } from '../../firebase'
-import { STATUS_COLORS, STATUS_LABELS } from '../../lib/status'
+import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../../lib/status'
 import type { Player, PlayerStatus } from '../../types'
 
 export function AdminDashboard() {
@@ -22,7 +22,7 @@ export function AdminDashboard() {
       const matchBusca = p.nomeCompleto
         ?.toLowerCase()
         .includes(busca.toLowerCase())
-      const matchStatus = filtroStatus === 'todos' || p.status === filtroStatus
+      const matchStatus = filtroStatus === 'todos' || statusEfetivo(p) === filtroStatus
       return matchBusca && matchStatus
     })
   }, [players, busca, filtroStatus])
@@ -60,6 +60,7 @@ export function AdminDashboard() {
               <th className="px-4 py-2">E-mail</th>
               <th className="px-4 py-2">Time</th>
               <th className="px-4 py-2">Status</th>
+              <th className="px-4 py-2">Vencimento</th>
             </tr>
           </thead>
           <tbody>
@@ -79,16 +80,17 @@ export function AdminDashboard() {
                 </td>
                 <td className="px-4 py-2">
                   <span
-                    className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[p.status]}`}
+                    className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[statusEfetivo(p)]}`}
                   >
-                    {STATUS_LABELS[p.status]}
+                    {STATUS_LABELS[statusEfetivo(p)]}
                   </span>
                 </td>
+                <td className="px-4 py-2 text-mute">{formatarData(p.vencimento)}</td>
               </tr>
             ))}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-mute/70">
+                <td colSpan={5} className="px-4 py-6 text-center text-mute/70">
                   Nenhum jogador encontrado.
                 </td>
               </tr>

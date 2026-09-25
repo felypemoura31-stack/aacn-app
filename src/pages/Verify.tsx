@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
-import { STATUS_COLORS, STATUS_LABELS, isEmDia } from '../lib/status'
+import { STATUS_COLORS, STATUS_LABELS, formatarData, isEmDia, statusEfetivo } from '../lib/status'
 import type { PlayerStatus } from '../types'
 
 interface PublicCard {
@@ -10,6 +10,7 @@ interface PublicCard {
   fotoUrl: string | null
   timeNome: string | null
   status: PlayerStatus
+  vencimento: number | null
 }
 
 export function Verify() {
@@ -59,14 +60,17 @@ export function Verify() {
               Time: {card.timeNome ?? 'Nenhum'}
             </p>
             <span
-              className={`inline-block rounded-full border px-3 py-1 text-sm font-semibold ${STATUS_COLORS[card.status]}`}
+              className={`inline-block rounded-full border px-3 py-1 text-sm font-semibold ${STATUS_COLORS[statusEfetivo(card)]}`}
             >
-              {STATUS_LABELS[card.status]}
+              {STATUS_LABELS[statusEfetivo(card)]}
             </span>
             <p className="mt-4 text-xs text-mute/70">
-              {isEmDia(card.status)
+              {isEmDia(statusEfetivo(card))
                 ? 'Associado em dia — elegível a descontos de parceiros.'
                 : 'Associado não está em dia com a associação.'}
+            </p>
+            <p className="mt-1 text-xs text-mute/70">
+              Vencimento: {formatarData(card.vencimento)}
             </p>
           </>
         )}

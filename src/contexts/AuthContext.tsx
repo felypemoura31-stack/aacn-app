@@ -83,6 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       timeNome: null,
       timeAprovado: false,
       status: 'inadimplente',
+      vencimento: null,
+      ultimoPagamento: null,
       role: 'player',
       criadoEm: now,
       atualizadoEm: now,

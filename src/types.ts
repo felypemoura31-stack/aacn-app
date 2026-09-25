@@ -16,6 +16,8 @@ export interface Player {
   timeNome: string | null
   timeAprovado: boolean
   status: PlayerStatus
+  vencimento: number | null // ms; pago enquanto vencimento > agora
+  ultimoPagamento: number | null
   role: UserRole
   criadoEm: number
   atualizadoEm: number
@@ -41,4 +43,25 @@ export interface TeamJoinRequest {
   status: JoinRequestStatus
   criadoEm: number
   resolvidoEm: number | null
+}
+
+export interface PixConfig {
+  chave: string
+  nome: string
+  cidade: string
+  valor: number
+}
+
+export type PaymentStatus = 'pendente' | 'confirmado'
+
+export interface Payment {
+  id: string
+  uid: string
+  jogadorNome: string
+  valor: number
+  txid: string
+  status: PaymentStatus
+  criadoEm: number
+  confirmadoEm: number | null
+  dataPagamento: number | null
 }

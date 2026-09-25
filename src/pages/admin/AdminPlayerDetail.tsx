@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { doc, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
-import { STATUS_LABELS } from '../../lib/status'
+import { DIA_MS, CICLO_DIAS, STATUS_LABELS, formatarData, statusEfetivo } from '../../lib/status'
 import { sincronizarCartaoPublico } from '../../lib/publicCard'
 import type { Player, PlayerStatus, UserRole } from '../../types'
 
@@ -49,6 +49,21 @@ export function AdminPlayerDetail() {
     } finally {
       setSaving(false)
     }
+  }
+
+  function mudarStatus(novo: PlayerStatus) {
+    setPlayer((prev) => {
+      if (!prev) return prev
+      const agora = Date.now()
+      let vencimento = prev.vencimento
+      if (novo === 'pago' && !(vencimento != null && vencimento > agora)) {
+        vencimento = agora + CICLO_DIAS * DIA_MS
+      }
+      if (novo === 'inadimplente' && vencimento != null && vencimento > agora) {
+        vencimento = agora
+      }
+      return { ...prev, status: novo, vencimento }
+    })
   }
 
   function setField<K extends keyof Player>(key: K, value: Player[K]) {
@@ -150,8 +165,8 @@ export function AdminPlayerDetail() {
 
         <Field label="Status de pagamento">
           <select
-            value={player.status}
-            onChange={(e) => setField('status', e.target.value as PlayerStatus)}
+            value={statusEfetivo(player)}
+            onChange={(e) => mudarStatus(e.target.value as PlayerStatus)}
             className="input"
           >
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -160,6 +175,10 @@ export function AdminPlayerDetail() {
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-mute">
+            Vencimento: {formatarData(player.vencimento)} (o status muda sozinho quando vence).
+            Para registrar um pagamento recebido, use Admin: Pagamentos.
+          </p>
         </Field>
 
         <Field label="Papel no sistema">
