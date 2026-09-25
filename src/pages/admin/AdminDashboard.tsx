@@ -29,7 +29,7 @@ export function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-slate-900">
+      <h1 className="mb-6 text-xl font-bold text-ink">
         Admin: Jogadores ({players.length})
       </h1>
 
@@ -52,9 +52,9 @@ export function AdminDashboard() {
         </select>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-sm border border-line bg-surface">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+          <thead className="bg-surface2 text-xs uppercase text-mute">
             <tr>
               <th className="px-4 py-2">Nome</th>
               <th className="px-4 py-2">E-mail</th>
@@ -64,17 +64,17 @@ export function AdminDashboard() {
           </thead>
           <tbody>
             {filtrados.map((p) => (
-              <tr key={p.uid} className="border-t border-slate-100">
+              <tr key={p.uid} className="border-t border-line">
                 <td className="px-4 py-2">
                   <Link
                     to={`/admin/jogadores/${p.uid}`}
-                    className="font-medium text-slate-900 hover:underline"
+                    className="font-medium text-ink hover:underline"
                   >
                     {p.nomeCompleto || '(sem nome)'}
                   </Link>
                 </td>
-                <td className="px-4 py-2 text-slate-500">{p.email}</td>
-                <td className="px-4 py-2 text-slate-500">
+                <td className="px-4 py-2 text-mute">{p.email}</td>
+                <td className="px-4 py-2 text-mute">
                   {p.timeId ? (p.timeAprovado ? p.timeNome : `${p.timeNome} (pendente)`) : '—'}
                 </td>
                 <td className="px-4 py-2">
@@ -88,7 +88,7 @@ export function AdminDashboard() {
             ))}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={4} className="px-4 py-6 text-center text-mute/70">
                   Nenhum jogador encontrado.
                 </td>
               </tr>

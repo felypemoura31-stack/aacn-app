@@ -24,21 +24,26 @@ export function Verify() {
   }, [uid])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-        <p className="mb-4 text-xs font-bold uppercase tracking-wide text-slate-500">
-          Verificação de associado AACN
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="chamfer w-full max-w-sm panel p-6 text-center">
+        <img
+          src="/logo.png"
+          alt="AACN"
+          className="mx-auto mb-3 h-16 w-16 rounded-full ring-2 ring-accent-hi/60"
+        />
+        <p className="mb-4 text-xs font-bold uppercase tracking-widest text-mute">
+          Verificação de associado
         </p>
 
-        {card === undefined && <p className="text-slate-500">Carregando...</p>}
+        {card === undefined && <p className="text-mute">Carregando...</p>}
 
         {card === null && (
-          <p className="text-red-600">Carteirinha não encontrada.</p>
+          <p className="text-danger">Carteirinha não encontrada.</p>
         )}
 
         {card && (
           <>
-            <div className="mx-auto mb-3 h-28 w-24 overflow-hidden rounded border border-slate-300 bg-slate-100">
+            <div className="mx-auto mb-3 h-28 w-24 overflow-hidden rounded border border-line bg-surface2">
               {card.fotoUrl && (
                 <img
                   src={card.fotoUrl}
@@ -47,10 +52,10 @@ export function Verify() {
                 />
               )}
             </div>
-            <p className="text-lg font-bold text-slate-900">
+            <p className="text-lg font-bold text-ink">
               {card.nomeCompleto}
             </p>
-            <p className="mb-3 text-sm text-slate-500">
+            <p className="mb-3 text-sm text-mute">
               Time: {card.timeNome ?? 'Nenhum'}
             </p>
             <span
@@ -58,7 +63,7 @@ export function Verify() {
             >
               {STATUS_LABELS[card.status]}
             </span>
-            <p className="mt-4 text-xs text-slate-400">
+            <p className="mt-4 text-xs text-mute/70">
               {isEmDia(card.status)
                 ? 'Associado em dia — elegível a descontos de parceiros.'
                 : 'Associado não está em dia com a associação.'}

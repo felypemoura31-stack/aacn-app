@@ -62,11 +62,11 @@ export function AdminTeams() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-slate-900">Admin: Times</h1>
+      <h1 className="mb-6 text-xl font-bold text-ink">Admin: Times</h1>
 
       <form
         onSubmit={handleCreate}
-        className="mb-6 flex gap-2 rounded-lg border border-slate-200 bg-white p-4"
+        className="mb-6 flex gap-2 panel p-4"
       >
         <input
           placeholder="Nome do novo time"
@@ -77,7 +77,7 @@ export function AdminTeams() {
         <button
           type="submit"
           disabled={criando}
-          className="whitespace-nowrap rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+          className="btn-primary whitespace-nowrap"
         >
           Criar time
         </button>
@@ -87,11 +87,11 @@ export function AdminTeams() {
         {teams.map((team) => (
           <div
             key={team.id}
-            className="rounded-lg border border-slate-200 bg-white p-4"
+            className="panel p-4"
           >
-            <p className="mb-2 font-semibold text-slate-900">{team.nome}</p>
+            <p className="mb-2 font-semibold text-ink">{team.nome}</p>
             <label className="block text-sm">
-              <span className="mb-1 block text-xs font-medium text-slate-500">
+              <span className="mb-1 block text-xs font-medium text-mute">
                 Representante
               </span>
               <select
@@ -110,7 +110,7 @@ export function AdminTeams() {
           </div>
         ))}
         {teams.length === 0 && (
-          <p className="text-sm text-slate-400">Nenhum time cadastrado ainda.</p>
+          <p className="text-sm text-mute/70">Nenhum time cadastrado ainda.</p>
         )}
       </div>
     </div>

@@ -23,7 +23,7 @@ export function AdminRoute({ children }: { children: ReactNode }) {
 
 function CenteredMessage({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center text-slate-500">
+    <div className="flex min-h-screen items-center justify-center text-mute">
       {children}
     </div>
   )

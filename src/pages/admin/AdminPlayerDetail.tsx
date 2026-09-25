@@ -22,12 +22,12 @@ export function AdminPlayerDetail() {
     })
   }, [uid])
 
-  if (loading) return <div className="px-4 py-8 text-slate-500">Carregando...</div>
+  if (loading) return <div className="px-4 py-8 text-mute">Carregando...</div>
   if (!player) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
-        <p className="text-red-600">Jogador não encontrado.</p>
-        <Link to="/admin" className="text-sm text-slate-500 underline">
+        <p className="text-danger">Jogador não encontrado.</p>
+        <Link to="/admin" className="text-sm text-mute underline">
           Voltar
         </Link>
       </div>
@@ -57,19 +57,19 @@ export function AdminPlayerDetail() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <Link to="/admin" className="text-sm text-slate-500 hover:underline">
+      <Link to="/admin" className="text-sm text-mute hover:underline">
         &larr; Voltar para lista
       </Link>
-      <h1 className="mb-6 mt-2 text-xl font-bold text-slate-900">
+      <h1 className="mb-6 mt-2 text-xl font-bold text-ink">
         {player.nomeCompleto || '(sem nome)'}
       </h1>
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-slate-200 bg-white p-5"
+        className="space-y-4 panel p-5"
       >
         <div className="flex gap-4">
-          <div className="h-28 w-24 shrink-0 overflow-hidden rounded border border-slate-300 bg-slate-100">
+          <div className="h-28 w-24 shrink-0 overflow-hidden rounded border border-line bg-surface2">
             {player.fotoUrl && (
               <img
                 src={player.fotoUrl}
@@ -87,7 +87,7 @@ export function AdminPlayerDetail() {
               />
             </Field>
             <Field label="E-mail">
-              <input value={player.email} disabled className="input bg-slate-50 text-slate-400" />
+              <input value={player.email} disabled className="input bg-surface2 text-mute/70" />
             </Field>
           </div>
         </div>
@@ -141,9 +141,9 @@ export function AdminPlayerDetail() {
           <input
             value={player.timeNome ?? ''}
             disabled
-            className="input bg-slate-50 text-slate-400"
+            className="input bg-surface2 text-mute/70"
           />
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-mute">
             Gerencie a entrada em times em Admin: Times.
           </p>
         </Field>
@@ -173,20 +173,20 @@ export function AdminPlayerDetail() {
           </select>
         </Field>
 
-        {savedMessage && <p className="text-sm text-green-700">{savedMessage}</p>}
+        {savedMessage && <p className="text-sm text-ok">{savedMessage}</p>}
 
         <div className="flex gap-2">
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            className="rounded-sm btn-primary"
           >
             {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>
           <button
             type="button"
             onClick={() => navigate('/admin')}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="btn-ghost"
           >
             Cancelar
           </button>
@@ -199,7 +199,7 @@ export function AdminPlayerDetail() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-ink">{label}</span>
       {children}
     </label>
   )

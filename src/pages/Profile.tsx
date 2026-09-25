@@ -77,11 +77,11 @@ export function Profile() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-slate-900">Meus dados</h1>
+      <h1 className="mb-6 text-xl font-bold text-ink">Meus dados</h1>
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-slate-200 bg-white p-5"
+        className="space-y-4 panel p-5"
       >
         <Field label="Nome completo">
           <input
@@ -154,12 +154,12 @@ export function Profile() {
             ))}
           </select>
           {player.timeId && (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-mute">
               Status no time atual:{' '}
               {player.timeAprovado ? (
-                <span className="font-medium text-green-700">aprovado</span>
+                <span className="font-medium text-ok">aprovado</span>
               ) : (
-                <span className="font-medium text-amber-700">
+                <span className="font-medium text-warn">
                   aguardando aprovação do representante
                 </span>
               )}
@@ -168,13 +168,13 @@ export function Profile() {
         </Field>
 
         {savedMessage && (
-          <p className="text-sm text-green-700">{savedMessage}</p>
+          <p className="text-sm text-ok">{savedMessage}</p>
         )}
 
         <button
           type="submit"
           disabled={saving}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+          className="rounded-sm btn-primary"
         >
           {saving ? 'Salvando...' : 'Salvar alterações'}
         </button>
@@ -186,7 +186,7 @@ export function Profile() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-ink">{label}</span>
       {children}
     </label>
   )

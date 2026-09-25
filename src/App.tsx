@@ -15,6 +15,12 @@ import { AdminTeams } from './pages/admin/AdminTeams'
 function App() {
   return (
     <AuthProvider>
+      {import.meta.env.MODE === 'demo' && (
+        <div className="no-print bg-gold/15 px-3 py-1 text-center text-xs text-gold">
+          Modo demonstração (dados fictícios). Logins: admin@teste.com ou
+          jogador@teste.com, senha 123456
+        </div>
+      )}
       <Navbar />
       <Routes>
         <Route path="/login" element={<Login />} />

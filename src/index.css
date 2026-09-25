@@ -1,20 +1,79 @@
 @import "tailwindcss";
 
-:root {
-  color-scheme: light;
+@theme {
+  --color-bg: #080c12;
+  --color-surface: #0f1620;
+  --color-surface2: #16202e;
+  --color-line: #253247;
+  --color-ink: #e6ebf2;
+  --color-mute: #8795aa;
+  --color-accent: #2c6bd1;
+  --color-accent-hi: #4a8af0;
+  --color-gold: #f0c02e;
+  --color-ok: #45b46b;
+  --color-warn: #e6a23c;
+  --color-danger: #e05a5a;
+  --font-display: Bahnschrift, 'Roboto Condensed', 'Arial Narrow', system-ui, sans-serif;
 }
 
-.input {
-  @apply w-full rounded-md border border-slate-300 px-3 py-2 text-sm;
+:root {
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
+  min-height: 100vh;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  background: #f4f5f7;
+  color: var(--color-ink);
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(rgba(74, 138, 240, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 138, 240, 0.045) 1px, transparent 1px),
+    radial-gradient(ellipse at top, rgba(44, 107, 209, 0.16), transparent 60%);
+  background-size: 32px 32px, 32px 32px, 100% 100%;
+  background-attachment: fixed;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.input {
+  @apply w-full rounded-sm border border-line bg-surface2 px-3 py-2 text-sm text-ink placeholder:text-mute/60;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent-hi);
+  box-shadow: 0 0 0 1px var(--color-accent-hi);
+}
+.input:disabled {
+  opacity: 0.6;
+}
+
+.panel {
+  @apply rounded-sm border border-line bg-surface;
+  border-top: 2px solid var(--color-accent);
+}
+
+/* cantos chanfrados, marca visual "tática" */
+.chamfer {
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+
+.btn-primary {
+  @apply rounded-sm bg-accent px-4 py-2 text-sm font-semibold uppercase tracking-wider text-white hover:bg-accent-hi disabled:opacity-60;
+}
+.btn-ghost {
+  @apply rounded-sm border border-line px-4 py-2 text-sm font-medium text-mute hover:bg-surface2 hover:text-ink;
 }
 
 @media print {
+  body {
+    background: #fff !important;
+  }
   body * {
     visibility: hidden;
   }
@@ -26,6 +85,8 @@ body {
     position: absolute;
     top: 0;
     left: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .no-print {
     display: none !important;

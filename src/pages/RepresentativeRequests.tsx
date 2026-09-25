@@ -51,10 +51,10 @@ export function RepresentativeRequests() {
   if (teams.length === 0) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
-        <h1 className="mb-2 text-xl font-bold text-slate-900">
+        <h1 className="mb-2 text-xl font-bold text-ink">
           Solicitações do time
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-mute">
           Você não é representante de nenhum time no momento.
         </p>
       </div>
@@ -77,41 +77,41 @@ export function RepresentativeRequests() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-1 text-xl font-bold text-slate-900">
+      <h1 className="mb-1 text-xl font-bold text-ink">
         Solicitações do time
       </h1>
-      <p className="mb-6 text-sm text-slate-500">
+      <p className="mb-6 text-sm text-mute">
         Times: {teams.map((t) => t.nome).join(', ')}
       </p>
 
-      <h2 className="mb-2 text-sm font-semibold text-slate-700">Pendentes</h2>
+      <h2 className="mb-2 text-sm font-semibold text-ink">Pendentes</h2>
       {pendentes.length === 0 && (
-        <p className="mb-6 text-sm text-slate-400">Nenhuma solicitação pendente.</p>
+        <p className="mb-6 text-sm text-mute/70">Nenhuma solicitação pendente.</p>
       )}
       <div className="mb-8 space-y-2">
         {pendentes.map((r) => (
           <div
             key={r.id}
-            className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3"
+            className="flex items-center justify-between panel px-4 py-3"
           >
             <div>
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-sm font-medium text-ink">
                 {r.jogadorNome}
               </p>
-              <p className="text-xs text-slate-500">quer entrar em {r.timeNome}</p>
+              <p className="text-xs text-mute">quer entrar em {r.timeNome}</p>
             </div>
             <div className="flex gap-2">
               <button
                 disabled={busyId === r.id}
                 onClick={() => handle('aprovar', r)}
-                className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+                className="rounded-sm bg-ok px-3 py-1.5 text-xs font-semibold text-white hover:bg-ok/80 disabled:opacity-60"
               >
                 Aprovar
               </button>
               <button
                 disabled={busyId === r.id}
                 onClick={() => handle('rejeitar', r)}
-                className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                className="rounded-sm bg-danger px-3 py-1.5 text-xs font-semibold text-white hover:bg-danger/80 disabled:opacity-60"
               >
                 Recusar
               </button>
@@ -120,19 +120,19 @@ export function RepresentativeRequests() {
         ))}
       </div>
 
-      <h2 className="mb-2 text-sm font-semibold text-slate-700">Histórico</h2>
+      <h2 className="mb-2 text-sm font-semibold text-ink">Histórico</h2>
       <div className="space-y-2">
         {resolvidas.map((r) => (
           <div
             key={r.id}
-            className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-4 py-2 text-sm text-slate-500"
+            className="flex items-center justify-between rounded-sm border border-line px-4 py-2 text-sm text-mute"
           >
             <span>
               {r.jogadorNome} — {r.timeNome}
             </span>
             <span
               className={
-                r.status === 'aprovado' ? 'text-green-700' : 'text-red-700'
+                r.status === 'aprovado' ? 'text-ok' : 'text-danger'
               }
             >
               {r.status}

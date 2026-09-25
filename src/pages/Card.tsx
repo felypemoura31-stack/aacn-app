@@ -12,12 +12,12 @@ export function Card() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-8">
-      <h1 className="no-print mb-6 text-xl font-bold text-slate-900">
+      <h1 className="no-print mb-6 text-xl font-bold text-ink">
         Minha carteirinha
       </h1>
 
       {faltamDados && (
-        <div className="no-print mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="no-print mb-4 rounded-sm border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
           Complete seus dados em{' '}
           <span className="font-semibold">Meus dados</span> para finalizar sua
           carteirinha.
@@ -26,19 +26,22 @@ export function Card() {
 
       <div
         id="print-card"
-        className="mx-auto w-full max-w-sm rounded-xl border border-slate-300 bg-white p-5 shadow-sm"
+        className="chamfer mx-auto w-full max-w-sm panel p-5"
       >
-        <div className="mb-3 text-center">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-            Associação de Airsoft de Caldas Novas
-          </p>
-          <p className="text-[10px] uppercase tracking-widest text-slate-400">
-            Carteira do associado
-          </p>
+        <div className="mb-3 flex items-center gap-3 border-b border-line pb-3">
+          <img src="/logo.png" alt="AACN" className="h-12 w-12 rounded-full ring-1 ring-accent-hi/60" />
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-ink">
+              Associação de Airsoft de Caldas Novas
+            </p>
+            <p className="text-[10px] uppercase tracking-widest text-gold">
+              Carteira do associado
+            </p>
+          </div>
         </div>
 
         <div className="flex gap-4">
-          <div className="h-28 w-24 shrink-0 overflow-hidden rounded border border-slate-300 bg-slate-100">
+          <div className="h-28 w-24 shrink-0 overflow-hidden rounded border border-line bg-surface2">
             {player.fotoUrl ? (
               <img
                 src={player.fotoUrl}
@@ -46,7 +49,7 @@ export function Card() {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full items-center justify-center text-[10px] text-slate-400">
+              <div className="flex h-full items-center justify-center text-[10px] text-mute/70">
                 sem foto
               </div>
             )}
@@ -54,13 +57,13 @@ export function Card() {
 
           <div className="flex flex-1 flex-col justify-between">
             <div>
-              <p className="text-sm font-bold leading-tight text-slate-900">
+              <p className="text-sm font-bold leading-tight text-ink">
                 {player.nomeCompleto || '—'}
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-mute">
                 Time: {player.timeAprovado ? player.timeNome : 'Nenhum'}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-mute">
                 Nasc.: {player.dataNascimento || '—'}
               </p>
             </div>
@@ -72,11 +75,11 @@ export function Card() {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between border-t border-dashed border-slate-300 pt-3">
-          <p className="max-w-[60%] text-[10px] leading-tight text-slate-400">
+        <div className="mt-4 flex items-center justify-between border-t border-dashed border-line pt-3">
+          <p className="max-w-[60%] text-[10px] leading-tight text-mute/70">
             Parceiros: escaneie para validar associado e status de pagamento.
           </p>
-          <div className="rounded bg-white p-1">
+          <div className="rounded-sm bg-[#ffffff] p-1.5">
             <QRCode value={verifyUrl} size={72} />
           </div>
         </div>
@@ -84,7 +87,7 @@ export function Card() {
 
       <button
         onClick={() => window.print()}
-        className="no-print mx-auto mt-6 block rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+        className="no-print mx-auto mt-6 block btn-primary"
       >
         Imprimir carteirinha
       </button>
