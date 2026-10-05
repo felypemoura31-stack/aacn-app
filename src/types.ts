@@ -86,6 +86,8 @@ export interface Game {
 
 export type PagoCom = 'creditos' | 'dinheiro'
 
+export type ParticipationStatus = 'ativa' | 'removida'
+
 export interface Participation {
   id: string
   gameId: string
@@ -94,5 +96,21 @@ export interface Participation {
   jogadorNome: string
   pagoCom: PagoCom
   creditosDebitados: number
+  status: ParticipationStatus
+  criadoEm: number
+}
+
+export type LedgerTipo = 'pagamento' | 'jogo' | 'estorno' | 'ajuste'
+
+export interface LedgerEntry {
+  id: string
+  uid: string
+  tipo: LedgerTipo
+  creditos: number // positivo = entrada, negativo = saída
+  saldoApos: number
+  descricao: string
+  refId: string | null
+  porUid: string
+  porNome: string
   criadoEm: number
 }

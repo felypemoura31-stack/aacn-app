@@ -150,6 +150,7 @@ service cloud.firestore {
         request.resource.data.uid == request.auth.uid &&
         pid == request.resource.data.gameId + '_' + request.auth.uid &&
         request.resource.data.pagoCom == 'creditos' &&
+        request.resource.data.status == 'ativa' &&
         request.resource.data.creditosDebitados ==
           get(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.custoCreditos &&
         getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.ultimoJogoId == request.resource.data.gameId &&
@@ -158,8 +159,34 @@ service cloud.firestore {
           request.resource.data.creditosDebitados
       );
 
-      allow update: if false;
-      allow delete: if isAdmin();
+      // Cancelar não apaga: o admin marca como "removida" (fica no histórico).
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // Extrato de créditos: livro-razão imutável (ninguém edita nem apaga, nem o
+    // admin). O admin cria qualquer lançamento (pagamento, ajuste, estorno). O
+    // jogador só cria o lançamento da própria inscrição, e só se o saldo dele
+    // caiu exatamente aquele valor no mesmo lote.
+    match /ledger/{lid} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if isAdmin() || (
+        isSignedIn() &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.tipo == 'jogo' &&
+        request.resource.data.refId is string &&
+        lid == 'jogo_' + request.resource.data.refId + '_' + request.auth.uid &&
+        request.resource.data.creditos ==
+          -get(/databases/$(database)/documents/games/$(request.resource.data.refId)).data.custoCreditos &&
+        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.ultimoJogoId == request.resource.data.refId &&
+        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos ==
+          get(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos + request.resource.data.creditos &&
+        request.resource.data.saldoApos ==
+          getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos
+      );
+
+      allow update, delete: if false;
     }
 
     // Fila de e-mails consumida pela extensão "Trigger Email" (Firebase

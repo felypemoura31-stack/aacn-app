@@ -151,15 +151,21 @@ para receber o aviso de pagamento.
 - O jogador vê o saldo na carteirinha e em **Jogos**, onde se inscreve gastando créditos.
   Sem saldo, o app avisa quanto falta e que dá para pagar em dinheiro no local.
 - O admin pode inscrever alguém (debitando créditos ou marcando "pagou em dinheiro") e
-  remover inscrições; ao remover, os créditos debitados voltam.
+  cancelar inscrições; ao cancelar, os créditos debitados voltam (estorno) e a inscrição fica
+  no histórico como "cancelada" (o jogador não consegue se reinscrever sozinho nesse jogo).
+- **Extrato detalhado:** todo movimento de saldo (pagamento, inscrição, estorno, ajuste) vira
+  uma linha com data, descrição, quem fez, valor e saldo após. O jogador vê o dele em **Jogos**;
+  o admin vê o de qualquer um em **Admin: Créditos**. O extrato é imutável (nem o admin edita
+  ou apaga linhas) e é gravado no mesmo lote do saldo, então os dois nunca divergem.
+- **Ajuste manual:** em **Admin: Créditos**, o admin soma ou subtrai créditos de um jogador
+  informando obrigatoriamente o motivo, que fica no extrato. Não deixa o saldo ficar negativo.
 - Pagamento confirmado, crédito e mudança de vencimento são gravados juntos; confirmar duas
   vezes o mesmo pagamento é bloqueado.
 - Segurança (`firestore.rules`): o jogador não consegue aumentar o próprio saldo. Só consegue
   gastar exatamente o custo de um jogo aberto, junto com a própria inscrição. Essas regras
   ainda não foram testadas com o emulador do Firebase (exige Java); teste no "Rules Playground"
   do console assim que o projeto existir.
-- Créditos não expiram e não há extrato detalhado (o histórico vem dos pagamentos e das
-  inscrições).
+- Créditos não expiram.
 
 ## Ícones do app
 

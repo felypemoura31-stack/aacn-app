@@ -7,11 +7,11 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../firebase'
-import { creditosDoPagamento } from './credits'
+import { creditosDoPagamento, lancar, lerCarteira, reais, type Autor } from './credits'
 import { novoTxid } from './pix'
 import { sincronizarCartaoPublico } from './publicCard'
-import { calcularNovoVencimento } from './status'
-import type { Payment, PixConfig, Player, Wallet } from '../types'
+import { calcularNovoVencimento, formatarData } from './status'
+import type { Payment, PixConfig, Player } from '../types'
 
 export async function gerarCobranca(player: Player, cfg: PixConfig) {
   await addDoc(collection(db, 'payments'), {
@@ -28,13 +28,18 @@ export async function gerarCobranca(player: Player, cfg: PixConfig) {
 
 /**
  * Admin confirma o recebimento: define o novo vencimento, credita os créditos
- * de jogo (R$ 1 = 2 créditos) e marca a cobrança como confirmada, tudo em um
- * único lote, para nunca creditar duas vezes nem esquecer de creditar.
+ * de jogo (R$ 1 = 2 créditos), registra no extrato e marca a cobrança como
+ * confirmada, tudo em um único lote, para nunca creditar duas vezes nem
+ * esquecer de creditar.
  */
-export async function confirmarPagamento(payment: Payment, dataPagamento: number) {
-  const [playerSnap, walletSnap, paymentSnap] = await Promise.all([
+export async function confirmarPagamento(
+  payment: Payment,
+  dataPagamento: number,
+  admin: Autor,
+) {
+  const [playerSnap, carteira, paymentSnap] = await Promise.all([
     getDoc(doc(db, 'players', payment.uid)),
-    getDoc(doc(db, 'wallets', payment.uid)),
+    lerCarteira(payment.uid),
     getDoc(doc(db, 'payments', payment.id)),
   ])
   if (!playerSnap.exists()) throw new Error('Jogador não encontrado')
@@ -49,24 +54,23 @@ export async function confirmarPagamento(payment: Payment, dataPagamento: number
     vencimento,
     ultimoPagamento: dataPagamento,
   }
-
   const creditosGerados = creditosDoPagamento(payment.valor)
-  const saldoAtual = walletSnap.exists() ? (walletSnap.data() as Wallet).creditos : 0
-  const novoSaldo = Math.round((saldoAtual + creditosGerados) * 100) / 100
 
   const batch = writeBatch(db)
   batch.update(doc(db, 'players', payment.uid), {
     ...atualizado,
     atualizadoEm: serverTimestamp(),
   })
-  batch.set(
-    doc(db, 'wallets', payment.uid),
-    {
-      creditos: novoSaldo,
-      ultimoJogoId: walletSnap.exists() ? (walletSnap.data() as Wallet).ultimoJogoId : null,
-      atualizadoEm: serverTimestamp(),
-    },
-  )
+  lancar(batch, {
+    uid: payment.uid,
+    saldoAntes: carteira.saldo,
+    delta: creditosGerados,
+    tipo: 'pagamento',
+    descricao: `Pix de ${reais(payment.valor)} (pago em ${formatarData(dataPagamento)})`,
+    refId: payment.id,
+    autor: admin,
+    existe: carteira.existe,
+  })
   batch.update(doc(db, 'payments', payment.id), {
     status: 'confirmado',
     confirmadoEm: serverTimestamp(),

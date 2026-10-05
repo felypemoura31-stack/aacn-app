@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
+import { useAuth } from '../../contexts/AuthContext'
 import { confirmarPagamento } from '../../lib/payments'
 import { formatarData } from '../../lib/status'
 import type { Payment, PixConfig } from '../../types'
@@ -9,11 +10,13 @@ const hoje = () => new Date().toISOString().slice(0, 10)
 const reais = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`
 
 export function AdminPayments() {
+  const { player: admin } = useAuth()
   const [cfg, setCfg] = useState<PixConfig>({ chave: '', nome: '', cidade: '', valor: 5 })
   const [cfgMsg, setCfgMsg] = useState<string | null>(null)
   const [payments, setPayments] = useState<Payment[]>([])
   const [datas, setDatas] = useState<Record<string, string>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [erro, setErro] = useState<string | null>(null)
 
   useEffect(() => {
     return onSnapshot(doc(db, 'config', 'pix'), (snap) => {
@@ -35,10 +38,17 @@ export function AdminPayments() {
   }
 
   async function confirmar(p: Payment) {
+    if (!admin) return
     setBusyId(p.id)
+    setErro(null)
     try {
       const [y, m, d] = (datas[p.id] ?? hoje()).split('-').map(Number)
-      await confirmarPagamento(p, new Date(y, m - 1, d, 12).getTime())
+      await confirmarPagamento(p, new Date(y, m - 1, d, 12).getTime(), {
+        uid: admin.uid,
+        nome: admin.nomeCompleto,
+      })
+    } catch (e) {
+      setErro((e as Error).message)
     } finally {
       setBusyId(null)
     }
@@ -96,6 +106,7 @@ export function AdminPayments() {
         </button>
       </form>
 
+      {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
       <h2 className="mb-2 text-sm font-semibold text-ink">Aguardando confirmação</h2>
       {pendentes.length === 0 && (
         <p className="mb-6 text-sm text-mute/70">Nenhuma cobrança pendente.</p>

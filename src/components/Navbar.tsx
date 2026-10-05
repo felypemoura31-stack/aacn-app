@@ -41,6 +41,9 @@ export function Navbar() {
             <NavLink to="/admin/jogos" className={linkClass}>
               Admin: Jogos
             </NavLink>
+            <NavLink to="/admin/creditos" className={linkClass}>
+              Admin: Créditos
+            </NavLink>
           </>
         )}
         <button

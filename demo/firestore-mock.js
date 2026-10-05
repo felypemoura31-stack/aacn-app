@@ -13,6 +13,7 @@ const store = {
   wallets: {},
   games: {},
   participations: {},
+  ledger: {},
 }
 
 function player(uid, nome, email, extra = {}) {
@@ -123,6 +124,12 @@ const saldos = { 'u-admin': 0, 'u-jogador': 20, 'u-marcos': 0, 'u-ana': 0, 'u-pe
 for (const [uid, creditos] of Object.entries(saldos)) {
   store.wallets[uid] = { creditos, ultimoJogoId: null, atualizadoEm: now }
 }
+const mov = (id, uid, tipo, creditos, saldoApos, descricao, offset, porUid = 'u-admin', porNome = 'Administrador AACN') => {
+  store.ledger[id] = { uid, tipo, creditos, saldoApos, descricao, refId: null, porUid, porNome, criadoEm: now + offset * day }
+}
+mov('l1', 'u-jogador', 'pagamento', 20, 20, 'Pix de R$ 10,00 (pago em 25/09/2026)', -10)
+mov('l2', 'u-pedro', 'pagamento', 10, 10, 'Pix de R$ 5,00 (pago em 20/09/2026)', -15)
+mov('l3', 'u-pedro', 'ajuste', -6, 4, 'Compra de BBs na loja', -3)
 const iso = (offset) => new Date(now + offset * day).toISOString().slice(0, 10)
 store.games['g-1'] = {
   nome: 'Jogo de domingo',
@@ -147,6 +154,7 @@ store.participations['g-1_u-pedro'] = {
   jogadorNome: 'Pedro Alves',
   pagoCom: 'dinheiro',
   creditosDebitados: 0,
+  status: 'ativa',
   criadoEm: now - day,
 }
 

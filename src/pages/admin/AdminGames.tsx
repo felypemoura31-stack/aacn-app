@@ -10,6 +10,7 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
+import { useAuth } from '../../contexts/AuthContext'
 import {
   adminAdicionarParticipante,
   adminRemoverParticipante,
@@ -19,6 +20,7 @@ import {
 import type { Game, PagoCom, Participation, Player } from '../../types'
 
 export function AdminGames() {
+  const { player: admin } = useAuth()
   const [games, setGames] = useState<Game[]>([])
   const [parts, setParts] = useState<Participation[]>([])
   const [players, setPlayers] = useState<Player[]>([])
@@ -50,6 +52,8 @@ export function AdminGames() {
     }
   }, [])
 
+  const autor = () => ({ uid: admin!.uid, nome: admin!.nomeCompleto })
+
   async function criar(e: FormEvent) {
     e.preventDefault()
     await addDoc(collection(db, 'games'), {
@@ -75,7 +79,7 @@ export function AdminGames() {
     if (!jogador) return
     setErro(null)
     try {
-      await adminAdicionarParticipante(g, jogador, novoModo)
+      await adminAdicionarParticipante(g, jogador, novoModo, autor())
       setNovoUid('')
     } catch (e) {
       setErro((e as Error).message)
@@ -85,7 +89,7 @@ export function AdminGames() {
   async function remover(p: Participation) {
     setErro(null)
     try {
-      await adminRemoverParticipante(p)
+      await adminRemoverParticipante(p, autor())
     } catch (e) {
       setErro((e as Error).message)
     }
@@ -138,7 +142,7 @@ export function AdminGames() {
       <div className="space-y-3">
         {games.length === 0 && <p className="text-sm text-mute/70">Nenhum jogo cadastrado.</p>}
         {games.map((g) => {
-          const lista = parts.filter((p) => p.gameId === g.id)
+          const lista = parts.filter((p) => p.gameId === g.id && p.status !== 'removida')
           const expandido = aberto === g.id
           return (
             <div key={g.id} className="panel p-4">

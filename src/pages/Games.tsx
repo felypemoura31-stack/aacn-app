@@ -4,6 +4,7 @@ import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { formatarCreditos, participarComCreditos, reais } from '../lib/credits'
 import { useWallet } from '../lib/useWallet'
+import { ExtratoCreditos } from '../components/ExtratoCreditos'
 import type { Game, Participation } from '../types'
 
 export function Games() {
@@ -32,7 +33,8 @@ export function Games() {
   if (!player) return null
 
   const saldo = wallet?.creditos ?? 0
-  const inscritoEm = new Set(minhas.map((p) => p.gameId))
+  const inscritoEm = new Set(minhas.filter((p) => p.status !== 'removida').map((p) => p.gameId))
+  const canceladoEm = new Set(minhas.filter((p) => p.status === 'removida').map((p) => p.gameId))
   const abertos = games.filter((g) => g.status === 'aberto')
 
   async function participar(g: Game) {
@@ -72,7 +74,9 @@ export function Games() {
                   {formatarCreditos(g.custoCreditos)} créditos
                 </p>
               </div>
-              {jaInscrito ? (
+              {canceladoEm.has(g.id) ? (
+                <span className="text-xs text-mute">Inscrição cancelada. Fale com a diretoria.</span>
+              ) : jaInscrito ? (
                 <span className="rounded-full border border-ok/40 bg-ok/15 px-3 py-1 text-xs font-semibold text-ok">
                   Inscrito
                 </span>
@@ -107,13 +111,18 @@ export function Games() {
           >
             <span>{p.gameNome}</span>
             <span>
-              {p.pagoCom === 'creditos'
+              {p.status === 'removida'
+                ? 'cancelada'
+                : p.pagoCom === 'creditos'
                 ? `−${formatarCreditos(p.creditosDebitados)} créditos`
                 : 'pago em dinheiro'}
             </span>
           </div>
         ))}
       </div>
+
+      <h2 className="mb-2 mt-8 text-sm font-semibold text-ink">Extrato de créditos</h2>
+      <ExtratoCreditos uid={player.uid} />
     </div>
   )
 }
