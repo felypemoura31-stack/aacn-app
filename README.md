@@ -84,7 +84,7 @@ configurar antes de ir para produção.
   regras do banco também impedem). Cadastre-se normalmente pelo app, abra o Firestore no console,
   encontre o documento em `players/{uid}` dessa pessoa e mude o campo `role` de `"player"`
   para `"admin"`. Para remover um admin, o caminho é o mesmo (volte para `"player"`).
-- **Demais cargos (ex: tesoureiro):** o admin delega pelo app, em **Admin: Cargos**, escolhendo o
+- **Demais cargos (ex: tesoureiro):** o admin delega pelo app, em **Gestão → Cargos**, escolhendo o
   cargo de cada jogador. Fica registrado quem definiu. O admin não altera o cargo de outro admin.
 - **Criar um cargo novo:** adicione o valor em `UserRole` (`src/types.ts`), uma linha em
   `CARGOS_DELEGAVEIS` (`src/lib/roles.ts`) e as permissões dele em `firestore.rules`. Ele
@@ -170,7 +170,7 @@ para receber o aviso de pagamento.
 
 ## Cargo de tesoureiro
 
-O admin delega o cargo em **Admin: Cargos** (ver seção 6).
+O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
 
 - **Vê e faz:** Pagamentos (confirmar Pix recebido), Jogos (criar jogos, inscrever e cancelar)
   e Créditos (extrato e ajuste de saldo). Confirmar pagamento, ajustar créditos e inscrever
@@ -185,7 +185,7 @@ O admin delega o cargo em **Admin: Cargos** (ver seção 6).
 
 ## Cargo de organizador
 
-O admin delega em **Admin: Cargos**.
+O admin delega em **Gestão → Cargos**.
 
 - **Faz:** criar jogos, editar nome/data e os valores cobrados (em dinheiro e em créditos) e
   abrir/encerrar inscrições. Vê quem está inscrito em cada jogo.
