@@ -12,6 +12,8 @@ import { AdminDashboard } from './pages/admin/AdminDashboard'
 import { AdminPlayerDetail } from './pages/admin/AdminPlayerDetail'
 import { AdminTeams } from './pages/admin/AdminTeams'
 import { AdminPayments } from './pages/admin/AdminPayments'
+import { AdminGames } from './pages/admin/AdminGames'
+import { Games } from './pages/Games'
 
 function App() {
   return (
@@ -41,6 +43,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jogos"
+          element={
+            <ProtectedRoute>
+              <Games />
             </ProtectedRoute>
           }
         />
@@ -83,6 +93,15 @@ function App() {
           element={
             <AdminRoute>
               <AdminPayments />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/jogos"
+          element={
+            <AdminRoute>
+              <AdminGames />
             </AdminRoute>
           }
         />

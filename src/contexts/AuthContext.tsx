@@ -94,6 +94,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       criadoEm: serverTimestamp(),
       atualizadoEm: serverTimestamp(),
     })
+    await setDoc(doc(db, 'wallets', cred.user.uid), {
+      creditos: 0,
+      ultimoJogoId: null,
+      atualizadoEm: serverTimestamp(),
+    })
     await sincronizarCartaoPublico(newPlayer)
   }
 

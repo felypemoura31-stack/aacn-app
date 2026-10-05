@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore'
 import QRCode from 'react-qr-code'
 import { db } from '../firebase'
+import { creditosDoPagamento, formatarCreditos } from '../lib/credits'
 import { gerarCobranca } from '../lib/payments'
 import { gerarPixCopiaECola } from '../lib/pix'
 import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../lib/status'
@@ -93,6 +94,9 @@ export function PagamentoPix({ player }: { player: Player }) {
           </div>
           <p className="text-center text-sm text-ink">
             Valor: <b>R$ {pendente.valor.toFixed(2).replace('.', ',')}</b>
+          </p>
+          <p className="text-center text-xs text-gold">
+            Ao confirmar, você recebe {formatarCreditos(creditosDoPagamento(pendente.valor))} créditos de jogo.
           </p>
           <textarea readOnly value={payload} rows={3} className="input font-mono text-[10px]" />
           <button onClick={copiar} className="btn-primary w-full">

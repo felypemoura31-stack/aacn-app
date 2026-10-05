@@ -64,4 +64,35 @@ export interface Payment {
   criadoEm: number
   confirmadoEm: number | null
   dataPagamento: number | null
+  creditosGerados?: number
+}
+
+export interface Wallet {
+  creditos: number
+  ultimoJogoId: string | null
+}
+
+export type GameStatus = 'aberto' | 'encerrado'
+
+export interface Game {
+  id: string
+  nome: string
+  data: string // yyyy-mm-dd
+  valor: number // preço em dinheiro (R$)
+  custoCreditos: number
+  status: GameStatus
+  criadoEm: number
+}
+
+export type PagoCom = 'creditos' | 'dinheiro'
+
+export interface Participation {
+  id: string
+  gameId: string
+  gameNome: string
+  uid: string
+  jogadorNome: string
+  pagoCom: PagoCom
+  creditosDebitados: number
+  criadoEm: number
 }

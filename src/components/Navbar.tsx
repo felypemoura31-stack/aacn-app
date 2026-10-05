@@ -21,6 +21,9 @@ export function Navbar() {
         <NavLink to="/perfil" className={linkClass}>
           Meus dados
         </NavLink>
+        <NavLink to="/jogos" className={linkClass}>
+          Jogos
+        </NavLink>
         <NavLink to="/solicitacoes" className={linkClass}>
           Solicitações do time
         </NavLink>
@@ -34,6 +37,9 @@ export function Navbar() {
             </NavLink>
             <NavLink to="/admin/pagamentos" className={linkClass}>
               Admin: Pagamentos
+            </NavLink>
+            <NavLink to="/admin/jogos" className={linkClass}>
+              Admin: Jogos
             </NavLink>
           </>
         )}

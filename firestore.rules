@@ -103,6 +103,65 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Carteira de créditos de jogo (R$ 1 = 2 créditos). Quem credita é só o
+    // admin (ao confirmar um pagamento). O jogador só consegue GASTAR: o saldo
+    // só pode diminuir exatamente o custo de um jogo aberto, e no mesmo lote
+    // precisa nascer a inscrição dele nesse jogo (verificado com getAfter).
+    match /wallets/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+
+      allow create: if isAdmin() || (
+        isOwner(uid) &&
+        request.resource.data.creditos == 0 &&
+        request.resource.data.ultimoJogoId == null
+      );
+
+      allow update: if isAdmin() || (
+        isOwner(uid) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['creditos', 'ultimoJogoId', 'atualizadoEm']) &&
+        request.resource.data.ultimoJogoId is string &&
+        get(/databases/$(database)/documents/games/$(request.resource.data.ultimoJogoId)).data.status == 'aberto' &&
+        request.resource.data.creditos ==
+          resource.data.creditos -
+          get(/databases/$(database)/documents/games/$(request.resource.data.ultimoJogoId)).data.custoCreditos &&
+        request.resource.data.creditos >= 0 &&
+        !exists(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + uid)) &&
+        existsAfter(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + uid))
+      );
+
+      allow delete: if false;
+    }
+
+    // Jogos criados pelo admin; todos os associados logados podem ver.
+    match /games/{gameId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Inscrições em jogos. O id é sempre "<jogo>_<uid>" (uma por jogador).
+    // O jogador só cria a própria inscrição paga com créditos, e só se o saldo
+    // dele caiu exatamente o custo do jogo no mesmo lote.
+    match /participations/{pid} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if isAdmin() || (
+        isSignedIn() &&
+        request.resource.data.uid == request.auth.uid &&
+        pid == request.resource.data.gameId + '_' + request.auth.uid &&
+        request.resource.data.pagoCom == 'creditos' &&
+        request.resource.data.creditosDebitados ==
+          get(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.custoCreditos &&
+        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.ultimoJogoId == request.resource.data.gameId &&
+        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos ==
+          get(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos -
+          request.resource.data.creditosDebitados
+      );
+
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
     // Fila de e-mails consumida pela extensão "Trigger Email" (Firebase
     // Extensions). O backend da extensão usa Admin SDK e ignora estas regras;
     // aqui só liberamos a criação pelo cliente.

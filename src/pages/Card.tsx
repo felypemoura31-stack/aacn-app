@@ -2,6 +2,7 @@ import QRCode from 'react-qr-code'
 import { useAuth } from '../contexts/AuthContext'
 import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../lib/status'
 import { PagamentoPix } from '../components/PagamentoPix'
+import { SaldoCreditos } from '../components/SaldoCreditos'
 
 export function Card() {
   const { currentUser, player } = useAuth()
@@ -97,6 +98,7 @@ export function Card() {
         Imprimir carteirinha
       </button>
 
+      <SaldoCreditos uid={player.uid} />
       <PagamentoPix player={player} />
     </div>
   )

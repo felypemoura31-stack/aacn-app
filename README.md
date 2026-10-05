@@ -141,6 +141,26 @@ validar se o associado está em dia e pode receber desconto.
 A confirmação automática exige um provedor de Pix (Mercado Pago, Efí etc.) e um servidor
 para receber o aviso de pagamento.
 
+## Créditos de jogo
+
+- Cada pagamento Pix confirmado gera créditos: **R$ 1,00 = 2 créditos** (constante
+  `CREDITOS_POR_REAL` em `src/lib/credits.ts`). Mensalidade de R$ 10 = 20 créditos.
+- O admin cria jogos em **Admin: Jogos** com o valor em dinheiro (ex: R$ 10) e o custo em
+  créditos (padrão: o mesmo número, ex: 10 créditos). Assim, R$ 10 pagos na mensalidade
+  (20 créditos) valem 2 jogos.
+- O jogador vê o saldo na carteirinha e em **Jogos**, onde se inscreve gastando créditos.
+  Sem saldo, o app avisa quanto falta e que dá para pagar em dinheiro no local.
+- O admin pode inscrever alguém (debitando créditos ou marcando "pagou em dinheiro") e
+  remover inscrições; ao remover, os créditos debitados voltam.
+- Pagamento confirmado, crédito e mudança de vencimento são gravados juntos; confirmar duas
+  vezes o mesmo pagamento é bloqueado.
+- Segurança (`firestore.rules`): o jogador não consegue aumentar o próprio saldo. Só consegue
+  gastar exatamente o custo de um jogo aberto, junto com a própria inscrição. Essas regras
+  ainda não foram testadas com o emulador do Firebase (exige Java); teste no "Rules Playground"
+  do console assim que o projeto existir.
+- Créditos não expiram e não há extrato detalhado (o histórico vem dos pagamentos e das
+  inscrições).
+
 ## Ícones do app
 
 Os ícones em `public/pwa-192x192.png`, `public/pwa-512x512.png`,

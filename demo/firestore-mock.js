@@ -10,6 +10,9 @@ const store = {
   mail: {},
   config: {},
   payments: {},
+  wallets: {},
+  games: {},
+  participations: {},
 }
 
 function player(uid, nome, email, extra = {}) {
@@ -116,6 +119,37 @@ store.payments['pg-1'] = {
   dataPagamento: null,
 }
 
+const saldos = { 'u-admin': 0, 'u-jogador': 20, 'u-marcos': 0, 'u-ana': 0, 'u-pedro': 4 }
+for (const [uid, creditos] of Object.entries(saldos)) {
+  store.wallets[uid] = { creditos, ultimoJogoId: null, atualizadoEm: now }
+}
+const iso = (offset) => new Date(now + offset * day).toISOString().slice(0, 10)
+store.games['g-1'] = {
+  nome: 'Jogo de domingo',
+  data: iso(7),
+  valor: 10,
+  custoCreditos: 10,
+  status: 'aberto',
+  criadoEm: now - 2 * day,
+}
+store.games['g-2'] = {
+  nome: 'Operação Noturna',
+  data: iso(21),
+  valor: 20,
+  custoCreditos: 20,
+  status: 'aberto',
+  criadoEm: now - day,
+}
+store.participations['g-1_u-pedro'] = {
+  gameId: 'g-1',
+  gameNome: 'Jogo de domingo',
+  uid: 'u-pedro',
+  jogadorNome: 'Pedro Alves',
+  pagoCom: 'dinheiro',
+  creditosDebitados: 0,
+  criadoEm: now - day,
+}
+
 const listeners = new Set()
 const notify = () => setTimeout(() => listeners.forEach((l) => l()), 0)
 const clone = (v) => JSON.parse(JSON.stringify(v))
@@ -194,4 +228,25 @@ export async function addDoc(colRef, data) {
   store[colRef.col][id] = resolveValues(data)
   notify()
   return { id }
+}
+
+export function writeBatch() {
+  const ops = []
+  const batch = {
+    set: (ref, data) => (ops.push(['set', ref, data]), batch),
+    update: (ref, data) => (ops.push(['update', ref, data]), batch),
+    delete: (ref) => (ops.push(['delete', ref]), batch),
+    async commit() {
+      for (const [op, ref, data] of ops) {
+        store[ref.col] ??= {}
+        if (op === 'set') store[ref.col][ref.id] = resolveValues(data)
+        else if (op === 'update') {
+          if (!store[ref.col][ref.id]) throw new Error('Documento não existe: ' + ref.col + '/' + ref.id)
+          Object.assign(store[ref.col][ref.id], resolveValues(data))
+        } else delete store[ref.col][ref.id]
+      }
+      notify()
+    },
+  }
+  return batch
 }
