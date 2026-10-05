@@ -13,8 +13,9 @@ jogadores, times e status de pagamento.
 - `vite-plugin-pwa` para instalação no celular
 - `react-qr-code` para gerar o QR code da carteirinha
 
-> **Foto 3x4 sem Firebase Storage.** O Storage exige o plano pago Blaze, então a foto é
-> recortada em 3x4, reduzida para 240x320 (JPEG, ~20 KB) no próprio navegador e guardada como
+> **Foto 3x4 sem Firebase Storage.** O Storage exige o plano pago Blaze, então o jogador enquadra
+> o rosto (arrasta e dá zoom, com um oval de guia), e a foto é reduzida para 240x320 (JPEG, ~20 KB)
+> no próprio navegador e guardada como
 > texto no Firestore (campo `fotoUrl`). Fica no plano gratuito. Se um dia migrarem para o
 > Blaze, dá para trocar para o Storage mudando só `src/components/PhotoUploader.tsx`.
 
