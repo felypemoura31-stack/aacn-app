@@ -77,13 +77,17 @@ Sem essa extensão instalada, o cadastro dos documentos em `mail` continua
 funcionando, mas nenhum e-mail é realmente enviado — só é necessário
 configurar antes de ir para produção.
 
-## 6. Criar o primeiro administrador
+## 6. Administradores e cargos
 
-Não existe convite de admin pelo app (por segurança). Depois que alguém se
-cadastrar normalmente pelo app, abra o Firestore no console do Firebase,
-encontre o documento em `players/{uid}` dessa pessoa e mude o campo `role` de
-`"player"` para `"admin"`. A partir daí, essa pessoa também pode promover
-outros admins pela própria tela **Admin: Jogadores**.
+- **Administrador:** só é definido direto no Firebase (o app nunca cria nem remove admin, e as
+  regras do banco também impedem). Cadastre-se normalmente pelo app, abra o Firestore no console,
+  encontre o documento em `players/{uid}` dessa pessoa e mude o campo `role` de `"player"`
+  para `"admin"`. Para remover um admin, o caminho é o mesmo (volte para `"player"`).
+- **Demais cargos (ex: tesoureiro):** o admin delega pelo app, em **Admin: Cargos**, escolhendo o
+  cargo de cada jogador. Fica registrado quem definiu. O admin não altera o cargo de outro admin.
+- **Criar um cargo novo:** adicione o valor em `UserRole` (`src/types.ts`), uma linha em
+  `CARGOS_DELEGAVEIS` (`src/lib/roles.ts`) e as permissões dele em `firestore.rules`. Ele
+  passa a aparecer sozinho em Admin: Cargos.
 
 ## 7. Publicar o app (hosting)
 
@@ -165,7 +169,7 @@ para receber o aviso de pagamento.
 
 ## Cargo de tesoureiro
 
-O admin define o cargo em **Admin: Jogadores**, abrindo o jogador e escolhendo "Tesoureiro".
+O admin delega o cargo em **Admin: Cargos** (ver seção 6).
 
 - **Vê e faz:** Pagamentos (confirmar Pix recebido), Jogos (criar jogos, inscrever e cancelar)
   e Créditos (extrato e ajuste de saldo). Confirmar pagamento, ajustar créditos e inscrever

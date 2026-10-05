@@ -26,6 +26,8 @@ export interface Player {
   vencimento: number | null // ms; pago enquanto vencimento > agora
   ultimoPagamento: number | null
   role: UserRole
+  cargoAlteradoPor?: string
+  cargoAlteradoEm?: number
   criadoEm: number
   atualizadoEm: number
 }

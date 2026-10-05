@@ -15,6 +15,7 @@ import { AdminPayments } from './pages/admin/AdminPayments'
 import { AdminGames } from './pages/admin/AdminGames'
 import { Games } from './pages/Games'
 import { AdminCredits } from './pages/admin/AdminCredits'
+import { AdminRoles } from './pages/admin/AdminRoles'
 
 function App() {
   return (
@@ -113,6 +114,15 @@ function App() {
             <FinanceiroRoute>
               <AdminCredits />
             </FinanceiroRoute>
+          }
+        />
+
+        <Route
+          path="/admin/cargos"
+          element={
+            <AdminRoute>
+              <AdminRoles />
+            </AdminRoute>
           }
         />
 

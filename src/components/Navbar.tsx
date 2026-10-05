@@ -35,6 +35,9 @@ export function Navbar() {
             <NavLink to="/admin/times" className={linkClass}>
               Admin: Times
             </NavLink>
+            <NavLink to="/admin/cargos" className={linkClass}>
+              Admin: Cargos
+            </NavLink>
           </>
         )}
         {(player?.role === 'admin' || player?.role === 'tesoureiro') && (

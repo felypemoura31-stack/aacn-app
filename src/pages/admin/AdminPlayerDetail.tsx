@@ -4,7 +4,8 @@ import { doc, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { DIA_MS, CICLO_DIAS, STATUS_LABELS, formatarData, statusEfetivo } from '../../lib/status'
 import { sincronizarCartaoPublico } from '../../lib/publicCard'
-import type { Player, PlayerStatus, UserRole } from '../../types'
+import { rotuloDoCargo } from '../../lib/roles'
+import type { Player, PlayerStatus } from '../../types'
 
 export function AdminPlayerDetail() {
   const { uid } = useParams<{ uid: string }>()
@@ -40,8 +41,10 @@ export function AdminPlayerDetail() {
     setSaving(true)
     setSavedMessage(null)
     try {
+      // O cargo é gerenciado só em Admin: Cargos; não vai neste salvamento (evita sobrescrever com valor antigo).
+      const { role: _role, cargoAlteradoPor: _por, cargoAlteradoEm: _em, ...resto } = player
       await updateDoc(doc(db, 'players', uid), {
-        ...player,
+        ...resto,
         atualizadoEm: serverTimestamp(),
       })
       await sincronizarCartaoPublico(player)
@@ -181,16 +184,11 @@ export function AdminPlayerDetail() {
           </p>
         </Field>
 
-        <Field label="Papel no sistema">
-          <select
-            value={player.role}
-            onChange={(e) => setField('role', e.target.value as UserRole)}
-            className="input"
-          >
-            <option value="player">Jogador</option>
-            <option value="tesoureiro">Tesoureiro (pagamentos, jogos e créditos)</option>
-            <option value="admin">Administrador</option>
-          </select>
+        <Field label="Cargo">
+          <input value={rotuloDoCargo(player.role)} disabled className="input" />
+          <p className="mt-1 text-xs text-mute">
+            Cargos são delegados em Admin: Cargos (o de administrador, só no Firebase).
+          </p>
         </Field>
 
         {savedMessage && <p className="text-sm text-ok">{savedMessage}</p>}

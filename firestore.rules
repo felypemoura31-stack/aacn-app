@@ -54,10 +54,15 @@ service cloud.firestore {
 
       // O próprio jogador NÃO pode mexer em papel, status, vencimento, e-mail
       // nem se aprovar em um time; isso é só do admin/representante.
-      allow update: if isAdmin() || (
+      // Cargos: o app NUNCA cria nem remove um admin (isso é só no console do
+      // Firebase). O admin delega os demais cargos, mas não mexe no de outro admin.
+      allow update: if (isAdmin() && (
+        request.resource.data.role == resource.data.role ||
+        (request.resource.data.role != 'admin' && resource.data.role != 'admin')
+      )) || (
         isOwner(uid) &&
         !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['role', 'status', 'vencimento', 'ultimoPagamento', 'uid', 'email']) &&
+          .hasAny(['role', 'cargoAlteradoPor', 'cargoAlteradoEm', 'status', 'vencimento', 'ultimoPagamento', 'uid', 'email']) &&
         fotoValida(request.resource.data.get('fotoUrl', null)) &&
         (request.resource.data.timeAprovado == resource.data.timeAprovado ||
          request.resource.data.timeAprovado == false)
