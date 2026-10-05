@@ -11,7 +11,7 @@ export function Card() {
 
   const verifyUrl = `${window.location.origin}/verificar/${player.uid}`
   const status = statusEfetivo(player)
-  const faltamDados = !player.endereco || !player.dataNascimento
+  const faltamDados = !player.fotoUrl || !player.endereco || !player.dataNascimento
 
   return (
     <div className="mx-auto max-w-md px-4 py-8">
@@ -21,7 +21,7 @@ export function Card() {
 
       {faltamDados && (
         <div className="no-print mb-4 rounded-sm border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
-          Complete seus dados em{' '}
+          Complete sua foto e seus dados em{' '}
           <span className="font-semibold">Meus dados</span> para finalizar sua
           carteirinha.
         </div>

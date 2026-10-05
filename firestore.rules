@@ -16,6 +16,12 @@ service cloud.firestore {
         get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Foto 3x4 guardada como texto (JPEG em base64, ~240x320). Limite de tamanho
+    // para ninguém encher o banco; o app reduz a imagem antes de enviar.
+    function fotoValida(v) {
+      return v == null || (v is string && v.size() < 80000);
+    }
+
     function isRepresentativeOfTeam(timeId) {
       return isSignedIn() && timeId != null &&
         get(/databases/$(database)/documents/teams/$(timeId)).data.representanteUid == request.auth.uid;
@@ -32,7 +38,8 @@ service cloud.firestore {
         request.resource.data.role == 'player' &&
         request.resource.data.status == 'inadimplente' &&
         request.resource.data.vencimento == null &&
-        request.resource.data.timeAprovado == false;
+        request.resource.data.timeAprovado == false &&
+        fotoValida(request.resource.data.get('fotoUrl', null));
 
       // O próprio jogador NÃO pode mexer em papel, status, vencimento, e-mail
       // nem se aprovar em um time; isso é só do admin/representante.
@@ -40,6 +47,7 @@ service cloud.firestore {
         isOwner(uid) &&
         !request.resource.data.diff(resource.data).affectedKeys()
           .hasAny(['role', 'status', 'vencimento', 'ultimoPagamento', 'uid', 'email']) &&
+        fotoValida(request.resource.data.get('fotoUrl', null)) &&
         (request.resource.data.timeAprovado == resource.data.timeAprovado ||
          request.resource.data.timeAprovado == false)
       ) || (
@@ -57,6 +65,7 @@ service cloud.firestore {
       allow read: if true;
 
       allow write: if isSignedIn() &&
+        fotoValida(request.resource.data.get('fotoUrl', null)) &&
         request.resource.data.status == get(/databases/$(database)/documents/players/$(uid)).data.status &&
         request.resource.data.vencimento == get(/databases/$(database)/documents/players/$(uid)).data.vencimento && (
           isOwner(uid) ||

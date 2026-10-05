@@ -13,14 +13,10 @@ jogadores, times e status de pagamento.
 - `vite-plugin-pwa` para instalação no celular
 - `react-qr-code` para gerar o QR code da carteirinha
 
-> **Foto 3x4 adiada.** O Firebase Storage passou a exigir o plano pago Blaze
-> (cartão vinculado) para criar um bucket novo, mesmo dentro da faixa
-> gratuita de uso. Por decisão da associação, o upload de foto fica desligado
-> por enquanto — o campo `fotoUrl` já existe no cadastro do jogador e a
-> carteirinha/painel admin mostram a foto se ela existir, então é só reativar
-> depois: reinstalar `firebase/storage`, restaurar `storage.rules` no
-> `firebase.json` e recriar o componente de upload (havia um em
-> `src/components/PhotoUploader.tsx`, removido neste commit).
+> **Foto 3x4 sem Firebase Storage.** O Storage exige o plano pago Blaze, então a foto é
+> recortada em 3x4, reduzida para 240x320 (JPEG, ~20 KB) no próprio navegador e guardada como
+> texto no Firestore (campo `fotoUrl`). Fica no plano gratuito. Se um dia migrarem para o
+> Blaze, dá para trocar para o Storage mudando só `src/components/PhotoUploader.tsx`.
 
 ## 1. Criar o projeto no Firebase
 

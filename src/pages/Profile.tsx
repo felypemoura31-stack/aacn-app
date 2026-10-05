@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
+import { PhotoUploader } from '../components/PhotoUploader'
 import { solicitarEntradaNoTime } from '../lib/teams'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
 import type { Team } from '../types'
@@ -75,9 +76,22 @@ export function Profile() {
     }
   }
 
+  async function handleFoto(dataUrl: string) {
+    await updateDoc(doc(db, 'players', currentUser!.uid), {
+      fotoUrl: dataUrl,
+      atualizadoEm: serverTimestamp(),
+    })
+    await sincronizarCartaoPublico({ ...player!, fotoUrl: dataUrl })
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="mb-6 text-xl font-bold text-ink">Meus dados</h1>
+
+      <div className="panel mb-6 p-5">
+        <h2 className="mb-3 text-sm font-semibold text-ink">Foto 3x4</h2>
+        <PhotoUploader currentUrl={player.fotoUrl} onChange={handleFoto} />
+      </div>
 
       <form
         onSubmit={handleSubmit}
