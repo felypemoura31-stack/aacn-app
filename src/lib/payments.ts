@@ -9,9 +9,9 @@ import {
 import { db } from '../firebase'
 import { creditosDoPagamento, lancar, lerCarteira, reais, type Autor } from './credits'
 import { novoTxid } from './pix'
-import { sincronizarCartaoPublico } from './publicCard'
+import { atualizarPagamentoNoCartaoPublico } from './publicCard'
 import { calcularNovoVencimento, formatarData } from './status'
-import type { Payment, PixConfig, Player } from '../types'
+import type { Payment, PixConfig, Player, PlayerStatus } from '../types'
 
 export async function gerarCobranca(player: Player, cfg: PixConfig) {
   await addDoc(collection(db, 'payments'), {
@@ -37,20 +37,21 @@ export async function confirmarPagamento(
   dataPagamento: number,
   admin: Autor,
 ) {
-  const [playerSnap, carteira, paymentSnap] = await Promise.all([
-    getDoc(doc(db, 'players', payment.uid)),
+  // Lê só o cartão público (nome/status/vencimento): o tesoureiro não tem acesso aos dados pessoais.
+  const [cartaoSnap, carteira, paymentSnap] = await Promise.all([
+    getDoc(doc(db, 'publicCards', payment.uid)),
     lerCarteira(payment.uid),
     getDoc(doc(db, 'payments', payment.id)),
   ])
-  if (!playerSnap.exists()) throw new Error('Jogador não encontrado')
+  if (!cartaoSnap.exists()) throw new Error('Jogador não encontrado')
   if ((paymentSnap.data() as Payment).status === 'confirmado') {
     throw new Error('Este pagamento já foi confirmado')
   }
-  const player = playerSnap.data() as Player
+  const cartao = cartaoSnap.data() as { status: PlayerStatus; vencimento: number | null }
 
-  const vencimento = calcularNovoVencimento(dataPagamento, player.vencimento ?? null)
+  const vencimento = calcularNovoVencimento(dataPagamento, cartao.vencimento ?? null)
   const atualizado = {
-    status: player.status === 'inativo' ? ('inativo' as const) : ('pago' as const),
+    status: cartao.status === 'inativo' ? ('inativo' as const) : ('pago' as const),
     vencimento,
     ultimoPagamento: dataPagamento,
   }
@@ -79,5 +80,5 @@ export async function confirmarPagamento(
   })
   await batch.commit()
 
-  await sincronizarCartaoPublico({ ...player, ...atualizado })
+  await atualizarPagamentoNoCartaoPublico(payment.uid, atualizado.status, vencimento)
 }

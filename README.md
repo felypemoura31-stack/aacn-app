@@ -163,6 +163,21 @@ para receber o aviso de pagamento.
   do console assim que o projeto existir.
 - Créditos não expiram.
 
+## Cargo de tesoureiro
+
+O admin define o cargo em **Admin: Jogadores**, abrindo o jogador e escolhendo "Tesoureiro".
+
+- **Vê e faz:** Pagamentos (confirmar Pix recebido), Jogos (criar jogos, inscrever e cancelar)
+  e Créditos (extrato e ajuste de saldo). Confirmar pagamento, ajustar créditos e inscrever
+  ficam registrados no extrato com o nome de quem fez.
+- **Não vê:** a lista completa de jogadores, endereço, contato de emergência, condições médicas,
+  times e cargos. Para escolher um jogador ele usa só o cartão público (nome, time e status,
+  os mesmos dados do QR).
+- **Não faz:** alterar a chave Pix e o valor da mensalidade (só o admin, para ninguém desviar
+  os pagamentos), promover cargos, nem reativar um jogador inativo.
+- Tudo isso é imposto nas regras do Firestore (`firestore.rules`), não só escondido na tela.
+  Essas regras ainda não foram testadas com o emulador (exige Java).
+
 ## Ícones do app
 
 Os ícones em `public/pwa-192x192.png`, `public/pwa-512x512.png`,

@@ -188,6 +188,7 @@ export function AdminPlayerDetail() {
             className="input"
           >
             <option value="player">Jogador</option>
+            <option value="tesoureiro">Tesoureiro (pagamentos, jogos e créditos)</option>
             <option value="admin">Administrador</option>
           </select>
         </Field>

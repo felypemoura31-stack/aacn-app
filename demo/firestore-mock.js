@@ -42,6 +42,7 @@ function player(uid, nome, email, extra = {}) {
 
 const seedPlayers = [
   player('u-admin', 'Administrador AACN', 'admin@teste.com', { role: 'admin' }),
+  player('u-tesoureiro', 'Tiago Tesoureiro', 'tesoureiro@teste.com', { role: 'tesoureiro' }),
   player('u-jogador', 'Carlos Silva', 'jogador@teste.com', {
     timeId: 't-alpha',
     timeNome: 'Alpha Squad',
@@ -120,7 +121,7 @@ store.payments['pg-1'] = {
   dataPagamento: null,
 }
 
-const saldos = { 'u-admin': 0, 'u-jogador': 20, 'u-marcos': 0, 'u-ana': 0, 'u-pedro': 4 }
+const saldos = { 'u-tesoureiro': 0, 'u-admin': 0, 'u-jogador': 20, 'u-marcos': 0, 'u-ana': 0, 'u-pedro': 4 }
 for (const [uid, creditos] of Object.entries(saldos)) {
   store.wallets[uid] = { creditos, ultimoJogoId: null, atualizadoEm: now }
 }

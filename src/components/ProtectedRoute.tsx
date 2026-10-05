@@ -21,6 +21,16 @@ export function AdminRoute({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+export function FinanceiroRoute({ children }: { children: ReactNode }) {
+  const { currentUser, player, loading } = useAuth()
+
+  if (loading) return <CenteredMessage>Carregando...</CenteredMessage>
+  if (!currentUser) return <Navigate to="/login" replace />
+  if (player?.role !== 'admin' && player?.role !== 'tesoureiro') return <Navigate to="/" replace />
+
+  return <>{children}</>
+}
+
 function CenteredMessage({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center text-mute">

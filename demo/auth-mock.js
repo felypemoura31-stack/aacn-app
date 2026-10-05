@@ -1,6 +1,7 @@
 // Firebase Auth falso em memória, usado apenas por `npm run dev:demo`.
 const users = [
   { uid: 'u-admin', email: 'admin@teste.com', senha: '123456', displayName: 'Administrador AACN' },
+  { uid: 'u-tesoureiro', email: 'tesoureiro@teste.com', senha: '123456', displayName: 'Tiago Tesoureiro' },
   { uid: 'u-jogador', email: 'jogador@teste.com', senha: '123456', displayName: 'Carlos Silva' },
   { uid: 'u-marcos', email: 'marcos@teste.com', senha: '123456', displayName: 'Marcos Lima' },
   { uid: 'u-ana', email: 'ana@teste.com', senha: '123456', displayName: 'Ana Souza' },

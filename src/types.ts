@@ -1,6 +1,13 @@
 export type PlayerStatus = 'pago' | 'inadimplente' | 'inativo'
 
-export type UserRole = 'player' | 'admin'
+export type UserRole = 'player' | 'admin' | 'tesoureiro'
+
+/** Dados públicos mínimos de um jogador (cartão público), sem informações pessoais. */
+export interface JogadorResumo {
+  uid: string
+  nomeCompleto: string
+  timeNome: string | null
+}
 
 export interface Player {
   uid: string

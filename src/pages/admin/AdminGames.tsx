@@ -17,13 +17,13 @@ import {
   formatarCreditos,
   reais,
 } from '../../lib/credits'
-import type { Game, PagoCom, Participation, Player } from '../../types'
+import type { Game, JogadorResumo, PagoCom, Participation } from '../../types'
 
 export function AdminGames() {
   const { player: admin } = useAuth()
   const [games, setGames] = useState<Game[]>([])
   const [parts, setParts] = useState<Participation[]>([])
-  const [players, setPlayers] = useState<Player[]>([])
+  const [players, setPlayers] = useState<JogadorResumo[]>([])
   const [aberto, setAberto] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -42,8 +42,8 @@ export function AdminGames() {
     const unsubP = onSnapshot(collection(db, 'participations'), (snap) =>
       setParts(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation)),
     )
-    const unsubJ = onSnapshot(query(collection(db, 'players'), orderBy('nomeCompleto')), (snap) =>
-      setPlayers(snap.docs.map((d) => d.data() as Player)),
+    const unsubJ = onSnapshot(query(collection(db, 'publicCards'), orderBy('nomeCompleto')), (snap) =>
+      setPlayers(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as JogadorResumo)),
     )
     return () => {
       unsubG()
@@ -97,7 +97,7 @@ export function AdminGames() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-ink">Admin: Jogos</h1>
+      <h1 className="mb-6 text-xl font-bold text-ink">Jogos</h1>
 
       <form onSubmit={criar} className="panel mb-8 space-y-3 p-4">
         <h2 className="text-sm font-bold text-ink">Novo jogo</h2>

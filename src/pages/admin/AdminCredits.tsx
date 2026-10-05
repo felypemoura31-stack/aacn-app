@@ -4,11 +4,11 @@ import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { ExtratoCreditos } from '../../components/ExtratoCreditos'
 import { adminAjustarSaldo, formatarCreditos } from '../../lib/credits'
-import type { Player, Wallet } from '../../types'
+import type { JogadorResumo, Wallet } from '../../types'
 
 export function AdminCredits() {
   const { player: admin } = useAuth()
-  const [players, setPlayers] = useState<Player[]>([])
+  const [players, setPlayers] = useState<JogadorResumo[]>([])
   const [carteiras, setCarteiras] = useState<Record<string, Wallet>>({})
   const [busca, setBusca] = useState('')
   const [aberto, setAberto] = useState<string | null>(null)
@@ -21,8 +21,8 @@ export function AdminCredits() {
   const [enviando, setEnviando] = useState(false)
 
   useEffect(() => {
-    const unsubP = onSnapshot(query(collection(db, 'players'), orderBy('nomeCompleto')), (snap) =>
-      setPlayers(snap.docs.map((d) => d.data() as Player)),
+    const unsubP = onSnapshot(query(collection(db, 'publicCards'), orderBy('nomeCompleto')), (snap) =>
+      setPlayers(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as JogadorResumo)),
     )
     const unsubW = onSnapshot(collection(db, 'wallets'), (snap) => {
       const m: Record<string, Wallet> = {}
@@ -51,7 +51,7 @@ export function AdminCredits() {
     setOk(null)
   }
 
-  async function ajustar(e: FormEvent, jogador: Player) {
+  async function ajustar(e: FormEvent, jogador: JogadorResumo) {
     e.preventDefault()
     if (!admin) return
     setErro(null)
@@ -76,7 +76,7 @@ export function AdminCredits() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-ink">Admin: Créditos</h1>
+      <h1 className="mb-6 text-xl font-bold text-ink">Créditos</h1>
 
       <input
         placeholder="Buscar jogador..."
@@ -91,7 +91,7 @@ export function AdminCredits() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-semibold text-ink">{p.nomeCompleto}</p>
-                <p className="text-xs text-mute">{p.email}</p>
+                <p className="text-xs text-mute">{p.timeNome ?? 'Sem time'}</p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-lg font-bold text-gold">

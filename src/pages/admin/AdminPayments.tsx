@@ -17,6 +17,7 @@ export function AdminPayments() {
   const [datas, setDatas] = useState<Record<string, string>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+  const podeEditarPix = admin?.role === 'admin'
 
   useEffect(() => {
     return onSnapshot(doc(db, 'config', 'pix'), (snap) => {
@@ -59,10 +60,14 @@ export function AdminPayments() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-ink">Admin: Pagamentos</h1>
+      <h1 className="mb-6 text-xl font-bold text-ink">Pagamentos</h1>
 
-      <form onSubmit={salvarCfg} className="panel mb-8 space-y-3 p-4">
+      <form onSubmit={salvarCfg} className="panel mb-8 p-4">
+        <fieldset disabled={!podeEditarPix} className="space-y-3">
         <h2 className="text-sm font-bold text-ink">Chave Pix da associação</h2>
+        {!podeEditarPix && (
+          <p className="text-xs text-mute">Somente o administrador altera a chave e o valor.</p>
+        )}
         <input
           required
           placeholder="Chave Pix (e-mail, CPF/CNPJ, telefone ou aleatória)"
@@ -101,9 +106,12 @@ export function AdminPayments() {
           />
         </label>
         {cfgMsg && <p className="text-sm text-ok">{cfgMsg}</p>}
-        <button type="submit" className="btn-primary">
-          Salvar
-        </button>
+        {podeEditarPix && (
+          <button type="submit" className="btn-primary">
+            Salvar
+          </button>
+        )}
+        </fieldset>
       </form>
 
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}

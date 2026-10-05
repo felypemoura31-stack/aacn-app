@@ -35,14 +35,18 @@ export function Navbar() {
             <NavLink to="/admin/times" className={linkClass}>
               Admin: Times
             </NavLink>
+          </>
+        )}
+        {(player?.role === 'admin' || player?.role === 'tesoureiro') && (
+          <>
             <NavLink to="/admin/pagamentos" className={linkClass}>
-              Admin: Pagamentos
+              {player.role === 'admin' ? 'Admin' : 'Tesouraria'}: Pagamentos
             </NavLink>
             <NavLink to="/admin/jogos" className={linkClass}>
-              Admin: Jogos
+              {player.role === 'admin' ? 'Admin' : 'Tesouraria'}: Jogos
             </NavLink>
             <NavLink to="/admin/creditos" className={linkClass}>
-              Admin: Créditos
+              {player.role === 'admin' ? 'Admin' : 'Tesouraria'}: Créditos
             </NavLink>
           </>
         )}

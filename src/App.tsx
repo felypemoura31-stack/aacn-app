@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { Navbar } from './components/Navbar'
-import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute'
+import { ProtectedRoute, AdminRoute, FinanceiroRoute } from './components/ProtectedRoute'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { Profile } from './pages/Profile'
@@ -21,8 +21,8 @@ function App() {
     <AuthProvider>
       {import.meta.env.MODE === 'demo' && (
         <div className="no-print bg-gold/15 px-3 py-1 text-center text-xs text-gold">
-          Modo demonstração (dados fictícios). Logins: admin@teste.com ou
-          jogador@teste.com, senha 123456
+          Modo demonstração (dados fictícios). Logins: admin@teste.com,
+          tesoureiro@teste.com ou jogador@teste.com, senha 123456
         </div>
       )}
       <Navbar />
@@ -92,27 +92,27 @@ function App() {
         <Route
           path="/admin/pagamentos"
           element={
-            <AdminRoute>
+            <FinanceiroRoute>
               <AdminPayments />
-            </AdminRoute>
+            </FinanceiroRoute>
           }
         />
 
         <Route
           path="/admin/jogos"
           element={
-            <AdminRoute>
+            <FinanceiroRoute>
               <AdminGames />
-            </AdminRoute>
+            </FinanceiroRoute>
           }
         />
 
         <Route
           path="/admin/creditos"
           element={
-            <AdminRoute>
+            <FinanceiroRoute>
               <AdminCredits />
-            </AdminRoute>
+            </FinanceiroRoute>
           }
         />
 

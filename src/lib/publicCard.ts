@@ -25,6 +25,22 @@ export async function sincronizarCartaoPublico(player: PublicCardSource) {
 }
 
 /**
+ * Usado ao confirmar um pagamento (admin ou tesoureiro): só mexe em status e
+ * vencimento do cartão público, sem precisar ler os dados pessoais do jogador.
+ */
+export async function atualizarPagamentoNoCartaoPublico(
+  uid: string,
+  status: Player['status'],
+  vencimento: number,
+) {
+  await updateDoc(doc(db, 'publicCards', uid), {
+    status,
+    vencimento,
+    atualizadoEm: serverTimestamp(),
+  })
+}
+
+/**
  * Usado pelo representante do time ao aprovar/recusar um jogador: só
  * altera o nome do time exibido, sem tocar no status de pagamento.
  */

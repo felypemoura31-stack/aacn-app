@@ -16,6 +16,17 @@ service cloud.firestore {
         get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Tesoureiro: cuida só de pagamentos, jogos e créditos. NÃO lê os dados
+    // pessoais dos jogadores (usa só o cartão público: nome, time e status).
+    function isTesoureiro() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'tesoureiro';
+    }
+
+    function isFinanceiro() {
+      return isAdmin() || isTesoureiro();
+    }
+
     // Foto 3x4 guardada como texto (JPEG em base64, ~240x320). Limite de tamanho
     // para ninguém encher o banco; o app reduz a imagem antes de enviar.
     function fotoValida(v) {
@@ -54,6 +65,16 @@ service cloud.firestore {
         isSignedIn() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['timeAprovado', 'atualizadoEm']) &&
         isRepresentativeOfTeam(resource.data.timeId)
+      ) || (
+        // Tesoureiro: só ao confirmar um pagamento. Só pode mover o vencimento
+        // para frente e marcar "pago" (nunca reativar um inativo nem rebaixar).
+        isTesoureiro() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'vencimento', 'ultimoPagamento', 'atualizadoEm']) &&
+        (request.resource.data.status == resource.data.status ||
+         (request.resource.data.status == 'pago' && resource.data.status != 'inativo')) &&
+        request.resource.data.vencimento >
+          (resource.data.vencimento == null ? 0 : resource.data.vencimento)
       );
 
       allow delete: if false;
@@ -70,7 +91,10 @@ service cloud.firestore {
         request.resource.data.vencimento == get(/databases/$(database)/documents/players/$(uid)).data.vencimento && (
           isOwner(uid) ||
           isAdmin() ||
-          isRepresentativeOfTeam(get(/databases/$(database)/documents/players/$(uid)).data.timeId)
+          isRepresentativeOfTeam(get(/databases/$(database)/documents/players/$(uid)).data.timeId) ||
+          (isTesoureiro() &&
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'vencimento', 'atualizadoEm']))
         );
     }
 
@@ -95,20 +119,21 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Chave Pix e valor da mensalidade: todos leem, só admin altera.
+    // Chave Pix e valor da mensalidade: todos leem, só admin altera (o
+    // tesoureiro não troca a chave, para ninguém desviar os pagamentos).
     match /config/{docId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
     // Cobranças Pix: o jogador só cria a própria, sempre como "pendente";
-    // só o admin confirma (isso é o que libera o status "adimplente").
+    // admin e tesoureiro confirmam (isso é o que libera o status "adimplente").
     match /payments/{paymentId} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow read: if isFinanceiro() || (isSignedIn() && resource.data.uid == request.auth.uid);
       allow create: if isSignedIn() &&
         request.resource.data.uid == request.auth.uid &&
         request.resource.data.status == 'pendente';
-      allow update: if isAdmin();
+      allow update: if isFinanceiro();
       allow delete: if false;
     }
 
@@ -117,15 +142,15 @@ service cloud.firestore {
     // só pode diminuir exatamente o custo de um jogo aberto, e no mesmo lote
     // precisa nascer a inscrição dele nesse jogo (verificado com getAfter).
     match /wallets/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
+      allow read: if isOwner(uid) || isFinanceiro();
 
-      allow create: if isAdmin() || (
+      allow create: if isFinanceiro() || (
         isOwner(uid) &&
         request.resource.data.creditos == 0 &&
         request.resource.data.ultimoJogoId == null
       );
 
-      allow update: if isAdmin() || (
+      allow update: if isFinanceiro() || (
         isOwner(uid) &&
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['creditos', 'ultimoJogoId', 'atualizadoEm']) &&
@@ -145,16 +170,16 @@ service cloud.firestore {
     // Jogos criados pelo admin; todos os associados logados podem ver.
     match /games/{gameId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isFinanceiro();
     }
 
     // Inscrições em jogos. O id é sempre "<jogo>_<uid>" (uma por jogador).
     // O jogador só cria a própria inscrição paga com créditos, e só se o saldo
     // dele caiu exatamente o custo do jogo no mesmo lote.
     match /participations/{pid} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow read: if isFinanceiro() || (isSignedIn() && resource.data.uid == request.auth.uid);
 
-      allow create: if isAdmin() || (
+      allow create: if isFinanceiro() || (
         isSignedIn() &&
         request.resource.data.uid == request.auth.uid &&
         pid == request.resource.data.gameId + '_' + request.auth.uid &&
@@ -169,7 +194,7 @@ service cloud.firestore {
       );
 
       // Cancelar não apaga: o admin marca como "removida" (fica no histórico).
-      allow update: if isAdmin();
+      allow update: if isFinanceiro();
       allow delete: if false;
     }
 
@@ -178,9 +203,9 @@ service cloud.firestore {
     // jogador só cria o lançamento da própria inscrição, e só se o saldo dele
     // caiu exatamente aquele valor no mesmo lote.
     match /ledger/{lid} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow read: if isFinanceiro() || (isSignedIn() && resource.data.uid == request.auth.uid);
 
-      allow create: if isAdmin() || (
+      allow create: if isFinanceiro() || (
         isSignedIn() &&
         request.resource.data.uid == request.auth.uid &&
         request.resource.data.tipo == 'jogo' &&
