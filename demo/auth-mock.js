@@ -2,6 +2,7 @@
 const users = [
   { uid: 'u-admin', email: 'admin@teste.com', senha: '123456', displayName: 'Administrador AACN' },
   { uid: 'u-tesoureiro', email: 'tesoureiro@teste.com', senha: '123456', displayName: 'Tiago Tesoureiro' },
+  { uid: 'u-organizador', email: 'organizador@teste.com', senha: '123456', displayName: 'Olavo Organizador' },
   { uid: 'u-jogador', email: 'jogador@teste.com', senha: '123456', displayName: 'Carlos Silva' },
   { uid: 'u-marcos', email: 'marcos@teste.com', senha: '123456', displayName: 'Marcos Lima' },
   { uid: 'u-ana', email: 'ana@teste.com', senha: '123456', displayName: 'Ana Souza' },

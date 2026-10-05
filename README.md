@@ -181,7 +181,26 @@ O admin delega o cargo em **Admin: Cargos** (ver seção 6).
 - **Não faz:** alterar a chave Pix e o valor da mensalidade (só o admin, para ninguém desviar
   os pagamentos), promover cargos, nem reativar um jogador inativo.
 - Tudo isso é imposto nas regras do Firestore (`firestore.rules`), não só escondido na tela.
-  Essas regras ainda não foram testadas com o emulador (exige Java).
+ 
+
+## Cargo de organizador
+
+O admin delega em **Admin: Cargos**.
+
+- **Faz:** criar jogos, editar nome/data e os valores cobrados (em dinheiro e em créditos) e
+  abrir/encerrar inscrições. Vê quem está inscrito em cada jogo.
+- **Não faz:** inscrever ou cancelar jogadores (isso mexe em créditos/dinheiro, é do tesoureiro),
+  ver pagamentos, créditos e extrato, alterar a chave Pix, ver dados pessoais, apagar jogos
+  nem alterar cargos.
+- Alterar o valor de um jogo vale para as próximas inscrições; quem já se inscreveu mantém o que
+  foi cobrado.
+
+## Testes das regras do Firestore
+
+As regras foram verificadas contra o Firebase com a API de testes de regras (28 casos: o que
+organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo gastar créditos
+sem inflar o saldo). O script é descartável e não está no repositório; refaça-o ao mudar
+permissões.
 
 ## Ícones do app
 

@@ -27,6 +27,17 @@ service cloud.firestore {
       return isAdmin() || isTesoureiro();
     }
 
+    // Organizador: cria/edita jogos e os valores cobrados. NÃO mexe em créditos,
+    // pagamentos nem inscrições (só enxerga quem está inscrito).
+    function isOrganizador() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'organizador';
+    }
+
+    function podeGerirJogos() {
+      return isFinanceiro() || isOrganizador();
+    }
+
     // Foto 3x4 guardada como texto (JPEG em base64, ~240x320). Limite de tamanho
     // para ninguém encher o banco; o app reduz a imagem antes de enviar.
     function fotoValida(v) {
@@ -175,14 +186,15 @@ service cloud.firestore {
     // Jogos criados pelo admin; todos os associados logados podem ver.
     match /games/{gameId} {
       allow read: if isSignedIn();
-      allow write: if isFinanceiro();
+      allow create, update: if podeGerirJogos();
+      allow delete: if isAdmin();
     }
 
     // Inscrições em jogos. O id é sempre "<jogo>_<uid>" (uma por jogador).
     // O jogador só cria a própria inscrição paga com créditos, e só se o saldo
     // dele caiu exatamente o custo do jogo no mesmo lote.
     match /participations/{pid} {
-      allow read: if isFinanceiro() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow read: if podeGerirJogos() || (isSignedIn() && resource.data.uid == request.auth.uid);
 
       allow create: if isFinanceiro() || (
         isSignedIn() &&

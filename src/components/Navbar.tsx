@@ -6,6 +6,8 @@ export function Navbar() {
 
   if (!currentUser) return null
 
+  const prefixo = player?.role === 'admin' ? 'Admin' : player?.role === 'tesoureiro' ? 'Tesouraria' : 'Organização'
+
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `px-3 py-2 rounded-sm text-sm font-medium ${
       isActive ? 'bg-accent text-white' : 'text-mute hover:bg-surface2'
@@ -43,15 +45,17 @@ export function Navbar() {
         {(player?.role === 'admin' || player?.role === 'tesoureiro') && (
           <>
             <NavLink to="/admin/pagamentos" className={linkClass}>
-              {player.role === 'admin' ? 'Admin' : 'Tesouraria'}: Pagamentos
-            </NavLink>
-            <NavLink to="/admin/jogos" className={linkClass}>
-              {player.role === 'admin' ? 'Admin' : 'Tesouraria'}: Jogos
+              {prefixo}: Pagamentos
             </NavLink>
             <NavLink to="/admin/creditos" className={linkClass}>
-              {player.role === 'admin' ? 'Admin' : 'Tesouraria'}: Créditos
+              {prefixo}: Créditos
             </NavLink>
           </>
+        )}
+        {(player?.role === 'admin' || player?.role === 'tesoureiro' || player?.role === 'organizador') && (
+          <NavLink to="/admin/jogos" className={linkClass}>
+            {prefixo}: Jogos
+          </NavLink>
         )}
         <button
           onClick={() => logout()}

@@ -32,6 +32,12 @@ export function AdminGames() {
   const [valor, setValor] = useState(10)
   const [custo, setCusto] = useState(10)
 
+  const [editando, setEditando] = useState<string | null>(null)
+  const [eNome, setENome] = useState('')
+  const [eData, setEData] = useState('')
+  const [eValor, setEValor] = useState(0)
+  const [eCusto, setECusto] = useState(0)
+
   const [novoUid, setNovoUid] = useState('')
   const [novoModo, setNovoModo] = useState<PagoCom>('creditos')
 
@@ -52,6 +58,9 @@ export function AdminGames() {
     }
   }, [])
 
+  // Inscrever/cancelar mexe em créditos e dinheiro: só admin e tesoureiro. O organizador só vê a lista.
+  const gerenciaInscricoes = admin?.role === 'admin' || admin?.role === 'tesoureiro'
+
   const autor = () => ({ uid: admin!.uid, nome: admin!.nomeCompleto })
 
   async function criar(e: FormEvent) {
@@ -66,6 +75,31 @@ export function AdminGames() {
     })
     setNome('')
     setData('')
+  }
+
+  function abrirEdicao(g: Game) {
+    if (editando === g.id) return setEditando(null)
+    setEditando(g.id)
+    setENome(g.nome)
+    setEData(g.data)
+    setEValor(g.valor)
+    setECusto(g.custoCreditos)
+  }
+
+  async function salvarEdicao(e: FormEvent, g: Game) {
+    e.preventDefault()
+    setErro(null)
+    try {
+      await updateDoc(doc(db, 'games', g.id), {
+        nome: eNome.trim(),
+        data: eData,
+        valor: eValor,
+        custoCreditos: eCusto,
+      })
+      setEditando(null)
+    } catch {
+      setErro('Não foi possível salvar as alterações do jogo.')
+    }
   }
 
   async function alternar(g: Game) {
@@ -156,6 +190,9 @@ export function AdminGames() {
                   </p>
                 </div>
                 <div className="flex gap-2">
+                  <button onClick={() => abrirEdicao(g)} className="btn-ghost">
+                    {editando === g.id ? 'Cancelar edição' : 'Editar'}
+                  </button>
                   <button onClick={() => alternar(g)} className="btn-ghost">
                     {g.status === 'aberto' ? 'Encerrar' : 'Reabrir'}
                   </button>
@@ -164,6 +201,49 @@ export function AdminGames() {
                   </button>
                 </div>
               </div>
+
+              {editando === g.id && (
+                <form onSubmit={(e) => salvarEdicao(e, g)} className="mt-4 space-y-3 border-t border-line pt-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <input required value={eNome} onChange={(e) => setENome(e.target.value)} className="input" />
+                    <input required type="date" value={eData} onChange={(e) => setEData(e.target.value)} className="input" />
+                    <label className="text-xs text-mute">
+                      Valor em dinheiro (R$)
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={eValor}
+                        onChange={(e) => {
+                          const v = Number(e.target.value)
+                          if (eCusto === eValor) setECusto(v)
+                          setEValor(v)
+                        }}
+                        className="input mt-1"
+                      />
+                    </label>
+                    <label className="text-xs text-mute">
+                      Custo em créditos
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={eCusto}
+                        onChange={(e) => setECusto(Number(e.target.value))}
+                        className="input mt-1"
+                      />
+                    </label>
+                  </div>
+                  <p className="text-xs text-mute/70">
+                    Quem já se inscreveu mantém o que foi cobrado; o novo valor vale para as próximas inscrições.
+                  </p>
+                  <button type="submit" className="btn-primary">
+                    Salvar alterações
+                  </button>
+                </form>
+              )}
 
               {expandido && (
                 <div className="mt-4 space-y-2 border-t border-line pt-3">
@@ -174,14 +254,17 @@ export function AdminGames() {
                         {p.pagoCom === 'creditos'
                           ? `${formatarCreditos(p.creditosDebitados)} créditos`
                           : 'dinheiro'}
-                        <button onClick={() => remover(p)} className="text-xs text-danger hover:underline">
-                          Remover
-                        </button>
+                        {gerenciaInscricoes && (
+                          <button onClick={() => remover(p)} className="text-xs text-danger hover:underline">
+                            Remover
+                          </button>
+                        )}
                       </span>
                     </div>
                   ))}
                   {lista.length === 0 && <p className="text-xs text-mute/70">Ninguém inscrito ainda.</p>}
 
+                  {gerenciaInscricoes && (
                   <div className="flex flex-wrap gap-2 pt-2">
                     <select value={novoUid} onChange={(e) => setNovoUid(e.target.value)} className="input w-auto flex-1">
                       <option value="">Adicionar jogador...</option>
@@ -201,6 +284,7 @@ export function AdminGames() {
                       Adicionar
                     </button>
                   </div>
+                  )}
                 </div>
               )}
             </div>

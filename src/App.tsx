@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { Navbar } from './components/Navbar'
-import { ProtectedRoute, AdminRoute, FinanceiroRoute } from './components/ProtectedRoute'
+import { ProtectedRoute, AdminRoute, FinanceiroRoute, JogosRoute } from './components/ProtectedRoute'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { Profile } from './pages/Profile'
@@ -102,9 +102,9 @@ function App() {
         <Route
           path="/admin/jogos"
           element={
-            <FinanceiroRoute>
+            <JogosRoute>
               <AdminGames />
-            </FinanceiroRoute>
+            </JogosRoute>
           }
         />
 

@@ -18,6 +18,11 @@ export const CARGOS_DELEGAVEIS: CargoInfo[] = [
     label: 'Tesoureiro',
     descricao: 'Pagamentos, jogos e créditos',
   },
+  {
+    value: 'organizador',
+    label: 'Organizador',
+    descricao: 'Cria jogos e define os valores cobrados (não mexe em pagamentos nem créditos)',
+  },
 ]
 
 export function rotuloDoCargo(role: UserRole) {
