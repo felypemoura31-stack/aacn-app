@@ -18,6 +18,7 @@ export function AdminPlayerDetail() {
   const [player, setPlayer] = useState<Player | null>(null)
   const [loading, setLoading] = useState(true)
   const [cpfInicial, setCpfInicial] = useState('')
+  const [original, setOriginal] = useState<Player | null>(null) // como estava quando a ficha foi aberta/salva
   const [saving, setSaving] = useState(false)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
 
@@ -26,6 +27,7 @@ export function AdminPlayerDetail() {
     getDoc(doc(db, 'players', uid)).then((snap) => {
       setPlayer(snap.exists() ? (snap.data() as Player) : null)
       setCpfInicial(snap.exists() ? ((snap.data() as Player).cpf ?? '') : '')
+      setOriginal(snap.exists() ? (snap.data() as Player) : null)
       setLoading(false)
     })
   }, [uid])
@@ -48,8 +50,13 @@ export function AdminPlayerDetail() {
     setSaving(true)
     setSavedMessage(null)
     try {
-      // O cargo é gerenciado só em Admin: Cargos; não vai neste salvamento (evita sobrescrever com valor antigo).
-      const { role: _role, cargoAlteradoPor: _por, cargoAlteradoEm: _em, ...resto } = player
+      // Só os campos que esta ficha edita, e só os que mudaram. Cargo, time e o resto do cadastro não vão aqui:
+      // a ficha pode estar aberta há tempo e regravá-los desfaria o que mudou nesse meio tempo (ex.: aprovação no time).
+      const editaveis = ['nomeCompleto', 'endereco', 'bairro', 'cep', 'celular', 'dataNascimento', 'contatoEmergenciaNome', 'contatoEmergenciaTelefone', 'condicoesMedicas', 'status', 'vencimento'] as const
+      const alterados: Record<string, unknown> = {}
+      for (const k of editaveis) {
+        if ((player[k] ?? null) !== (original?.[k] ?? null)) alterados[k] = player[k] ?? null
+      }
       // o CPF é único: a troca vai antes, junto com o documento do CPF
       if ((player.cpf ?? '') !== cpfInicial) {
         try {
@@ -60,11 +67,18 @@ export function AdminPlayerDetail() {
           throw e
         }
       }
-      await updateDoc(doc(db, 'players', uid), {
-        ...resto,
-        atualizadoEm: serverTimestamp(),
-      })
-      await sincronizarCartaoPublico(player)
+      if (Object.keys(alterados).length > 0) {
+        await updateDoc(doc(db, 'players', uid), { ...alterados, atualizadoEm: serverTimestamp() })
+      }
+      // o cartão público sai do cadastro ATUAL (não da cópia da tela), para não perder time/situação mudados por outros
+      const atual = await getDoc(doc(db, 'players', uid))
+      if (atual.exists()) {
+        const p = atual.data() as Player
+        await sincronizarCartaoPublico(p)
+        setPlayer(p)
+        setOriginal(p)
+        setCpfInicial(p.cpf ?? '')
+      }
       setSavedMessage('Alterações salvas.')
     } finally {
       setSaving(false)

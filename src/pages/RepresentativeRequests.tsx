@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   collection,
+  doc,
   onSnapshot,
   orderBy,
   query,
+  serverTimestamp,
+  updateDoc,
   where,
 } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -48,7 +51,11 @@ export function RepresentativeRequests() {
     for (const r of requests) {
       if (r.status !== 'aprovado' || membros.has(r.jogadorUid) || corrigidos.current.has(r.id)) continue
       corrigidos.current.add(r.id)
-      atualizarTimeNoCartaoPublico(r.jogadorUid, r.timeNome, r.timeId).catch(() => {})
+      // refaz a aprovação inteira (idempotente): o cadastro do jogador (se ainda estiver neste time) e o cartão público.
+      // O representante só consegue gravar se o jogador continua pedindo este time; senão o banco recusa, sem efeito.
+      updateDoc(doc(db, 'players', r.jogadorUid), { timeAprovado: true, atualizadoEm: serverTimestamp() })
+        .then(() => atualizarTimeNoCartaoPublico(r.jogadorUid, r.timeNome, r.timeId))
+        .catch(() => {})
     }
   }, [membros, requests])
 

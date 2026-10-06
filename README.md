@@ -333,6 +333,11 @@ admin repõe sozinho ao abrir as telas Cobranças ou Carteirinhas. Se a cópia a
 aviso para o jogador abrir o app uma vez. As regras exigem que a cópia seja igual ao cadastro (ninguém inventa a
 data de nascimento ou o "membro desde").
 
+## Consistência: ficha do admin e aprovação de time
+
+- A **ficha do jogador** (admin) grava **só os campos que foram alterados** (dados pessoais, situação e vencimento) e nunca regrava cargo, time ou o resto do cadastro. Antes ela regravava o cadastro inteiro a partir da cópia da tela: uma ficha aberta antes de o representante aprovar o jogador, e salva depois, **desfazia a aprovação** (o jogador voltava a "pendente" no time e sumia da lista de membros). Depois de salvar, o cartão público é refeito a partir do cadastro atual.
+- A aprovação de um jogador pelo representante tem vários passos (pedido, cadastro, cartão público). A tela **Solicitações do time** refaz sozinha, ao abrir, a aprovação de quem foi aprovado mas não aparece como membro.
+
 ## Excluir jogador, excluir a própria conta e excluir jogo
 
 **Admin exclui um jogador** (ficha do jogador, painel "Excluir jogador", confirmando com o nome): apaga cadastro,
