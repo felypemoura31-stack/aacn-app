@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   collection,
   onSnapshot,
@@ -9,6 +9,7 @@ import {
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { aprovarSolicitacao, rejeitarSolicitacao } from '../lib/teams'
+import { atualizarTimeNoCartaoPublico } from '../lib/publicCard'
 import { Link } from 'react-router-dom'
 import { TeamEditor } from '../components/TeamEditor'
 import { TeamLogo } from './Teams'
@@ -20,6 +21,8 @@ export function RepresentativeRequests() {
   const [requests, setRequests] = useState<TeamJoinRequest[]>([])
   const [busyId, setBusyId] = useState<string | null>(null)
   const [editandoTime, setEditandoTime] = useState<Team | null>(null)
+  const [membros, setMembros] = useState<Set<string> | null>(null)
+  const corrigidos = useRef(new Set<string>())
 
   useEffect(() => {
     if (!currentUser) return
@@ -31,6 +34,23 @@ export function RepresentativeRequests() {
       setTeams(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Team))
     })
   }, [currentUser])
+
+  // Quem aparece como membro do time (cartão público com o timeId do time).
+  useEffect(() => {
+    if (teams.length === 0) return
+    const q = query(collection(db, 'publicCards'), where('timeId', 'in', teams.map((t) => t.id).slice(0, 10)))
+    return onSnapshot(q, (snap) => setMembros(new Set(snap.docs.map((d) => d.id))))
+  }, [teams])
+
+  // Auto-correção: jogador aprovado que ficou fora da lista de membros (aprovações antigas) volta a aparecer.
+  useEffect(() => {
+    if (!membros) return
+    for (const r of requests) {
+      if (r.status !== 'aprovado' || membros.has(r.jogadorUid) || corrigidos.current.has(r.id)) continue
+      corrigidos.current.add(r.id)
+      atualizarTimeNoCartaoPublico(r.jogadorUid, r.timeNome, r.timeId).catch(() => {})
+    }
+  }, [membros, requests])
 
   useEffect(() => {
     if (teams.length === 0) {
