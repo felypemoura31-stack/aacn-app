@@ -400,3 +400,6 @@ export const persistentMultipleTabManager = () => ({})
 export async function getDocs(ref) {
   return runQuery(ref.kind === 'col' ? { col: ref.col, cons: [] } : ref)
 }
+
+// só no modo demonstração: permite a testes mexerem nos dados da mesma instância que o app usa
+if (typeof window !== 'undefined') window.__demo = { store, notify }

@@ -333,6 +333,10 @@ admin repõe sozinho ao abrir as telas Cobranças ou Carteirinhas. Se a cópia a
 aviso para o jogador abrir o app uma vez. As regras exigem que a cópia seja igual ao cadastro (ninguém inventa a
 data de nascimento ou o "membro desde").
 
+## Remover membros do time
+
+O **representante** tira do time quem já não faz parte, em **Solicitações do time → Membros do time** (botão **Remover**, com confirmação) ou, no perfil do time, em **Remover do time** (o admin também vê esse botão). O jogador fica **sem time** (cadastro e cartão público mudam juntos, no mesmo lote) e os pedidos aprovados dele nesse time passam a **"removido"** no histórico. Para voltar, ele pede de novo e o representante aprova. O representante não remove a si mesmo (se for o caso, o admin troca o representante). As regras do banco só deixam o representante **limpar** o time do jogador do próprio time: ele não troca o jogador de time nem mexe em outro campo do cadastro. A reconciliação automática de aprovações antigas passou a considerar só o pedido mais recente de cada jogador, para não refazer uma aprovação de quem foi removido.
+
 ## Consistência: ficha do admin e aprovação de time
 
 - A **ficha do jogador** (admin) grava **só os campos que foram alterados** (dados pessoais, situação e vencimento) e nunca regrava cargo, time ou o resto do cadastro. Antes ela regravava o cadastro inteiro a partir da cópia da tela: uma ficha aberta antes de o representante aprovar o jogador, e salva depois, **desfazia a aprovação** (o jogador voltava a "pendente" no time e sumia da lista de membros). Depois de salvar, o cartão público é refeito a partir do cadastro atual.
@@ -480,7 +484,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (318 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (331 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

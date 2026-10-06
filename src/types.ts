@@ -62,7 +62,7 @@ export type RedeSocial = 'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'what
 /** Só as redes que o time tem; o valor é o que foi digitado (@usuario, número ou link). */
 export type RedesDoTime = Partial<Record<RedeSocial, string>>
 
-export type JoinRequestStatus = 'pendente' | 'aprovado' | 'rejeitado'
+export type JoinRequestStatus = 'pendente' | 'aprovado' | 'rejeitado' | 'removido'
 
 export interface TeamJoinRequest {
   id: string

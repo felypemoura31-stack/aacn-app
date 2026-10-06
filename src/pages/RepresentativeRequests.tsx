@@ -11,12 +11,12 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
-import { aprovarSolicitacao, rejeitarSolicitacao } from '../lib/teams'
+import { aprovarSolicitacao, rejeitarSolicitacao, removerMembroDoTime } from '../lib/teams'
 import { atualizarTimeNoCartaoPublico } from '../lib/publicCard'
 import { Link } from 'react-router-dom'
 import { TeamEditor } from '../components/TeamEditor'
 import { TeamLogo } from './Teams'
-import type { Team, TeamJoinRequest } from '../types'
+import type { JogadorResumo, Team, TeamJoinRequest } from '../types'
 
 export function RepresentativeRequests() {
   const { currentUser } = useAuth()
@@ -25,6 +25,8 @@ export function RepresentativeRequests() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [editandoTime, setEditandoTime] = useState<Team | null>(null)
   const [membros, setMembros] = useState<Set<string> | null>(null)
+  const [cartoes, setCartoes] = useState<JogadorResumo[]>([])
+  const [erro, setErro] = useState<string | null>(null)
   const corrigidos = useRef(new Set<string>())
 
   useEffect(() => {
@@ -42,14 +44,22 @@ export function RepresentativeRequests() {
   useEffect(() => {
     if (teams.length === 0) return
     const q = query(collection(db, 'publicCards'), where('timeId', 'in', teams.map((t) => t.id).slice(0, 10)))
-    return onSnapshot(q, (snap) => setMembros(new Set(snap.docs.map((d) => d.id))))
+    return onSnapshot(q, (snap) => {
+      setMembros(new Set(snap.docs.map((d) => d.id)))
+      setCartoes(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as JogadorResumo))
+    })
   }, [teams])
 
   // Auto-correção: jogador aprovado que ficou fora da lista de membros (aprovações antigas) volta a aparecer.
   useEffect(() => {
     if (!membros) return
+    const vistos = new Set<string>()
     for (const r of requests) {
-      if (r.status !== 'aprovado' || membros.has(r.jogadorUid) || corrigidos.current.has(r.id)) continue
+      // os pedidos vêm do mais novo para o mais antigo: só o mais recente de cada jogador/time conta
+      const chave = r.jogadorUid + '|' + r.timeId
+      const jaVisto = vistos.has(chave)
+      vistos.add(chave)
+      if (jaVisto || r.status !== 'aprovado' || membros.has(r.jogadorUid) || corrigidos.current.has(r.id)) continue
       corrigidos.current.add(r.id)
       // refaz a aprovação inteira (idempotente): o cadastro do jogador (se ainda estiver neste time) e o cartão público.
       // O representante só consegue gravar se o jogador continua pedindo este time; senão o banco recusa, sem efeito.
@@ -95,6 +105,19 @@ export function RepresentativeRequests() {
   const pendentes = requests.filter((r) => r.status === 'pendente')
   const resolvidas = requests.filter((r) => r.status !== 'pendente')
 
+  async function remover(m: JogadorResumo, t: Team) {
+    if (!window.confirm(`Tirar ${m.nomeCompleto} do time ${t.nome}? Ele fica sem time e, para voltar, precisa pedir de novo e você aprovar.`)) return
+    setBusyId(m.uid)
+    setErro(null)
+    try {
+      await removerMembroDoTime(m.uid, t.id)
+    } catch {
+      setErro('Não consegui remover agora. Tente de novo.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   async function handle(action: 'aprovar' | 'rejeitar', r: TeamJoinRequest) {
     setBusyId(r.id)
     try {
@@ -128,6 +151,36 @@ export function RepresentativeRequests() {
             </Link>
           </div>
         ))}
+      </div>
+
+      {erro && <p className="mb-3 text-sm text-danger">{erro}</p>}
+
+      <h2 className="mb-1 text-sm font-semibold text-ink">Membros do time</h2>
+      <p className="mb-3 text-xs text-mute">Tire do time quem já não faz parte. Ele fica sem time e pode pedir para entrar de novo.</p>
+      <div className="mb-8 space-y-4">
+        {teams.map((t) => {
+          const doTime = cartoes.filter((c) => c.timeId === t.id).sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto))
+          return (
+            <div key={t.id}>
+              {teams.length > 1 && <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-mute/80">{t.nome}</p>}
+              <div className="space-y-2">
+                {doTime.length === 0 && <p className="text-sm text-mute/70">Nenhum membro aprovado ainda.</p>}
+                {doTime.map((m) => (
+                  <div key={m.uid} className="panel flex items-center gap-3 px-4 py-2">
+                    <p className="min-w-0 flex-1 truncate text-sm text-ink">{m.nomeCompleto}</p>
+                    {m.uid === currentUser?.uid ? (
+                      <span className="text-[10px] uppercase tracking-widest text-gold">Você</span>
+                    ) : (
+                      <button disabled={busyId === m.uid} onClick={() => remover(m, t)} className="btn-ghost text-danger">
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       <h2 className="mb-2 text-sm font-semibold text-ink">Pendentes</h2>
@@ -178,7 +231,7 @@ export function RepresentativeRequests() {
             </span>
             <span
               className={
-                r.status === 'aprovado' ? 'text-ok' : 'text-danger'
+                r.status === 'aprovado' ? 'text-ok' : r.status === 'removido' ? 'text-mute' : 'text-danger'
               }
             >
               {r.status}

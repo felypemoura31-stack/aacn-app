@@ -195,6 +195,15 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['timeAprovado', 'atualizadoEm']) &&
         isRepresentativeOfTeam(resource.data.timeId)
       ) || (
+        // O representante tira do time quem já não faz parte: o jogador fica sem time (nunca troca de time
+        // nem mexe em outro campo), e o representante não remove a si mesmo.
+        isSignedIn() && uid != request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['timeId', 'timeNome', 'timeAprovado', 'atualizadoEm']) &&
+        request.resource.data.get('timeId', null) == null &&
+        request.resource.data.get('timeNome', null) == null &&
+        request.resource.data.timeAprovado == false &&
+        isRepresentativeOfTeam(resource.data.timeId)
+      ) || (
         // Tesoureiro: só ao confirmar um pagamento. Só pode mover o vencimento
         // para frente e marcar "pago" (nunca reativar um inativo nem rebaixar).
         isTesoureiro() &&
@@ -243,8 +252,8 @@ service cloud.firestore {
       allow create, update: if isSignedIn() &&
         fotoValida(request.resource.data.get('fotoUrl', null)) &&
         request.resource.data.get('timeId', null) ==
-          (get(/databases/$(database)/documents/players/$(uid)).data.get('timeAprovado', false) == true
-            ? get(/databases/$(database)/documents/players/$(uid)).data.get('timeId', null) : null) &&
+          (getAfter(/databases/$(database)/documents/players/$(uid)).data.get('timeAprovado', false) == true
+            ? getAfter(/databases/$(database)/documents/players/$(uid)).data.get('timeId', null) : null) &&
         request.resource.data.status == get(/databases/$(database)/documents/players/$(uid)).data.status &&
         request.resource.data.vencimento == get(/databases/$(database)/documents/players/$(uid)).data.vencimento && (
           isOwner(uid) ||

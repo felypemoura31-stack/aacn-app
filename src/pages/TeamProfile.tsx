@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
+import { removerMembroDoTime } from '../lib/teams'
 import { TeamEditor } from '../components/TeamEditor'
 import { TeamLogo } from './Teams'
 import { useTeam } from '../lib/useTeam'
@@ -64,6 +65,15 @@ export function TeamProfile() {
 
   const ehAdmin = player?.role === 'admin'
   const ehRepresentante = !!currentUser && team.representanteUid === currentUser.uid
+
+  async function remover(m: JogadorResumo) {
+    if (!window.confirm(`Tirar ${m.nomeCompleto} do time ${team!.nome}? Ele fica sem time e, para voltar, precisa pedir de novo e ser aprovado.`)) return
+    try {
+      await removerMembroDoTime(m.uid, team!.id)
+    } catch {
+      window.alert('Não consegui remover agora. Tente de novo.')
+    }
+  }
   const redesAtivas = REDES.filter((r) => team.redes?.[r.id])
   // membros aprovados + o representante (que lidera o time mesmo sem pedido aprovado)
   const lista =
@@ -146,6 +156,11 @@ export function TeamProfile() {
               </div>
               <p className="text-sm font-medium leading-tight text-ink">{m.nomeCompleto}</p>
               {team.representanteUid === m.uid && <p className="mt-1 text-[10px] uppercase tracking-widest text-gold">Representante</p>}
+              {(ehAdmin || ehRepresentante) && team.representanteUid !== m.uid && (
+                <button onClick={() => remover(m)} className="mt-2 text-[11px] text-danger hover:underline">
+                  Remover do time
+                </button>
+              )}
             </div>
           )
         })}
