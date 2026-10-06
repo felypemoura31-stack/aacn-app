@@ -309,7 +309,7 @@ export function AdminGames() {
                   </p>
                   {g.local && <p className="text-xs text-mute/80">{g.local}</p>}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button onClick={() => abrirEdicao(g)} className="btn-ghost">
                     {editando === g.id ? 'Cancelar edição' : 'Editar'}
                   </button>

@@ -58,14 +58,14 @@ export function PhotoUploader({ currentUrl, onChange }: PhotoUploaderProps) {
           <span className="px-1 text-center text-xs text-mute/70">Sem foto</span>
         )}
       </div>
-      <div>
+      <div className="min-w-0 flex-1">
         <input
           ref={inputRef}
           type="file"
           accept="image/*"
           onChange={handleFile}
           disabled={enviando}
-          className="text-sm text-mute file:mr-3 file:rounded-sm file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-accent-hi"
+          className="w-full max-w-full text-sm text-mute file:mr-3 file:rounded-sm file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-accent-hi"
         />
         {enviando && <p className="mt-1 text-xs text-mute">Salvando...</p>}
         {erro && <p className="mt-1 text-xs text-danger">{erro}</p>}

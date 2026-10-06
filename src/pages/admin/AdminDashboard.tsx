@@ -52,7 +52,26 @@ export function AdminDashboard() {
         </select>
       </div>
 
-      <div className="overflow-hidden rounded-sm border border-line bg-surface">
+      {/* celular: um cartão por jogador (a tabela cortaria as colunas) */}
+      <div className="space-y-2 md:hidden">
+        {filtrados.map((p) => (
+          <Link key={p.uid} to={`/admin/jogadores/${p.uid}`} className="panel block p-3">
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-w-0 font-semibold text-ink">{p.nomeCompleto || '(sem nome)'}</p>
+              <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[statusEfetivo(p)]}`}>
+                {STATUS_LABELS[statusEfetivo(p)]}
+              </span>
+            </div>
+            <p className="mt-1 break-all text-xs text-mute">{p.email}</p>
+            <p className="mt-1 text-xs text-mute">
+              {p.timeId ? (p.timeAprovado ? p.timeNome : `${p.timeNome} (pendente)`) : 'Sem time'} · vence {formatarData(p.vencimento)}
+            </p>
+          </Link>
+        ))}
+        {filtrados.length === 0 && <p className="py-6 text-center text-sm text-mute/70">Nenhum jogador encontrado.</p>}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-sm border border-line bg-surface md:block">
         <table className="w-full text-left text-sm">
           <thead className="bg-surface2 text-xs uppercase text-mute">
             <tr>
