@@ -109,12 +109,20 @@ export interface Game {
   custoCreditos: number
   status: GameStatus
   criadoEm: number
+  horario?: string | null // HH:MM
+  local?: string | null
+  localLink?: string | null
+  descricao?: string | null
+  vagas?: number | null // null = sem limite
+  inscritos?: number // inscrições ativas + presentes
+  espera?: number // lista de espera
 }
 
 export type PagoCom = 'creditos' | 'dinheiro' | 'pendente'
 
-// ativa = inscrito (débito só no check-in); presente = check-in feito; removida = cancelada pela diretoria
-export type ParticipationStatus = 'ativa' | 'presente' | 'removida'
+// espera = lista de espera (jogo lotado); ativa = inscrito (débito só no check-in);
+// presente = check-in feito; removida = cancelada pela diretoria
+export type ParticipationStatus = 'espera' | 'ativa' | 'presente' | 'removida'
 
 export interface Participation {
   id: string

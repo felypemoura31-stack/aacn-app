@@ -162,6 +162,13 @@ const iso = (offset) => new Date(now + offset * day).toISOString().slice(0, 10)
 store.games['g-1'] = {
   nome: 'Jogo de domingo',
   data: iso(7),
+  horario: '07:30',
+  local: 'Campo AACN - Rodovia GO-139',
+  localLink: 'https://maps.google.com/?q=Caldas+Novas',
+  descricao: 'Concentração às 7h30. Cronagem obrigatória. Levar óculos de proteção fechados e água.',
+  vagas: 3,
+  inscritos: 2,
+  espera: 0,
   valor: 10,
   custoCreditos: 10,
   status: 'aberto',
@@ -170,6 +177,9 @@ store.games['g-1'] = {
 store.games['g-2'] = {
   nome: 'Operação Noturna',
   data: iso(21),
+  vagas: null,
+  inscritos: 0,
+  espera: 0,
   valor: 20,
   custoCreditos: 20,
   status: 'aberto',
@@ -219,10 +229,10 @@ const listeners = new Set()
 const notify = () => setTimeout(() => listeners.forEach((l) => l()), 0)
 const clone = (v) => JSON.parse(JSON.stringify(v))
 
-function resolveValues(data) {
+function resolveValues(data, base = {}) {
   const out = {}
   for (const [k, v] of Object.entries(data)) {
-    out[k] = v && v.__serverTimestamp ? Date.now() : v
+    out[k] = v && v.__serverTimestamp ? Date.now() : v && v.__inc !== undefined ? (base[k] ?? 0) + v.__inc : v
   }
   return out
 }
@@ -257,6 +267,7 @@ function runQuery(q) {
 
 export const getFirestore = () => ({})
 export const serverTimestamp = () => ({ __serverTimestamp: true })
+export const increment = (n) => ({ __inc: n })
 export const collection = (_db, col) => ({ kind: 'col', col })
 export const doc = (_db, col, id) => ({ kind: 'doc', col, id })
 export const orderBy = (field, dir = 'asc') => ({ t: 'order', field, dir })
@@ -312,7 +323,7 @@ export function writeBatch() {
         if (op === 'set') store[ref.col][ref.id] = resolveValues(data)
         else if (op === 'update') {
           if (!store[ref.col][ref.id]) throw new Error('Documento não existe: ' + ref.col + '/' + ref.id)
-          Object.assign(store[ref.col][ref.id], resolveValues(data))
+          Object.assign(store[ref.col][ref.id], resolveValues(data, store[ref.col][ref.id]))
         } else delete store[ref.col][ref.id]
       }
       notify()

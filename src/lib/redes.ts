@@ -19,7 +19,8 @@ export const REDES: RedeInfo[] = [
 
 const HANDLE = /^[A-Za-z0-9._-]{1,60}$/
 
-function comoUrl(valor: string): string | null {
+/** Aceita só endereços http/https (acrescenta https:// se faltar). */
+export function urlHttp(valor: string): string | null {
   const v = valor.trim()
   const comEsquema = /^https?:\/\//i.test(v) ? v : /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(v) ? `https://${v}` : null
   if (!comEsquema) return null
@@ -38,7 +39,7 @@ function comoUrl(valor: string): string | null {
 export function linkDaRede(rede: RedeSocial, valor: string): string | null {
   const v = valor.trim()
   if (!v) return null
-  const url = comoUrl(v)
+  const url = urlHttp(v)
   if (url) return url
   const handle = v.replace(/^@/, '')
 

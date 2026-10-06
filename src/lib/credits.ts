@@ -1,9 +1,8 @@
 import {
-  deleteDoc,
   doc,
   getDoc,
+  increment,
   serverTimestamp,
-  setDoc,
   writeBatch,
   type WriteBatch,
 } from 'firebase/firestore'
@@ -97,23 +96,44 @@ export function lancar(
   })
 }
 
-/** O jogador se inscreve no site. NÃO debita nada: o débito acontece no dia, no check-in por QR. */
-export async function inscreverNoJogo(player: Player, game: Game) {
-  await setDoc(doc(db, 'participations', participationId(game.id, player.uid)), {
+/**
+ * O jogador se inscreve no site. NÃO debita nada: o débito acontece no dia, no check-in por QR.
+ * Se o jogo está lotado, entra na lista de espera. O contador de vagas do jogo é atualizado no
+ * mesmo lote (as regras do banco exigem isso, para ninguém passar do limite).
+ */
+export async function inscreverNoJogo(player: Player, game: Game): Promise<'ativa' | 'espera'> {
+  const lotado = game.vagas != null && (game.inscritos ?? 0) >= game.vagas
+  const status = lotado ? 'espera' : 'ativa'
+  const batch = writeBatch(db)
+  batch.set(doc(db, 'participations', participationId(game.id, player.uid)), {
     gameId: game.id,
     gameNome: game.nome,
     uid: player.uid,
     jogadorNome: player.nomeCompleto,
     pagoCom: 'pendente',
     creditosDebitados: 0,
-    status: 'ativa',
+    status,
     criadoEm: serverTimestamp(),
   })
+  batch.update(doc(db, 'games', game.id), lotado ? { espera: increment(1) } : { inscritos: increment(1) })
+  await batch.commit()
+  return status
 }
 
-/** O jogador desiste da inscrição enquanto ainda não houve check-in (nada foi cobrado). */
+/** O jogador desiste da inscrição (ou da espera) enquanto ainda não houve check-in. */
 export async function cancelarMinhaInscricao(p: Participation) {
-  await deleteDoc(doc(db, 'participations', p.id))
+  const batch = writeBatch(db)
+  batch.delete(doc(db, 'participations', p.id))
+  batch.update(doc(db, 'games', p.gameId), p.status === 'espera' ? { espera: increment(-1) } : { inscritos: increment(-1) })
+  await batch.commit()
+}
+
+/** Staff chama alguém da lista de espera: passa a inscrito e os contadores acompanham. */
+export async function promoverDaEspera(p: Participation) {
+  const batch = writeBatch(db)
+  batch.update(doc(db, 'participations', p.id), { status: 'ativa' })
+  batch.update(doc(db, 'games', p.gameId), { espera: increment(-1), inscritos: increment(1) })
+  await batch.commit()
 }
 
 /**
@@ -165,6 +185,11 @@ export async function adminAdicionarParticipante(
   admin: Autor,
 ) {
   const batch = writeBatch(db)
+  const pid = participationId(game.id, jogador.uid)
+  const atual = await getDoc(doc(db, 'participations', pid))
+  const statusAtual = atual.exists() ? (atual.data() as Participation).status : null
+  if (statusAtual === 'espera') batch.update(doc(db, 'games', game.id), { espera: increment(-1), inscritos: increment(1) })
+  else if (statusAtual !== 'ativa' && statusAtual !== 'presente') batch.update(doc(db, 'games', game.id), { inscritos: increment(1) })
   let debitado = 0
   if (pagoCom === 'creditos') {
     const c = await lerCarteira(jogador.uid)
@@ -217,6 +242,8 @@ export async function adminRemoverParticipante(p: Participation, admin: Autor) {
     status: 'removida',
     removidaEm: serverTimestamp(),
   })
+  if (p.status === 'espera') batch.update(doc(db, 'games', p.gameId), { espera: increment(-1) })
+  else if (p.status === 'ativa' || p.status === 'presente') batch.update(doc(db, 'games', p.gameId), { inscritos: increment(-1) })
   await batch.commit()
 }
 

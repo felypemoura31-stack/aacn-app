@@ -249,6 +249,21 @@ volta. O check-in da organização e a leitura do QR por parceiros continuam pre
 Não foi possível testar o modo offline de ponta a ponta no ambiente de desenvolvimento; teste no
 celular (abra a carteirinha, ative o modo avião e abra de novo).
 
+## Jogos completos: local, horário, vagas e lista de espera
+
+- Ao criar/editar um jogo (**Gestão → Gerenciar jogos**) dá para informar horário, local, link do mapa
+  (só http/https), descrição e **vagas** (vazio = sem limite). O jogador vê tudo em **Jogos**, com
+  "Ver no mapa" e "12/20 vagas preenchidas".
+- **Limite de vagas sem servidor:** o jogo guarda contadores (`inscritos`, `espera`) que o jogador só
+  consegue mexer de um em um, junto com a própria inscrição, e nunca acima do limite (regras do banco,
+  conferidas por teste). Se o jogo lota, o botão vira **Entrar na lista de espera**.
+- Quem desiste (ou sai da espera) devolve a vaga. **Chamar da lista de espera** é manual: em
+  Gerenciar jogos → Inscritos, "Chamar para o jogo" (admin, tesoureiro ou organizador). O check-in só vale
+  para inscritos, não para quem está na espera.
+- **Exportar inscritos (CSV)** por jogo: jogador, situação, forma de pagamento, créditos, quando e por quem
+  fez o check-in (abre no Excel/Sheets).
+- Se uma disputa de última vaga acontecer ao mesmo tempo, quem perde recebe um aviso e pode entrar na espera.
+
 ## Cobrança pelo WhatsApp
 
 - Em **Gestão → Cobranças** (admin e tesoureiro) aparecem os associados com a mensalidade vencida
@@ -321,7 +336,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (102 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (126 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

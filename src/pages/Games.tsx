@@ -7,6 +7,11 @@ import { useWallet } from '../lib/useWallet'
 import { ExtratoCreditos } from '../components/ExtratoCreditos'
 import type { Game, Participation } from '../types'
 
+function quando(g: Game) {
+  const d = new Date(g.data + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
+  return g.horario ? `${d} às ${g.horario}` : d
+}
+
 export function Games() {
   const { player } = useAuth()
   const wallet = useWallet(player?.uid)
@@ -36,13 +41,13 @@ export function Games() {
   const porJogo = new Map(minhas.map((p) => [p.gameId, p]))
   const abertos = games.filter((g) => g.status === 'aberto' || porJogo.has(g.id))
 
-  async function agir(g: Game, acao: () => Promise<void>) {
+  async function agir(g: Game, acao: () => Promise<unknown>) {
     setErro(null)
     setBusyId(g.id)
     try {
       await acao()
-    } catch (e) {
-      setErro((e as Error).message || 'Não foi possível concluir. Tente novamente.')
+    } catch {
+      setErro('Não foi possível concluir. As vagas podem ter acabado nesse instante; tente de novo (se lotou, você entra na lista de espera).')
     } finally {
       setBusyId(null)
     }
@@ -66,51 +71,74 @@ export function Games() {
         {abertos.map((g) => {
           const p = porJogo.get(g.id)
           const faltam = g.custoCreditos - saldo
+          const inscritos = g.inscritos ?? 0
+          const lotado = g.vagas != null && inscritos >= g.vagas
           return (
-            <div key={g.id} className="panel flex flex-wrap items-center justify-between gap-3 p-4">
-              <div>
-                <p className="font-semibold text-ink">{g.nome}</p>
-                <p className="text-xs text-mute">
-                  {new Date(g.data + 'T12:00').toLocaleDateString('pt-BR')} · {reais(g.valor)} ou{' '}
-                  {formatarCreditos(g.custoCreditos)} créditos
-                </p>
-              </div>
-
-              {p?.status === 'removida' && (
-                <span className="text-xs text-mute">Inscrição cancelada. Fale com a diretoria.</span>
-              )}
-
-              {p?.status === 'presente' && (
-                <span className="rounded-full border border-ok/40 bg-ok/15 px-3 py-1 text-xs font-semibold text-ok">
-                  Presença confirmada
-                </span>
-              )}
-
-              {p?.status === 'ativa' && (
-                <div className="text-right">
-                  <span className="rounded-full border border-accent-hi/40 bg-accent/15 px-3 py-1 text-xs font-semibold text-accent-hi">
-                    Inscrito
-                  </span>
-                  <p className="mt-1 text-[11px] text-mute">
-                    {faltam > 0
-                      ? `Seu saldo não cobre o jogo (faltam ${formatarCreditos(faltam)}). Pague ${reais(g.valor)} no local.`
-                      : `${formatarCreditos(g.custoCreditos)} créditos serão debitados no dia.`}
+            <div key={g.id} className="panel p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-ink">{g.nome}</p>
+                  <p className="text-xs text-mute">
+                    {quando(g)} · {reais(g.valor)} ou {formatarCreditos(g.custoCreditos)} créditos
                   </p>
-                  <button
-                    disabled={busyId === g.id}
-                    onClick={() => agir(g, () => cancelarMinhaInscricao(p))}
-                    className="mt-1 text-[11px] text-danger hover:underline"
-                  >
-                    Cancelar inscrição
-                  </button>
+                  {(g.local || g.localLink) && (
+                    <p className="mt-1 text-xs text-mute">
+                      {g.local}
+                      {g.localLink && (
+                        <>
+                          {g.local ? ' · ' : ''}
+                          <a href={g.localLink} target="_blank" rel="noopener noreferrer" className="text-accent-hi underline">
+                            Ver no mapa
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-gold">
+                    {g.vagas != null ? `${Math.min(inscritos, g.vagas)}/${g.vagas} vagas preenchidas` : `${inscritos} inscritos (sem limite de vagas)`}
+                    {(g.espera ?? 0) > 0 && ` · ${g.espera} na lista de espera`}
+                  </p>
+                  {g.descricao && <p className="mt-2 whitespace-pre-line text-sm text-mute">{g.descricao}</p>}
                 </div>
-              )}
 
-              {!p && (
-                <button disabled={busyId === g.id} onClick={() => agir(g, () => inscreverNoJogo(player, g))} className="btn-primary">
-                  Inscrever-se
-                </button>
-              )}
+                <div className="text-right">
+                  {p?.status === 'removida' && <span className="text-xs text-mute">Inscrição cancelada. Fale com a diretoria.</span>}
+
+                  {p?.status === 'presente' && (
+                    <span className="rounded-full border border-ok/40 bg-ok/15 px-3 py-1 text-xs font-semibold text-ok">Presença confirmada</span>
+                  )}
+
+                  {p?.status === 'espera' && (
+                    <>
+                      <span className="rounded-full border border-warn/40 bg-warn/15 px-3 py-1 text-xs font-semibold text-warn">Na lista de espera</span>
+                      <p className="mt-1 text-[11px] text-mute">A diretoria chama você se abrir uma vaga.</p>
+                      <button disabled={busyId === g.id} onClick={() => agir(g, () => cancelarMinhaInscricao(p))} className="mt-1 text-[11px] text-danger hover:underline">
+                        Sair da lista de espera
+                      </button>
+                    </>
+                  )}
+
+                  {p?.status === 'ativa' && (
+                    <>
+                      <span className="rounded-full border border-accent-hi/40 bg-accent/15 px-3 py-1 text-xs font-semibold text-accent-hi">Inscrito</span>
+                      <p className="mt-1 max-w-[16rem] text-[11px] text-mute">
+                        {faltam > 0
+                          ? `Seu saldo não cobre o jogo (faltam ${formatarCreditos(faltam)}). Pague ${reais(g.valor)} no local.`
+                          : `${formatarCreditos(g.custoCreditos)} créditos serão debitados no dia.`}
+                      </p>
+                      <button disabled={busyId === g.id} onClick={() => agir(g, () => cancelarMinhaInscricao(p))} className="mt-1 text-[11px] text-danger hover:underline">
+                        Cancelar inscrição
+                      </button>
+                    </>
+                  )}
+
+                  {!p && (
+                    <button disabled={busyId === g.id} onClick={() => agir(g, () => inscreverNoJogo(player, g))} className="btn-primary">
+                      {lotado ? 'Entrar na lista de espera' : 'Inscrever-se'}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           )
         })}
@@ -120,19 +148,18 @@ export function Games() {
       <div className="space-y-2">
         {minhas.length === 0 && <p className="text-sm text-mute/70">Você ainda não se inscreveu em nenhum jogo.</p>}
         {minhas.map((p) => (
-          <div
-            key={p.id}
-            className="flex justify-between rounded-sm border border-line bg-surface2 px-4 py-2 text-sm text-mute"
-          >
+          <div key={p.id} className="flex justify-between rounded-sm border border-line bg-surface2 px-4 py-2 text-sm text-mute">
             <span>{p.gameNome}</span>
             <span>
               {p.status === 'removida'
                 ? 'cancelada'
-                : p.status === 'ativa'
-                  ? 'aguardando check-in'
-                  : p.pagoCom === 'creditos'
-                    ? `presente · −${formatarCreditos(p.creditosDebitados)} créditos`
-                    : 'presente · pago em dinheiro'}
+                : p.status === 'espera'
+                  ? 'na lista de espera'
+                  : p.status === 'ativa'
+                    ? 'aguardando check-in'
+                    : p.pagoCom === 'creditos'
+                      ? `presente · −${formatarCreditos(p.creditosDebitados)} créditos`
+                      : 'presente · pago em dinheiro'}
             </span>
           </div>
         ))}

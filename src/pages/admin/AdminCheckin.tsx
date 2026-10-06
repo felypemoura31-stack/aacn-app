@@ -79,7 +79,7 @@ export function AdminCheckin() {
   const lista = useMemo(
     () =>
       parts
-        .filter((p) => p.status !== 'removida')
+        .filter((p) => p.status === 'ativa' || p.status === 'presente')
         .sort((a, b) => a.jogadorNome.localeCompare(b.jogadorNome)),
     [parts],
   )
@@ -246,6 +246,9 @@ export function AdminCheckin() {
               </p>
             )}
             {cancelada && <p className="text-sm text-warn">A inscrição dessa pessoa foi cancelada pela diretoria.</p>}
+            {alvo.part?.status === 'espera' && (
+              <p className="text-sm text-warn">Essa pessoa está na lista de espera. Promova-a em Gerenciar jogos antes do check-in.</p>
+            )}
             {jaPresente && (
               <p className="text-sm text-ok">
                 Presença já registrada
