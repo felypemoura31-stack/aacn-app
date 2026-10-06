@@ -86,6 +86,10 @@ export function AdminPlayerDetail() {
         {player.nomeCompleto || '(sem nome)'}
       </h1>
 
+      <Link to={`/admin/carteirinhas/${player.uid}`} className="btn-ghost mb-4 inline-block">
+        Ver e imprimir a carteirinha
+      </Link>
+
       <SelosConquistas uid={player.uid} className="mb-6" />
 
       <form

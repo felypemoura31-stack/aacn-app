@@ -520,14 +520,20 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Contato de cobrança: espelho do celular do jogador. Grava o próprio jogador (ou o admin,
-    // que repõe a cópia de quem ainda não abriu o app); leem ele e a tesouraria (botão "Cobrar no WhatsApp").
+    // Dados de apoio da tesouraria: espelho do celular (botão "Cobrar no WhatsApp") e do nascimento e da data
+    // de cadastro (imprimir a carteirinha), já que o tesoureiro não lê o cadastro. Grava o próprio jogador
+    // (ou o admin, que repõe a cópia de quem ainda não abriu o app); leem ele, o admin e o tesoureiro.
+    // Nascimento e data de cadastro precisam ser iguais aos do cadastro.
     match /contatos/{uid} {
       allow read: if isOwner(uid) || isFinanceiro();
       allow create, update: if (isOwner(uid) || isAdmin()) &&
-        request.resource.data.keys().hasOnly(['celular', 'atualizadoEm']) &&
+        request.resource.data.keys().hasOnly(['celular', 'dataNascimento', 'criadoEm', 'atualizadoEm']) &&
         request.resource.data.celular is string &&
-        request.resource.data.celular.size() <= 20;
+        request.resource.data.celular.size() <= 20 &&
+        (!('dataNascimento' in request.resource.data) ||
+          request.resource.data.dataNascimento == get(/databases/$(database)/documents/players/$(uid)).data.get('dataNascimento', '')) &&
+        (!('criadoEm' in request.resource.data) ||
+          request.resource.data.criadoEm == get(/databases/$(database)/documents/players/$(uid)).data.get('criadoEm', null));
       allow delete: if isOwner(uid) || isAdmin();
     }
 

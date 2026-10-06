@@ -20,6 +20,7 @@ import { AdminCheckin } from './pages/admin/AdminCheckin'
 import { Teams } from './pages/Teams'
 import { Terms } from './pages/Terms'
 import { AdminCobrancas } from './pages/admin/AdminCobrancas'
+import { AdminCarteirinhas } from './pages/admin/AdminCarteirinhas'
 import { AdminAvisos } from './pages/admin/AdminAvisos'
 import { AdminPanel } from './pages/admin/AdminPanel'
 import { AdminPartners } from './pages/admin/AdminPartners'
@@ -195,6 +196,24 @@ function App() {
             <JogosRoute>
               <AdminCheckin />
             </JogosRoute>
+          }
+        />
+
+        <Route
+          path="/admin/carteirinhas"
+          element={
+            <FinanceiroRoute>
+              <AdminCarteirinhas />
+            </FinanceiroRoute>
+          }
+        />
+
+        <Route
+          path="/admin/carteirinhas/:uid"
+          element={
+            <FinanceiroRoute>
+              <AdminCarteirinhas />
+            </FinanceiroRoute>
           }
         />
 

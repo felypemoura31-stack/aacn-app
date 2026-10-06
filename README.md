@@ -307,6 +307,16 @@ deixa o **admin** apagar, parte por parte, os dados que sobraram de testes. Cada
 Cadastro, foto, cargo e time **não** são tocados. As regras do banco só deixam o admin apagar extrato, conquistas e
 pagamentos (tesoureiro, organizador e jogador não).
 
+## Ver e imprimir a carteirinha de outros jogadores
+
+**Admin e tesoureiro** têm o item **Carteirinhas** (menu de gestão, em Tesouraria): buscam o jogador por nome ou time,
+veem a carteirinha dele (a mesma da impressão) e imprimem. No admin também há o atalho **"Ver e imprimir a
+carteirinha"** na ficha do jogador. O tesoureiro não lê o cadastro, então o **nascimento** e o **membro desde**
+vêm de uma cópia (`contatos/{uid}`, a mesma do celular de cobrança), que o jogador atualiza ao abrir o app e que o
+admin repõe sozinho ao abrir as telas Cobranças ou Carteirinhas. Se a cópia ainda não existe, o tesoureiro vê um
+aviso para o jogador abrir o app uma vez. As regras exigem que a cópia seja igual ao cadastro (ninguém inventa a
+data de nascimento ou o "membro desde").
+
 ## Excluir jogador, excluir a própria conta e excluir jogo
 
 **Admin exclui um jogador** (ficha do jogador, painel "Excluir jogador", confirmando com o nome): apaga cadastro,
@@ -449,7 +459,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (264 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (274 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

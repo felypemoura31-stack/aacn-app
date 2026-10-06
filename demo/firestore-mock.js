@@ -246,7 +246,9 @@ pagos.forEach(([n, uid, nome, valor, dia], i) => {
   store.payments['pg-h' + i] = { uid, jogadorNome: nome, valor, txid: 'AACNHIST' + i, status: 'confirmado', criadoEm: mes(n, dia), confirmadoEm: mes(n, dia), dataPagamento: mes(n, dia), creditosGerados: valor * 2 }
 })
 
-for (const p of seedPlayers) store.contatos[p.uid] = { celular: p.celular || '', atualizadoEm: now }
+for (const p of seedPlayers) {
+  store.contatos[p.uid] = { celular: p.celular || '', dataNascimento: p.dataNascimento || '', criadoEm: p.criadoEm, atualizadoEm: now }
+}
 store.contatos['u-ana'] = { celular: '', atualizadoEm: now }
 store.avisos['a-1'] = {
   titulo: 'Jogo de domingo confirmado',

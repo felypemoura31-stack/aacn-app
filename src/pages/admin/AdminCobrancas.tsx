@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { collection, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
+import { useEffect, useMemo, useState } from 'react'
+import { collection, doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { reais } from '../../lib/credits'
 import { DIA_MS, STATUS_COLORS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import { linkWhatsapp } from '../../lib/whatsapp'
-import type { PixConfig, Player, PlayerStatus } from '../../types'
+import { useContatos } from '../../lib/useContatos'
+import type { PixConfig, PlayerStatus } from '../../types'
 
 interface Cartao {
   uid: string
@@ -31,7 +32,7 @@ function mensagem(c: Cartao, valor: number | null) {
 export function AdminCobrancas() {
   const { player: staff } = useAuth()
   const [cartoes, setCartoes] = useState<Cartao[]>([])
-  const [contatos, setContatos] = useState<Record<string, string>>({})
+  const contatos = useContatos(staff?.role === 'admin')
   const [cobradas, setCobradas] = useState<Record<string, { ultimaEm: unknown; porNome: string }>>({})
   const [cfg, setCfg] = useState<PixConfig | null>(null)
   const [filtro, setFiltro] = useState<'todos' | 'vencidos' | 'vencendo'>('todos')
@@ -40,11 +41,6 @@ export function AdminCobrancas() {
     const u1 = onSnapshot(collection(db, 'publicCards'), (snap) =>
       setCartoes(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as Cartao)),
     )
-    const u2 = onSnapshot(collection(db, 'contatos'), (snap) => {
-      const m: Record<string, string> = {}
-      snap.docs.forEach((d) => (m[d.id] = String(d.data().celular ?? '')))
-      setContatos(m)
-    })
     const u3 = onSnapshot(collection(db, 'cobrancas'), (snap) => {
       const m: Record<string, { ultimaEm: unknown; porNome: string }> = {}
       snap.docs.forEach((d) => (m[d.id] = d.data() as { ultimaEm: unknown; porNome: string }))
@@ -53,26 +49,10 @@ export function AdminCobrancas() {
     const u4 = onSnapshot(doc(db, 'config', 'pix'), (snap) => setCfg(snap.exists() ? (snap.data() as PixConfig) : null))
     return () => {
       u1()
-      u2()
       u3()
       u4()
     }
   }, [])
-
-  // Só o admin lê os cadastros: ele repõe o contato de quem tem celular no cadastro mas ainda não
-  // tem a cópia de cobrança (jogadores que não abriram o app depois da atualização).
-  const repostos = useRef(new Set<string>())
-  useEffect(() => {
-    if (staff?.role !== 'admin') return
-    return onSnapshot(collection(db, 'players'), (snap) => {
-      for (const d of snap.docs) {
-        const p = d.data() as Player
-        if (!p.celular || contatos[d.id] === p.celular || repostos.current.has(d.id + p.celular)) continue
-        repostos.current.add(d.id + p.celular)
-        setDoc(doc(db, 'contatos', d.id), { celular: p.celular, atualizadoEm: serverTimestamp() }).catch(() => {})
-      }
-    })
-  }, [staff?.role, contatos])
 
   const lista = useMemo(() => {
     const agora = Date.now()
@@ -116,7 +96,7 @@ export function AdminCobrancas() {
         {lista.length === 0 && <p className="text-sm text-mute/70">Ninguém para cobrar nesse filtro.</p>}
         {lista.map(({ c }) => {
           const efetivo = statusEfetivo(c)
-          const celular = contatos[c.uid]
+          const celular = contatos[c.uid]?.celular
           const link = celular ? linkWhatsapp(celular, mensagem(c, cfg?.valor ?? null)) : null
           const cobr = cobradas[c.uid]
           const cobrEm = cobr ? paraMillis(cobr.ultimaEm) : null

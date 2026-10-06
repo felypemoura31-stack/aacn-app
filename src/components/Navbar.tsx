@@ -30,6 +30,7 @@ const GRUPOS: Grupo[] = [
       { to: '/admin/pagamentos', rotulo: 'Pagamentos' },
       { to: '/admin/creditos', rotulo: 'Créditos' },
       { to: '/admin/cobrancas', rotulo: 'Cobranças' },
+      { to: '/admin/carteirinhas', rotulo: 'Carteirinhas' },
     ],
   },
   {

@@ -12,7 +12,7 @@ function tamanhoNome(nome: string) {
 }
 
 interface Props {
-  player: Player
+  player: Pick<Player, 'nomeCompleto' | 'fotoUrl' | 'dataNascimento' | 'criadoEm' | 'timeAprovado'>
   verifyUrl: string
   timeNome: string | null
   timeLogoUrl: string | null

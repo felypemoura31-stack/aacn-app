@@ -18,6 +18,7 @@ import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/fires
 import { auth, db } from '../firebase'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
 import { excluirMinhaConta } from '../lib/conta'
+import { contatoDesatualizado, contatoDoCadastro, type Contato } from '../lib/useContatos'
 import { VERSAO_TERMOS } from '../lib/termos'
 import type { Player } from '../types'
 
@@ -85,12 +86,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
   }, [player])
 
+  // Cópia para a tesouraria (celular, nascimento e data de cadastro); o tesoureiro não lê o cadastro.
   useEffect(() => {
-    if (!player?.celular) return
+    if (!player) return
     getDoc(doc(db, 'contatos', player.uid))
       .then((snap) => {
-        if (!snap.exists() || snap.data().celular !== player.celular) {
-          return setDoc(doc(db, 'contatos', player.uid), { celular: player.celular, atualizadoEm: serverTimestamp() })
+        if (contatoDesatualizado(snap.exists() ? (snap.data() as Contato) : undefined, player)) {
+          return setDoc(doc(db, 'contatos', player.uid), { ...contatoDoCadastro(player), atualizadoEm: serverTimestamp() })
         }
       })
       .catch(() => {})
