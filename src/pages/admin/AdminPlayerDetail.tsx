@@ -5,7 +5,7 @@ import { db } from '../../firebase'
 import { DIA_MS, CICLO_DIAS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import { sincronizarCartaoPublico } from '../../lib/publicCard'
 import { rotuloDoCargo } from '../../lib/roles'
-import { formatarTelefone } from '../../lib/cadastro'
+import { formatarCep, formatarTelefone } from '../../lib/cadastro'
 import type { Player, PlayerStatus } from '../../types'
 
 export function AdminPlayerDetail() {
@@ -118,6 +118,15 @@ export function AdminPlayerDetail() {
             className="input"
           />
         </Field>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Bairro">
+            <input value={player.bairro ?? ''} onChange={(e) => setField('bairro', e.target.value)} className="input" />
+          </Field>
+          <Field label="CEP">
+            <input value={player.cep ?? ''} onChange={(e) => setField('cep', formatarCep(e.target.value))} className="input" />
+          </Field>
+        </div>
 
         <Field label="Celular">
           <input

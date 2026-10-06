@@ -223,7 +223,11 @@ export function AdminGames() {
 
   function abrirLista(g: Game) {
     setCopiado(false)
-    setLista({ nome: g.nome, texto: montarListaWhatsapp(g, parts.filter((p) => p.gameId === g.id && p.status !== 'removida')) })
+    setLista({ nome: g.nome, texto: montarListaWhatsapp(
+        g,
+        parts.filter((p) => p.gameId === g.id && p.status !== 'removida'),
+        new Map(players.map((j) => [j.uid, j.timeNome])),
+      ) })
   }
 
   async function copiarLista() {

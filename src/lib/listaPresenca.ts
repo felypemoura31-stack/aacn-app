@@ -3,7 +3,15 @@ import { paraMillis } from './status'
 import type { Game, Participation } from '../types'
 
 /** Texto da lista de presença para enviar no WhatsApp (inscritos na ordem em que se inscreveram). */
-export function montarListaWhatsapp(game: Game, participacoes: Participation[]): string {
+export function montarListaWhatsapp(
+  game: Game,
+  participacoes: Participation[],
+  timePorJogador: Map<string, string | null> = new Map(),
+): string {
+  const nome = (p: Participation) => {
+    const time = timePorJogador.get(p.uid)
+    return time ? `${time} - ${p.jogadorNome}` : p.jogadorNome
+  }
   const ordem = (a: Participation, b: Participation) => (paraMillis(a.criadoEm) ?? 0) - (paraMillis(b.criadoEm) ?? 0)
   const inscritos = participacoes.filter((p) => p.status === 'ativa' || p.status === 'presente').sort(ordem)
   const espera = participacoes.filter((p) => p.status === 'espera').sort(ordem)
@@ -17,10 +25,10 @@ export function montarListaWhatsapp(game: Game, participacoes: Participation[]):
   linhas.push(`valor para associados: ${formatarCreditos(game.custoCreditos)} créditos`)
   linhas.push('', 'Lista de operadores:')
   if (inscritos.length === 0) linhas.push('(ninguém inscrito ainda)')
-  inscritos.forEach((p, i) => linhas.push(`${i + 1}-${p.jogadorNome}`))
+  inscritos.forEach((p, i) => linhas.push(`${i + 1}-${nome(p)}`))
   if (espera.length > 0) {
     linhas.push('', 'Lista de espera:')
-    espera.forEach((p, i) => linhas.push(`${i + 1}-${p.jogadorNome}`))
+    espera.forEach((p, i) => linhas.push(`${i + 1}-${nome(p)}`))
   }
   return linhas.join('\n')
 }

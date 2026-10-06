@@ -5,6 +5,16 @@ export function soDigitos(v: string) {
   return v.replace(/\D/g, '')
 }
 
+/** Formata como 75680-000 enquanto a pessoa digita. */
+export function formatarCep(v: string) {
+  const d = soDigitos(v).slice(0, 8)
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d
+}
+
+export function cepValido(v: string | undefined) {
+  return soDigitos(v ?? '').length === 8
+}
+
 /** Formata como (64) 99999-9999 enquanto a pessoa digita. */
 export function formatarTelefone(v: string) {
   const d = soDigitos(v).slice(0, 11)
@@ -45,6 +55,8 @@ export function faltasDoCadastro(p: Player): string[] {
   if (!p.nomeCompleto?.trim()) faltas.push('nome completo')
   if (!p.fotoUrl) faltas.push('foto 3x4')
   if (!p.endereco?.trim()) faltas.push('endereço')
+  if (!p.bairro?.trim()) faltas.push('bairro')
+  if (!cepValido(p.cep)) faltas.push('CEP')
   if (!dataNascimentoValida(p.dataNascimento)) faltas.push('data de nascimento')
   if (!telefoneValido(p.celular)) faltas.push('celular')
   if (!p.contatoEmergenciaNome?.trim()) faltas.push('nome do contato de emergência')

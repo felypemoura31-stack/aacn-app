@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { PasswordInput } from '../components/PasswordInput'
 
 export function Register() {
   const { register } = useAuth()
@@ -87,24 +88,12 @@ export function Register() {
         <label className="mb-1 block text-sm font-medium text-ink">
           Senha
         </label>
-        <input
-          type="password"
-          required
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          className="input mb-4"
-        />
+        <PasswordInput value={senha} onChange={setSenha} autoComplete="new-password" className="mb-4" />
 
         <label className="mb-1 block text-sm font-medium text-ink">
           Confirmar senha
         </label>
-        <input
-          type="password"
-          required
-          value={confirmarSenha}
-          onChange={(e) => setConfirmarSenha(e.target.value)}
-          className="input mb-4"
-        />
+        <PasswordInput value={confirmarSenha} onChange={setConfirmarSenha} autoComplete="new-password" className="mb-4" />
 
         <label className="mb-4 flex items-start gap-2 text-xs text-mute">
           <input type="checkbox" checked={aceita} onChange={(e) => setAceita(e.target.checked)} className="mt-0.5" />

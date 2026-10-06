@@ -15,7 +15,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { PhotoUploader } from '../components/PhotoUploader'
 import { solicitarEntradaNoTime } from '../lib/teams'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
-import { dataNascimentoValida, ehMenor, faltasDoCadastro, formatarTelefone, telefoneValido } from '../lib/cadastro'
+import { cepValido, dataNascimentoValida, ehMenor, faltasDoCadastro, formatarCep, formatarTelefone, telefoneValido } from '../lib/cadastro'
 import { VERSAO_TERMOS } from '../lib/termos'
 import { linkDaRede } from '../lib/redes'
 import { comMensagem } from '../lib/whatsapp'
@@ -31,6 +31,8 @@ export function Profile() {
 
   const [nomeCompleto, setNomeCompleto] = useState('')
   const [endereco, setEndereco] = useState('')
+  const [bairro, setBairro] = useState('')
+  const [cep, setCep] = useState('')
   const [dataNascimento, setDataNascimento] = useState('')
   const [celular, setCelular] = useState('')
   const [contatoEmergenciaNome, setContatoEmergenciaNome] = useState('')
@@ -53,6 +55,8 @@ export function Profile() {
     if (!player) return
     setNomeCompleto(player.nomeCompleto ?? '')
     setEndereco(player.endereco ?? '')
+    setBairro(player.bairro ?? '')
+    setCep(formatarCep(player.cep ?? ''))
     setDataNascimento(player.dataNascimento ?? '')
     setCelular(formatarTelefone(player.celular ?? ''))
     setContatoEmergenciaNome(player.contatoEmergenciaNome ?? '')
@@ -79,6 +83,7 @@ export function Profile() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setErroForm(null)
+    if (!cepValido(cep)) return setErroForm('Informe o CEP com 8 números, por exemplo 75680-000.')
     if (!dataNascimentoValida(dataNascimento)) return setErroForm('Informe uma data de nascimento válida.')
     if (!telefoneValido(celular)) return setErroForm('Informe o celular com DDD, por exemplo (64) 99999-9999.')
     if (!telefoneValido(contatoEmergenciaTelefone)) return setErroForm('Informe o telefone do contato de emergência com DDD.')
@@ -92,6 +97,8 @@ export function Profile() {
       await updateDoc(doc(db, 'players', currentUser!.uid), {
         nomeCompleto,
         endereco,
+        bairro: bairro.trim(),
+        cep,
         dataNascimento,
         celular,
         contatoEmergenciaNome,
@@ -111,7 +118,7 @@ export function Profile() {
       }
 
       setSavedMessage('Dados salvos com sucesso.')
-      if (faltasDoCadastro({ ...player!, nomeCompleto, endereco, dataNascimento, celular, contatoEmergenciaNome, contatoEmergenciaTelefone, responsavelLegalNome: respNome, responsavelLegalTelefone: respTel, responsavelLegalAutoriza: respAutoriza }).length === 0) {
+      if (faltasDoCadastro({ ...player!, nomeCompleto, endereco, bairro, cep, dataNascimento, celular, contatoEmergenciaNome, contatoEmergenciaTelefone, responsavelLegalNome: respNome, responsavelLegalTelefone: respTel, responsavelLegalAutoriza: respAutoriza }).length === 0) {
         navigate('/')
       }
     } finally {
@@ -191,7 +198,7 @@ export function Profile() {
           />
         </Field>
 
-        <Field label="Endereço">
+        <Field label="Endereço (rua e número)">
           <input
             required
             value={endereco}
@@ -199,6 +206,22 @@ export function Profile() {
             className="input"
           />
         </Field>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Bairro">
+            <input required maxLength={80} value={bairro} onChange={(e) => setBairro(e.target.value)} className="input" />
+          </Field>
+          <Field label="CEP">
+            <input
+              required
+              inputMode="numeric"
+              placeholder="00000-000"
+              value={cep}
+              onChange={(e) => setCep(formatarCep(e.target.value))}
+              className="input"
+            />
+          </Field>
+        </div>
 
         <Field label="Celular (com DDD)">
           <input

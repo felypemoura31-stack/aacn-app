@@ -16,6 +16,8 @@ export interface Player {
   nomeCompleto: string
   email: string
   endereco: string
+  bairro?: string
+  cep?: string
   dataNascimento: string // ISO date (yyyy-mm-dd)
   contatoEmergenciaNome: string
   contatoEmergenciaTelefone: string

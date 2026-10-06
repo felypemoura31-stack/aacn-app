@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { PasswordInput } from '../components/PasswordInput'
 
 export function Login() {
   const { login } = useAuth()
@@ -54,13 +55,7 @@ export function Login() {
         <label className="mb-1 block text-sm font-medium text-ink">
           Senha
         </label>
-        <input
-          type="password"
-          required
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          className="input mb-4"
-        />
+        <PasswordInput value={senha} onChange={setSenha} autoComplete="current-password" className="mb-4" />
 
         <p className="-mt-2 mb-4 text-right text-xs">
           <Link to="/esqueci-senha" className="text-mute underline hover:text-ink">

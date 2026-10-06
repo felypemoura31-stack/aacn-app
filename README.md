@@ -216,7 +216,7 @@ O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
 ## Cadastro obrigatório
 
 Para usar a carteirinha, os jogos e a área do time, o jogador precisa preencher: nome completo,
-foto 3x4, endereço, data de nascimento, **celular** (com DDD), nome e telefone do contato de
+foto 3x4, endereço (rua e número), **bairro**, **CEP**, data de nascimento, **celular** (com DDD), nome e telefone do contato de
 emergência. Enquanto faltar algo, o app leva para **Meus dados** e lista o que falta. Condições
 médicas continuam opcionais. A regra é aplicada na tela (não nas regras do banco).
 
@@ -262,7 +262,7 @@ celular (abra a carteirinha, ative o modo avião e abra de novo).
   para inscritos, não para quem está na espera.
 - **Lista para WhatsApp** (Gestão → Gerenciar jogos → Inscritos, para admin, tesoureiro e organizador): gera o texto
   com nome, local, data, "chegada às", valor em dinheiro, valor em créditos e a "Lista de operadores" numerada na
-  ordem das inscrições (a lista de espera vem separada, se houver). O texto pode ser editado; "Copiar texto" ou
+  ordem das inscrições (com o time na frente do nome: "Time - Nome", para quem tem time aprovado) (a lista de espera vem separada, se houver). O texto pode ser editado; "Copiar texto" ou
   "Enviar no WhatsApp" (abre o WhatsApp para escolher o grupo; o WhatsApp não permite escolher o grupo por link).
 - **Exportar inscritos (CSV)** por jogo: jogador, situação, forma de pagamento, créditos, quando e por quem
   fez o check-in (abre no Excel/Sheets).

@@ -99,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       nomeCompleto,
       email,
       endereco: '',
+      bairro: '',
+      cep: '',
       dataNascimento: '',
       contatoEmergenciaNome: '',
       contatoEmergenciaTelefone: '',
