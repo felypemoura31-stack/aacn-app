@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { PasswordInput } from '../components/PasswordInput'
 import { cpfValido, formatarCpf } from '../lib/cadastro'
@@ -7,6 +7,7 @@ import { cpfValido, formatarCpf } from '../lib/cadastro'
 export function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
+  const { state } = useLocation()
   const [nomeCompleto, setNomeCompleto] = useState('')
   const [cpf, setCpf] = useState('')
   const [email, setEmail] = useState('')
@@ -41,7 +42,7 @@ export function Register() {
     setLoading(true)
     try {
       await register({ nomeCompleto, cpf, email, senha, aceitaTermos: aceita })
-      navigate('/perfil')
+      navigate('/perfil', { state })
     } catch (err) {
       const code = (err as { code?: string }).code
       if (code === 'auth/email-already-in-use') {

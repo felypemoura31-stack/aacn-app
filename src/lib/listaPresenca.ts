@@ -2,6 +2,11 @@ import { formatarCreditos, reais } from './credits'
 import { paraMillis } from './status'
 import type { Game, Participation } from '../types'
 
+/** Endereço que abre direto o jogo na tela de inscrição (se a pessoa não estiver logada, entra e cai nele). */
+export function linkDoJogo(game: Pick<Game, 'id'>, origem: string = window.location.origin) {
+  return `${origem}/jogos?jogo=${encodeURIComponent(game.id)}`
+}
+
 /** Texto da lista de presença para enviar no WhatsApp (inscritos na ordem em que se inscreveram). */
 export function montarListaWhatsapp(
   game: Game,
@@ -10,7 +15,7 @@ export function montarListaWhatsapp(
 ): string {
   const nome = (p: Participation) => {
     const time = timePorJogador.get(p.uid)
-    return time ? `${time} - ${p.jogadorNome}` : p.jogadorNome
+    return time ? `${p.jogadorNome} - ${time}` : p.jogadorNome
   }
   const ordem = (a: Participation, b: Participation) => (paraMillis(a.criadoEm) ?? 0) - (paraMillis(b.criadoEm) ?? 0)
   const inscritos = participacoes.filter((p) => p.status === 'ativa' || p.status === 'presente').sort(ordem)
@@ -30,6 +35,7 @@ export function montarListaWhatsapp(
     linhas.push('', 'Lista de espera:')
     espera.forEach((p, i) => linhas.push(`${i + 1}-${nome(p)}`))
   }
+  linhas.push('', 'Se inscreva pelo link:', linkDoJogo(game))
   return linhas.join('\n')
 }
 

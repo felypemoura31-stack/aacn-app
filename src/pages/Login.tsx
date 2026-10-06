@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { destinoSalvo } from '../lib/destino'
 import { useAuth } from '../contexts/AuthContext'
 import { PasswordInput } from '../components/PasswordInput'
 
 export function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const { state } = useLocation()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -17,7 +19,7 @@ export function Login() {
     setLoading(true)
     try {
       await login(email, senha)
-      navigate('/')
+      navigate(destinoSalvo(state), { replace: true })
     } catch {
       setError('E-mail ou senha inválidos.')
     } finally {
@@ -78,7 +80,7 @@ export function Login() {
 
         <p className="mt-4 text-center text-sm text-mute">
           Ainda não tem conta?{' '}
-          <Link to="/cadastro" className="font-medium text-ink underline">
+          <Link to="/cadastro" state={state} className="font-medium text-ink underline">
             Cadastre-se
           </Link>
         </p>

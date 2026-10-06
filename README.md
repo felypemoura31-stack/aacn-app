@@ -281,7 +281,7 @@ celular (abra a carteirinha, ative o modo avião e abra de novo).
   para inscritos, não para quem está na espera.
 - **Lista para WhatsApp** (Gestão → Gerenciar jogos → Inscritos, para admin, tesoureiro e organizador): gera o texto
   com nome, local, data, "chegada às", valor em dinheiro, valor em créditos e a "Lista de operadores" numerada na
-  ordem das inscrições (com o time na frente do nome: "Time - Nome", para quem tem time aprovado) (a lista de espera vem separada, se houver). O texto pode ser editado; "Copiar texto" ou
+  ordem das inscrições (nome primeiro e time depois: "Nome - Time", para quem tem time aprovado) (a lista de espera vem separada, se houver). No fim vai "Se inscreva pelo link:" com o endereço do jogo (`/jogos?jogo=<id>`): quem abre já cai na tela de Jogos, rolada até aquele jogo e destacada. Quem não está logado entra (ou se cadastra) e volta para o jogo; se as inscrições já fecharam, aparece um aviso. O texto pode ser editado; "Copiar texto" ou
   "Enviar no WhatsApp" (abre o WhatsApp para escolher o grupo; o WhatsApp não permite escolher o grupo por link).
 - **Exportar inscritos (CSV)** por jogo: jogador, situação, forma de pagamento, créditos, quando e por quem
   fez o check-in (abre no Excel/Sheets).

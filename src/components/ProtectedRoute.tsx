@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { faltasDoCadastro } from '../lib/cadastro'
 import type { UserRole } from '../types'
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { currentUser, loading } = useAuth()
+  const local = useLocation()
 
   if (loading) return <CenteredMessage>Carregando...</CenteredMessage>
-  if (!currentUser) return <Navigate to="/login" replace />
+  // guarda o endereço pedido (ex.: link de um jogo) para voltar a ele depois do login
+  if (!currentUser) return <Navigate to="/login" replace state={{ from: local.pathname + local.search }} />
 
   return <>{children}</>
 }
@@ -16,10 +18,12 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 /** Só deixa passar quem já preencheu os dados pessoais obrigatórios; senão manda para Meus dados. */
 export function CadastroCompletoRoute({ children }: { children: ReactNode }) {
   const { currentUser, player, loading } = useAuth()
+  const local = useLocation()
+  const from = local.pathname + local.search
 
   if (loading) return <CenteredMessage>Carregando...</CenteredMessage>
-  if (!currentUser) return <Navigate to="/login" replace />
-  if (player && faltasDoCadastro(player).length > 0) return <Navigate to="/perfil" replace />
+  if (!currentUser) return <Navigate to="/login" replace state={{ from }} />
+  if (player && faltasDoCadastro(player).length > 0) return <Navigate to="/perfil" replace state={{ from }} />
 
   return <>{children}</>
 }

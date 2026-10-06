@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { destinoSalvo } from '../lib/destino'
 import {
   collection,
   doc,
@@ -27,6 +28,7 @@ import type { Team } from '../types'
 export function Profile() {
   const { currentUser, player } = useAuth()
   const navigate = useNavigate()
+  const { state } = useLocation()
   const [erroForm, setErroForm] = useState<string | null>(null)
   const [teams, setTeams] = useState<Team[]>([])
   const [saving, setSaving] = useState(false)
@@ -133,7 +135,7 @@ export function Profile() {
 
       setSavedMessage('Dados salvos com sucesso.')
       if (faltasDoCadastro({ ...player!, nomeCompleto, endereco, bairro, cep, dataNascimento, cpf, celular, contatoEmergenciaNome, contatoEmergenciaTelefone, responsavelLegalNome: respNome, responsavelLegalTelefone: respTel, responsavelLegalAutoriza: respAutoriza }).length === 0) {
-        navigate('/')
+        navigate(destinoSalvo(state))
       }
     } finally {
       setSaving(false)

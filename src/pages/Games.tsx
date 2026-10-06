@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
@@ -15,6 +16,8 @@ function quando(g: Game) {
 export function Games() {
   const { player } = useAuth()
   const wallet = useWallet(player?.uid)
+  const [params] = useSearchParams()
+  const jogoDoLink = params.get('jogo') // link recebido pelo WhatsApp: leva direto a este jogo
   const [games, setGames] = useState<Game[]>([])
   const [minhas, setMinhas] = useState<Participation[]>([])
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -34,6 +37,12 @@ export function Games() {
       setMinhas(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation))
     })
   }, [player])
+
+  // abre o jogo do link: rola até ele depois que a lista carrega
+  useEffect(() => {
+    if (!jogoDoLink || !games.some((g) => g.id === jogoDoLink)) return
+    document.getElementById(`jogo-${jogoDoLink}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [jogoDoLink, games])
 
   if (!player) return null
 
@@ -66,6 +75,14 @@ export function Games() {
 
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
 
+      {jogoDoLink && games.length > 0 && !abertos.some((g) => g.id === jogoDoLink) && (
+        <p className="mb-4 rounded-sm border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
+          {games.some((g) => g.id === jogoDoLink)
+            ? 'As inscrições deste jogo foram encerradas.'
+            : 'Este jogo não existe mais.'}
+        </p>
+      )}
+
       <div className="mb-8 space-y-3">
         {abertos.length === 0 && <p className="text-sm text-mute/70">Nenhum jogo com inscrições abertas.</p>}
         {abertos.map((g) => {
@@ -74,7 +91,7 @@ export function Games() {
           const inscritos = g.inscritos ?? 0
           const lotado = g.vagas != null && inscritos >= g.vagas
           return (
-            <div key={g.id} className="panel p-4">
+            <div key={g.id} id={`jogo-${g.id}`} className={`panel p-4 ${g.id === jogoDoLink ? 'ring-2 ring-accent-hi' : ''}`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-ink">{g.nome}</p>
