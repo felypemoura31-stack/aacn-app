@@ -140,6 +140,7 @@ o link/código caso a câmera não abra. A consulta usa só o cartão público (
 
 - O admin cadastra a chave Pix, o nome/cidade do recebedor e o valor (ex: R$ 5,00)
   em **Admin: Pagamentos**.
+- **A chave é normalizada** antes de ir para o código (os bancos exigem o formato exato): e-mail em **minúsculas** e sem espaços (`Fulano@Gmail.com` vira `fulano@gmail.com`; era a causa de um "copia e cola" recusado), CPF/CNPJ só com números, telefone como `+55DDDNÚMERO`, chave aleatória em minúsculas, e caracteres invisíveis (de colar do WhatsApp) removidos. Nome e cidade saem sem acento, em maiúsculas e sem espaço sobrando no corte. Em **Admin: Pagamentos** o admin vê a chave que o app envia e tem o painel **"Testar o Pix copia e cola"**: copia o código e cola no app do próprio banco para conferir antes dos jogadores usarem.
 - O jogador vê **Mensalidade** na tela da carteirinha, toca em "Gerar Pix" e recebe um
   QR code + "copia e cola" com o valor fixo.
 - Quando o dinheiro cair na conta, o admin confirma em **Admin: Pagamentos** (informando

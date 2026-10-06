@@ -4,6 +4,7 @@ import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { confirmarPagamento } from '../../lib/payments'
 import { formatarData, paraMillis } from '../../lib/status'
+import { gerarPixCopiaECola, normalizarChavePix, tipoDaChavePix } from '../../lib/pix'
 import type { Payment, PixConfig } from '../../types'
 
 const hoje = () => new Date().toISOString().slice(0, 10)
@@ -34,7 +35,10 @@ export function AdminPayments() {
 
   async function salvarCfg(e: FormEvent) {
     e.preventDefault()
-    await setDoc(doc(db, 'config', 'pix'), { ...cfg, valor: Number(cfg.valor) })
+    // grava a chave já no formato que os bancos esperam (e-mail em minúsculas, CPF só com números…)
+    const chave = normalizarChavePix(cfg.chave)
+    await setDoc(doc(db, 'config', 'pix'), { ...cfg, chave, valor: Number(cfg.valor) })
+    setCfg((c) => ({ ...c, chave }))
     setCfgMsg('Configuração salva.')
   }
 
@@ -105,6 +109,12 @@ export function AdminPayments() {
             className="input mt-1"
           />
         </label>
+        {cfg.chave.trim() && (
+          <p className="text-xs text-mute">
+            Chave enviada ao banco: <b className="text-ink">{normalizarChavePix(cfg.chave)}</b> ({tipoDaChavePix(cfg.chave)}).
+            O app corrige maiúsculas, espaços e pontuação sozinho.
+          </p>
+        )}
         {cfgMsg && <p className="text-sm text-ok">{cfgMsg}</p>}
         {podeEditarPix && (
           <button type="submit" className="btn-primary">
@@ -113,6 +123,30 @@ export function AdminPayments() {
         )}
         </fieldset>
       </form>
+
+      {cfg.chave.trim() && cfg.nome.trim() && cfg.cidade.trim() && Number(cfg.valor) > 0 && (
+        <div className="panel mb-8 p-4">
+          <h2 className="text-sm font-bold text-ink">Testar o Pix copia e cola</h2>
+          <p className="mt-1 text-xs text-mute">
+            Cole este código no app do seu banco (Pix → Pix Copia e Cola) e confira se aparece o nome do recebedor e o valor de{' '}
+            {reais(Number(cfg.valor))}. É o mesmo formato que os jogadores recebem.
+          </p>
+          <textarea
+            readOnly
+            rows={4}
+            value={gerarPixCopiaECola({ ...cfg, valor: Number(cfg.valor) }, 'TESTE')}
+            onFocus={(e) => e.currentTarget.select()}
+            className="input mt-2 break-all font-mono text-xs"
+          />
+          <button
+            type="button"
+            className="btn-ghost mt-2"
+            onClick={() => navigator.clipboard.writeText(gerarPixCopiaECola({ ...cfg, valor: Number(cfg.valor) }, 'TESTE'))}
+          >
+            Copiar código de teste
+          </button>
+        </div>
+      )}
 
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
       <h2 className="mb-2 text-sm font-semibold text-ink">Aguardando confirmação</h2>
