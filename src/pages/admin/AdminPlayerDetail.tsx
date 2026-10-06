@@ -6,6 +6,7 @@ import { DIA_MS, CICLO_DIAS, STATUS_LABELS, formatarData, paraMillis, statusEfet
 import { sincronizarCartaoPublico } from '../../lib/publicCard'
 import { rotuloDoCargo } from '../../lib/roles'
 import { SelosConquistas } from '../../components/SelosConquistas'
+import { ResetJogador } from '../../components/ResetJogador'
 import { formatarCep, formatarTelefone } from '../../lib/cadastro'
 import type { Player, PlayerStatus } from '../../types'
 
@@ -253,6 +254,14 @@ export function AdminPlayerDetail() {
           </button>
         </div>
       </form>
+
+      <ResetJogador
+        uid={player.uid}
+        nome={player.nomeCompleto || 'este jogador'}
+        aoTerminar={() =>
+          getDoc(doc(db, 'players', player.uid)).then((snap) => snap.exists() && setPlayer(snap.data() as Player))
+        }
+      />
     </div>
   )
 }

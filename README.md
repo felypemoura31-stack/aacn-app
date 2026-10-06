@@ -164,8 +164,8 @@ para receber o aviso de pagamento.
   reinscrever sozinho nesse jogo).
 - **Extrato detalhado:** todo movimento de saldo (pagamento, inscrição, estorno, ajuste) vira
   uma linha com data, descrição, quem fez, valor e saldo após. O jogador vê o dele em **Jogos**;
-  o admin vê o de qualquer um em **Admin: Créditos**. O extrato é imutável (nem o admin edita
-  ou apaga linhas) e é gravado no mesmo lote do saldo, então os dois nunca divergem.
+  o admin vê o de qualquer um em **Admin: Créditos**. Nenhuma linha do extrato é editada (nem pelo admin) e cada uma é gravada no mesmo lote do saldo, então os
+  dois nunca divergem. A única forma de apagar linhas é o **reset de dados de teste** (abaixo), só para o admin.
 - **Ajuste manual:** em **Admin: Créditos**, o admin soma ou subtrai créditos de um jogador
   informando obrigatoriamente o motivo, que fica no extrato. Não deixa o saldo ficar negativo.
 - Pagamento confirmado, crédito e mudança de vencimento são gravados juntos; confirmar duas
@@ -290,6 +290,23 @@ injeção quando abertas no Excel.
 - **Aba Parceiros** (todos os logados): lista com busca e filtro por categoria e aviso se a mensalidade do
   associado está em dia (benefício vale para quem está em dia; o parceiro confere lendo o QR).
 
+## Resetar dados de um jogador (testes)
+
+Na **ficha do jogador** (Admin: Jogadores > clicar no jogador), no fim da página, o painel **Resetar dados (testes)**
+deixa o **admin** apagar, parte por parte, os dados que sobraram de testes. Cada parte vem com uma caixa para marcar
+(e há "Marcar tudo"); antes de apagar o app pede confirmação, e não dá para desfazer:
+
+- **Extrato e saldo de créditos:** apaga todos os lançamentos (inclusive bônus) e zera o saldo.
+- **Conquistas (selos):** apaga os selos. Se as metas ainda forem atingidas, o jogador resgata de novo (e recebe o
+  bônus de novo) ao abrir o app. Para recomeçar do zero, marque também o extrato e os jogos/mensalidades.
+- **Inscrições e presenças em jogos:** apaga as inscrições/check-ins, ajusta as vagas dos jogos e zera os
+  contadores de jogos e de jogos noturnos.
+- **Pagamentos e mensalidade:** apaga os pagamentos Pix, volta para inadimplente (sem vencimento) e zera o
+  contador de mensalidades.
+
+Cadastro, foto, cargo e time **não** são tocados. As regras do banco só deixam o admin apagar extrato, conquistas e
+pagamentos (tesoureiro, organizador e jogador não).
+
 ## Meu histórico e conquistas
 
 **Histórico** (todos): jogos jogados, frequência (presenças ÷ presenças + faltas em jogos já passados),
@@ -412,7 +429,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (219 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (233 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

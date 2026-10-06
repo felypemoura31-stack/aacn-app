@@ -251,7 +251,7 @@ service cloud.firestore {
         request.resource.data.uid == request.auth.uid &&
         request.resource.data.status == 'pendente';
       allow update: if isFinanceiro();
-      allow delete: if false;
+      allow delete: if isAdmin(); // só para o reset de dados de teste (Admin > ficha do jogador)
     }
 
     // Carteira de créditos de jogo (R$ 1 = 2 créditos). Quem credita é só o admin
@@ -329,7 +329,7 @@ service cloud.firestore {
 
     // Conquistas resgatadas: um documento por jogador e conquista ("<uid>_<conquista>"), criado só
     // pelo próprio jogador, só se ele atingiu a meta, com o valor exato do bônus, e nunca editado
-    // nem apagado (o bônus não se repete). Os logados leem (para mostrar os selos).
+    // (o bônus não se repete; só o admin apaga, no reset de dados de teste). Os logados leem (para mostrar os selos).
     match /conquistas/{cid} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() &&
@@ -341,7 +341,8 @@ service cloud.firestore {
         request.resource.data.creditos > 0 &&
         request.resource.data.get('criadoEm', request.time) == request.time &&
         conquistaElegivel(request.auth.uid, request.resource.data.conquista);
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isAdmin(); // só no reset de dados de teste
     }
 
     // Jogos: admin, tesoureiro e organizador criam e editam (inclusive valores e vagas).
@@ -471,8 +472,8 @@ service cloud.firestore {
       );
     }
 
-    // Extrato de créditos: livro-razão imutável (ninguém edita nem apaga, nem o
-    // admin). Admin e tesoureiro criam qualquer lançamento. O organizador só
+    // Extrato de créditos: livro-razão (ninguém edita um lançamento; só o admin pode apagar,
+    // e apenas pelo "resetar dados" da ficha do jogador). Admin e tesoureiro criam qualquer lançamento. O organizador só
     // cria o lançamento do check-in, e só se o saldo do jogador caiu exatamente
     // aquele valor no mesmo lote. O jogador só lança o bônus de uma conquista, amarrado
     // ao documento da conquista e ao aumento exato do próprio saldo.
@@ -511,7 +512,8 @@ service cloud.firestore {
           getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos
       );
 
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     // Contato de cobrança: espelho do celular do jogador. Grava o próprio jogador (ou o admin,

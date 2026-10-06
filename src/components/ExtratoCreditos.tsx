@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { formatarCreditos } from '../lib/credits'
+import { paraMillis } from '../lib/status'
 import type { LedgerEntry, LedgerTipo } from '../types'
 
 const ROTULO: Record<LedgerTipo, string> = {
@@ -19,7 +20,7 @@ export function ExtratoCreditos({ uid }: { uid: string }) {
     const q = query(collection(db, 'ledger'), where('uid', '==', uid))
     return onSnapshot(q, (snap) => {
       const lista = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as LedgerEntry)
-      setItens(lista.sort((a, b) => b.criadoEm - a.criadoEm))
+      setItens(lista.sort((a, b) => (paraMillis(b.criadoEm) ?? 0) - (paraMillis(a.criadoEm) ?? 0)))
     })
   }, [uid])
 
@@ -42,7 +43,7 @@ export function ExtratoCreditos({ uid }: { uid: string }) {
           {itens.map((i) => (
             <tr key={i.id} className="border-t border-line align-top">
               <td className="whitespace-nowrap px-3 py-2 text-mute">
-                {new Date(i.criadoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                {paraMillis(i.criadoEm) ? new Date(paraMillis(i.criadoEm)!).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
               </td>
               <td className="px-3 py-2 text-mute">{ROTULO[i.tipo]}</td>
               <td className="px-3 py-2 text-ink">

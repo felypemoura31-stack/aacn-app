@@ -279,7 +279,7 @@ function resolveValues(data, base = {}) {
 
 function docSnap(col, id) {
   const data = store[col]?.[id]
-  return { id, exists: () => data !== undefined, data: () => clone(data) }
+  return { id, ref: { kind: 'doc', col, id }, exists: () => data !== undefined, data: () => clone(data) }
 }
 
 function runQuery(q) {
