@@ -100,6 +100,12 @@ npm run build
 firebase deploy --only hosting
 ```
 
+**Endereço do app: https://aacn.web.app** (site `aacn` do Firebase Hosting). O endereço antigo
+(`aacn-app.web.app`) só redireciona para o novo, mantendo o caminho; assim as carteirinhas já impressas, cujo QR
+apontava para o endereço antigo, continuam funcionando. O `firebase.json` tem os dois sites; o antigo serve a pasta
+`redirect/`. Quem instalou o app pelo endereço antigo deve instalar de novo pelo novo (e entrar de novo). O ID do
+projeto (`aacn-app`) não muda: o Firebase não permite renomear o projeto.
+
 ## 8. Instalar como app no celular
 
 Depois de publicado (precisa ser HTTPS — hospedagens acima já servem em
