@@ -17,6 +17,7 @@ export interface Player {
   dataNascimento: string // ISO date (yyyy-mm-dd)
   contatoEmergenciaNome: string
   contatoEmergenciaTelefone: string
+  celular: string
   condicoesMedicas: string
   fotoUrl: string | null
   timeId: string | null
@@ -38,6 +39,7 @@ export interface Team {
   representanteUid: string | null
   representanteNome: string | null
   representanteEmail: string | null
+  logoUrl?: string | null
   criadoEm: number
 }
 

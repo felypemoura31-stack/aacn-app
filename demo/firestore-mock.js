@@ -16,6 +16,13 @@ const store = {
   ledger: {},
 }
 
+const svg = (s) => 'data:image/svg+xml;utf8,' + encodeURIComponent(s)
+const fotoDemo = (cor) =>
+  svg(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="320"><rect width="240" height="320" fill="${cor}"/><circle cx="120" cy="125" r="55" fill="#f1c9a5"/><path d="M20 320c0-70 45-105 100-105s100 35 100 105z" fill="#1f2937"/></svg>`)
+const logoAlpha = svg(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192"><path d="M96 8l78 26v62c0 46-34 78-78 90C52 174 18 142 18 96V34z" fill="#b91c1c"/><path d="M96 24l62 21v51c0 36-26 63-62 73-36-10-62-37-62-73V45z" fill="#111827"/><text x="96" y="118" font-family="Arial" font-weight="900" font-size="64" text-anchor="middle" fill="#fbbf24">AS</text></svg>',
+)
+
 function player(uid, nome, email, extra = {}) {
   return {
     uid,
@@ -25,8 +32,9 @@ function player(uid, nome, email, extra = {}) {
     dataNascimento: '1994-05-17',
     contatoEmergenciaNome: 'Maria Silva',
     contatoEmergenciaTelefone: '(64) 99999-1234',
+    celular: '(64) 98888-0000',
     condicoesMedicas: '',
-    fotoUrl: null,
+    fotoUrl: fotoDemo('#cbd5e1'),
     timeId: null,
     timeNome: null,
     timeAprovado: false,
@@ -56,6 +64,8 @@ const seedPlayers = [
     condicoesMedicas: 'Alergia a picada de abelha',
   }),
   player('u-ana', 'Ana Souza', 'ana@teste.com', {
+    celular: '',
+    fotoUrl: null,
     status: 'inativo',
     vencimento: now - 40 * day,
     timeId: 't-bravo',
@@ -73,7 +83,7 @@ for (const p of seedPlayers) {
   store.players[p.uid] = p
   store.publicCards[p.uid] = {
     nomeCompleto: p.nomeCompleto,
-    fotoUrl: null,
+    fotoUrl: p.fotoUrl,
     timeNome: p.timeAprovado ? p.timeNome : null,
     status: p.status,
     vencimento: p.vencimento,
@@ -86,6 +96,7 @@ store.teams['t-alpha'] = {
   representanteUid: 'u-jogador',
   representanteNome: 'Carlos Silva',
   representanteEmail: 'jogador@teste.com',
+  logoUrl: logoAlpha,
   criadoEm: now - 60 * day,
 }
 store.teams['t-bravo'] = {

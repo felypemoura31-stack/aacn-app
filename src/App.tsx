@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { Navbar } from './components/Navbar'
-import { ProtectedRoute, AdminRoute, FinanceiroRoute, JogosRoute } from './components/ProtectedRoute'
+import { ProtectedRoute, AdminRoute, FinanceiroRoute, JogosRoute, CadastroCompletoRoute } from './components/ProtectedRoute'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { Profile } from './pages/Profile'
@@ -36,9 +36,9 @@ function App() {
         <Route
           path="/"
           element={
-            <ProtectedRoute>
+            <CadastroCompletoRoute>
               <Card />
-            </ProtectedRoute>
+            </CadastroCompletoRoute>
           }
         />
         <Route
@@ -52,17 +52,17 @@ function App() {
         <Route
           path="/jogos"
           element={
-            <ProtectedRoute>
+            <CadastroCompletoRoute>
               <Games />
-            </ProtectedRoute>
+            </CadastroCompletoRoute>
           }
         />
         <Route
           path="/solicitacoes"
           element={
-            <ProtectedRoute>
+            <CadastroCompletoRoute>
               <RepresentativeRequests />
-            </ProtectedRoute>
+            </CadastroCompletoRoute>
           }
         />
 

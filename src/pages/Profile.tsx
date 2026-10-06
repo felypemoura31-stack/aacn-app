@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   collection,
   doc,
@@ -13,10 +14,13 @@ import { useAuth } from '../contexts/AuthContext'
 import { PhotoUploader } from '../components/PhotoUploader'
 import { solicitarEntradaNoTime } from '../lib/teams'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
+import { dataNascimentoValida, faltasDoCadastro, formatarTelefone, telefoneValido } from '../lib/cadastro'
 import type { Team } from '../types'
 
 export function Profile() {
   const { currentUser, player } = useAuth()
+  const navigate = useNavigate()
+  const [erroForm, setErroForm] = useState<string | null>(null)
   const [teams, setTeams] = useState<Team[]>([])
   const [saving, setSaving] = useState(false)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
@@ -24,6 +28,7 @@ export function Profile() {
   const [nomeCompleto, setNomeCompleto] = useState('')
   const [endereco, setEndereco] = useState('')
   const [dataNascimento, setDataNascimento] = useState('')
+  const [celular, setCelular] = useState('')
   const [contatoEmergenciaNome, setContatoEmergenciaNome] = useState('')
   const [contatoEmergenciaTelefone, setContatoEmergenciaTelefone] = useState('')
   const [condicoesMedicas, setCondicoesMedicas] = useState('')
@@ -41,16 +46,23 @@ export function Profile() {
     setNomeCompleto(player.nomeCompleto ?? '')
     setEndereco(player.endereco ?? '')
     setDataNascimento(player.dataNascimento ?? '')
+    setCelular(formatarTelefone(player.celular ?? ''))
     setContatoEmergenciaNome(player.contatoEmergenciaNome ?? '')
-    setContatoEmergenciaTelefone(player.contatoEmergenciaTelefone ?? '')
+    setContatoEmergenciaTelefone(formatarTelefone(player.contatoEmergenciaTelefone ?? ''))
     setCondicoesMedicas(player.condicoesMedicas ?? '')
     setTimeSelecionado(player.timeId ?? '')
   }, [player])
 
   if (!currentUser || !player) return null
 
+  const faltas = faltasDoCadastro(player)
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    setErroForm(null)
+    if (!dataNascimentoValida(dataNascimento)) return setErroForm('Informe uma data de nascimento válida.')
+    if (!telefoneValido(celular)) return setErroForm('Informe o celular com DDD, por exemplo (64) 99999-9999.')
+    if (!telefoneValido(contatoEmergenciaTelefone)) return setErroForm('Informe o telefone do contato de emergência com DDD.')
     setSaving(true)
     setSavedMessage(null)
     try {
@@ -58,6 +70,7 @@ export function Profile() {
         nomeCompleto,
         endereco,
         dataNascimento,
+        celular,
         contatoEmergenciaNome,
         contatoEmergenciaTelefone,
         condicoesMedicas,
@@ -71,6 +84,9 @@ export function Profile() {
       }
 
       setSavedMessage('Dados salvos com sucesso.')
+      if (faltasDoCadastro({ ...player!, nomeCompleto, endereco, dataNascimento, celular, contatoEmergenciaNome, contatoEmergenciaTelefone }).length === 0) {
+        navigate('/')
+      }
     } finally {
       setSaving(false)
     }
@@ -88,8 +104,18 @@ export function Profile() {
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="mb-6 text-xl font-bold text-ink">Meus dados</h1>
 
+      {faltas.length > 0 && (
+        <div className="mb-6 rounded-sm border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
+          <p className="font-semibold">Complete seu cadastro para continuar.</p>
+          <p className="mt-1 text-xs">
+            O preenchimento dos dados pessoais é obrigatório para usar a carteirinha, os jogos e o time. Faltam:{' '}
+            {faltas.join(', ')}.
+          </p>
+        </div>
+      )}
+
       <div className="panel mb-6 p-5">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Foto 3x4</h2>
+        <h2 className="mb-3 text-sm font-semibold text-ink">Foto 3x4 (obrigatória)</h2>
         <PhotoUploader currentUrl={player.fotoUrl} onChange={handleFoto} />
       </div>
 
@@ -111,6 +137,18 @@ export function Profile() {
             required
             value={endereco}
             onChange={(e) => setEndereco(e.target.value)}
+            className="input"
+          />
+        </Field>
+
+        <Field label="Celular (com DDD)">
+          <input
+            required
+            type="tel"
+            inputMode="numeric"
+            placeholder="(64) 99999-9999"
+            value={celular}
+            onChange={(e) => setCelular(formatarTelefone(e.target.value))}
             className="input"
           />
         </Field>
@@ -137,14 +175,17 @@ export function Profile() {
           <Field label="Contato de emergência (telefone)">
             <input
               required
+              type="tel"
+              inputMode="numeric"
+              placeholder="(64) 99999-9999"
               value={contatoEmergenciaTelefone}
-              onChange={(e) => setContatoEmergenciaTelefone(e.target.value)}
+              onChange={(e) => setContatoEmergenciaTelefone(formatarTelefone(e.target.value))}
               className="input"
             />
           </Field>
         </div>
 
-        <Field label="Condições médicas ou especiais">
+        <Field label="Condições médicas ou especiais (opcional)">
           <textarea
             value={condicoesMedicas}
             onChange={(e) => setCondicoesMedicas(e.target.value)}
@@ -180,6 +221,8 @@ export function Profile() {
             </p>
           )}
         </Field>
+
+        {erroForm && <p className="text-sm text-danger">{erroForm}</p>}
 
         {savedMessage && (
           <p className="text-sm text-ok">{savedMessage}</p>

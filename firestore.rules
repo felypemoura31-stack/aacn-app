@@ -45,6 +45,11 @@ service cloud.firestore {
       return v == null || (v is string && v.size() < 80000);
     }
 
+    // Logo do time (PNG/JPEG pequeno em base64, ~192px). Limite de tamanho.
+    function logoValida(v) {
+      return v == null || (v is string && v.size() < 70000);
+    }
+
     function isRepresentativeOfTeam(timeId) {
       return isSignedIn() && timeId != null &&
         get(/databases/$(database)/documents/teams/$(timeId)).data.representanteUid == request.auth.uid;
@@ -116,10 +121,17 @@ service cloud.firestore {
     }
 
     // Times: qualquer associado logado pode ver a lista (para escolher seu
-    // time). Só admin cria/edita times e define o representante.
+    // time). Só admin cria times e define o representante.
     match /teams/{teamId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow create: if isAdmin() && logoValida(request.resource.data.get('logoUrl', null));
+      // O admin edita tudo; o representante só troca a logo do próprio time.
+      allow update: if (isAdmin() && logoValida(request.resource.data.get('logoUrl', null))) || (
+        isRepresentativeOfTeam(teamId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['logoUrl']) &&
+        logoValida(request.resource.data.get('logoUrl', null))
+      );
+      allow delete: if isAdmin();
     }
 
     // Pedidos de entrada em time: o próprio jogador cria o pedido; o

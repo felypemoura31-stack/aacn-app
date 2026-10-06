@@ -77,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       dataNascimento: '',
       contatoEmergenciaNome: '',
       contatoEmergenciaTelefone: '',
+      celular: '',
       condicoesMedicas: '',
       fotoUrl: null,
       timeId: null,

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { faltasDoCadastro } from '../lib/cadastro'
 import type { UserRole } from '../types'
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -8,6 +9,17 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (loading) return <CenteredMessage>Carregando...</CenteredMessage>
   if (!currentUser) return <Navigate to="/login" replace />
+
+  return <>{children}</>
+}
+
+/** Só deixa passar quem já preencheu os dados pessoais obrigatórios; senão manda para Meus dados. */
+export function CadastroCompletoRoute({ children }: { children: ReactNode }) {
+  const { currentUser, player, loading } = useAuth()
+
+  if (loading) return <CenteredMessage>Carregando...</CenteredMessage>
+  if (!currentUser) return <Navigate to="/login" replace />
+  if (player && faltasDoCadastro(player).length > 0) return <Navigate to="/perfil" replace />
 
   return <>{children}</>
 }

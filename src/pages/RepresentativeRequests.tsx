@@ -9,6 +9,7 @@ import {
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { aprovarSolicitacao, rejeitarSolicitacao } from '../lib/teams'
+import { TeamLogoEditor } from '../components/TeamLogoEditor'
 import type { Team, TeamJoinRequest } from '../types'
 
 export function RepresentativeRequests() {
@@ -83,6 +84,15 @@ export function RepresentativeRequests() {
       <p className="mb-6 text-sm text-mute">
         Times: {teams.map((t) => t.nome).join(', ')}
       </p>
+
+      <div className="mb-8 space-y-3">
+        {teams.map((t) => (
+          <div key={t.id} className="panel p-4">
+            <p className="mb-3 text-sm font-semibold text-ink">Logo do time {t.nome}</p>
+            <TeamLogoEditor team={t} />
+          </div>
+        ))}
+      </div>
 
       <h2 className="mb-2 text-sm font-semibold text-ink">Pendentes</h2>
       {pendentes.length === 0 && (

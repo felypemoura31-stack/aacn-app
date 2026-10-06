@@ -81,3 +81,38 @@ export function exportarFoto(img: ImagemCarregada, centro: Centro, zoom: number)
   }
   throw new Error('Não foi possível reduzir a foto o bastante. Tente outra imagem.')
 }
+
+const LOGO_MAX_LADO = 192
+export const LOGO_MAX_CARACTERES = 60000
+
+/** Reduz a logo do time (mantém proporção e transparência) para caber no banco. */
+export async function reduzirLogo(file: File): Promise<string> {
+  const img = await abrirImagem(file)
+  try {
+    for (const lado of [LOGO_MAX_LADO, 160, 128, 96]) {
+      const escala = Math.min(1, lado / Math.max(img.largura, img.altura))
+      const w = Math.max(1, Math.round(img.largura * escala))
+      const h = Math.max(1, Math.round(img.altura * escala))
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img.fonte, 0, 0, w, h)
+      const png = canvas.toDataURL('image/png')
+      if (png.length <= LOGO_MAX_CARACTERES) return png
+      // logo "de foto" (muitos detalhes): JPEG sobre fundo branco costuma caber
+      const fundo = document.createElement('canvas')
+      fundo.width = w
+      fundo.height = h
+      const c2 = fundo.getContext('2d')!
+      c2.fillStyle = '#ffffff'
+      c2.fillRect(0, 0, w, h)
+      c2.drawImage(canvas, 0, 0)
+      const jpg = fundo.toDataURL('image/jpeg', 0.8)
+      if (jpg.length <= LOGO_MAX_CARACTERES) return jpg
+    }
+    throw new Error('Não foi possível reduzir a logo o bastante. Tente uma imagem mais simples.')
+  } finally {
+    img.fechar()
+  }
+}

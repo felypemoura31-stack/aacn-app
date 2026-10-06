@@ -185,6 +185,34 @@ O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
 - Tudo isso é imposto nas regras do Firestore (`firestore.rules`), não só escondido na tela.
  
 
+## Carteirinha impressa
+
+- Em **Minha carteirinha**, o botão "Imprimir carteirinha" gera uma folha A4 com frente e verso lado
+  a lado, cada um com **85,6 x 54 mm** (tamanho de cartão de crédito). Imprima em **tamanho real
+  (100%)**, sem "ajustar à página", recorte na linha tracejada externa, dobre na linha do meio e
+  plastifique.
+- **Frente:** logo da AACN, foto 3x4, nome, nascimento, time (com a logo do time, se houver) e o QR
+  Code. A situação e a validade da mensalidade **não** são impressas (mudam com o tempo); quem lê o
+  QR vê a situação atual.
+- **Verso:** normas de segurança e conduta do airsoft, com campo de assinatura. O texto está em
+  `src/lib/regulamento.ts`. **É um texto geral: a diretoria deve revisar e trocar pelas regras e
+  limites oficiais da AACN (potência/FPS, idade mínima etc.) e conferir as referências legais com um
+  advogado.** O texto precisa caber no cartão (a 5 pt, cerca de 12 itens curtos).
+
+## Cadastro obrigatório
+
+Para usar a carteirinha, os jogos e a área do time, o jogador precisa preencher: nome completo,
+foto 3x4, endereço, data de nascimento, **celular** (com DDD), nome e telefone do contato de
+emergência. Enquanto faltar algo, o app leva para **Meus dados** e lista o que falta. Condições
+médicas continuam opcionais. A regra é aplicada na tela (não nas regras do banco).
+
+## Logo do time
+
+O admin (em **Gestão → Times**) ou o representante do time (em **Solicitações do time**) envia a
+logo do time. O app reduz a imagem (até 192 px, PNG ou JPEG, ~10–40 KB) e guarda no Firestore. Ela
+aparece na carteirinha de todos os jogadores aprovados no time. O representante só pode trocar a
+logo do próprio time; o resto continua com o admin.
+
 ## Check-in por QR (dia do jogo)
 
 Disponível em **Gestão → Check-in por QR** para admin, tesoureiro e organizador.
@@ -217,7 +245,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (54 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (66 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

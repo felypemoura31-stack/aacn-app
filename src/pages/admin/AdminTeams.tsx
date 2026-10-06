@@ -10,6 +10,7 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
+import { TeamLogoEditor } from '../../components/TeamLogoEditor'
 import type { Player, Team } from '../../types'
 
 export function AdminTeams() {
@@ -43,6 +44,7 @@ export function AdminTeams() {
         representanteUid: null,
         representanteNome: null,
         representanteEmail: null,
+        logoUrl: null,
         criadoEm: serverTimestamp(),
       })
       setNovoNome('')
@@ -89,7 +91,10 @@ export function AdminTeams() {
             key={team.id}
             className="panel p-4"
           >
-            <p className="mb-2 font-semibold text-ink">{team.nome}</p>
+            <p className="mb-3 font-semibold text-ink">{team.nome}</p>
+            <div className="mb-4">
+              <TeamLogoEditor team={team} />
+            </div>
             <label className="block text-sm">
               <span className="mb-1 block text-xs font-medium text-mute">
                 Representante
