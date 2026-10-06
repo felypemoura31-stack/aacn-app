@@ -85,6 +85,7 @@ for (const p of seedPlayers) {
     nomeCompleto: p.nomeCompleto,
     fotoUrl: p.fotoUrl,
     timeNome: p.timeAprovado ? p.timeNome : null,
+    timeId: p.timeAprovado ? p.timeId : null,
     status: p.status,
     vencimento: p.vencimento,
     atualizadoEm: now,
@@ -97,6 +98,10 @@ store.teams['t-alpha'] = {
   representanteNome: 'Carlos Silva',
   representanteEmail: 'jogador@teste.com',
   logoUrl: logoAlpha,
+  cidade: 'Caldas Novas - GO',
+  responsavelNome: 'Carlos Silva',
+  dataCriacao: '2019-03-15',
+  redes: { instagram: '@alphasquad', whatsapp: '(64) 99999-0000' },
   criadoEm: now - 60 * day,
 }
 store.teams['t-bravo'] = {

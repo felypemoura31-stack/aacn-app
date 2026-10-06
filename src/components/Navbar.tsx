@@ -93,6 +93,9 @@ export function Navbar() {
           <NavLink to="/jogos" className={linkClass}>
             Jogos
           </NavLink>
+          <NavLink to="/times" className={linkClass}>
+            Times
+          </NavLink>
           <NavLink to="/solicitacoes" className={linkClass}>
             Solicitações do time
           </NavLink>

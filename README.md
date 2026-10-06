@@ -220,12 +220,23 @@ foto 3x4, endereço, data de nascimento, **celular** (com DDD), nome e telefone 
 emergência. Enquanto faltar algo, o app leva para **Meus dados** e lista o que falta. Condições
 médicas continuam opcionais. A regra é aplicada na tela (não nas regras do banco).
 
-## Logo do time
+## Times: perfil, logo e membros
 
-O admin (em **Gestão → Times**) ou o representante do time (em **Solicitações do time**) envia a
-logo do time. O app reduz a imagem (até 192 px, PNG ou JPEG, ~10–40 KB) e guarda no Firestore. Ela
-aparece na carteirinha de todos os jogadores aprovados no time. O representante só pode trocar a
-logo do próprio time; o resto continua com o admin.
+- **Aba "Times"** (barra de cima, para todos os logados): mostra os times com logo, cidade e número
+  de membros. Ao clicar, abre o **perfil do time**: logo, cidade, data de criação (com há quantos
+  anos), responsável, redes sociais (botões que abrem o perfil) e a lista de membros com foto.
+- **Botão "Editar time":** no perfil do time, em **Gestão → Times** (admin) e em **Solicitações do
+  time** (representante). Campos: logo, data de criação, cidade, nome do responsável e redes sociais.
+  Nas redes, o time marca só as que tem (Instagram, Facebook, YouTube, TikTok, WhatsApp, X, Discord,
+  site) e informa o @usuário, o número (WhatsApp) ou o link; só aparecem no perfil as marcadas.
+- **Quem edita:** o admin edita tudo (inclusive o nome do time); o representante edita só o perfil do
+  próprio time. A logo é reduzida (até 192 px, ~10–40 KB) e guardada no Firestore.
+- **Links seguros:** só são aceitos endereços http/https (ou @usuário/número); `javascript:`, `data:`
+  e similares são recusados.
+- **Membros** são os jogadores com o time aprovado pelo representante. A lista vem do cartão público
+  (nome e foto), que agora guarda o `timeId` do time aprovado. Quem já era membro antes desta versão
+  aparece na lista no próximo login. **Mudança de privacidade:** listar todos os cartões públicos agora
+  exige estar logado; abrir **um** cartão pelo QR continua sem login.
 
 ## Check-in por QR (dia do jogo)
 
@@ -259,7 +270,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (66 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (79 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

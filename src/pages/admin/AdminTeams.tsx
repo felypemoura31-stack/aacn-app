@@ -10,7 +10,9 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
-import { TeamLogoEditor } from '../../components/TeamLogoEditor'
+import { Link } from 'react-router-dom'
+import { TeamEditor } from '../../components/TeamEditor'
+import { TeamLogo } from '../Teams'
 import type { Player, Team } from '../../types'
 
 export function AdminTeams() {
@@ -18,6 +20,7 @@ export function AdminTeams() {
   const [players, setPlayers] = useState<Player[]>([])
   const [novoNome, setNovoNome] = useState('')
   const [criando, setCriando] = useState(false)
+  const [editando, setEditando] = useState<Team | null>(null)
 
   useEffect(() => {
     const qTeams = query(collection(db, 'teams'), orderBy('nome'))
@@ -91,9 +94,23 @@ export function AdminTeams() {
             key={team.id}
             className="panel p-4"
           >
-            <p className="mb-3 font-semibold text-ink">{team.nome}</p>
-            <div className="mb-4">
-              <TeamLogoEditor team={team} />
+            <div className="mb-4 flex items-center gap-3">
+              <TeamLogo team={team} className="h-14 w-14" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-ink">{team.nome}</p>
+                <p className="truncate text-xs text-mute">
+                  {[team.cidade, team.responsavelNome && `resp.: ${team.responsavelNome}`].filter(Boolean).join(' · ') ||
+                    'Dados do time ainda não preenchidos'}
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <button onClick={() => setEditando(team)} className="btn-primary">
+                  Editar time
+                </button>
+                <Link to={`/times/${team.id}`} className="btn-ghost">
+                  Ver perfil
+                </Link>
+              </div>
             </div>
             <label className="block text-sm">
               <span className="mb-1 block text-xs font-medium text-mute">
@@ -118,6 +135,8 @@ export function AdminTeams() {
           <p className="text-sm text-mute/70">Nenhum time cadastrado ainda.</p>
         )}
       </div>
+
+      {editando && <TeamEditor team={editando} podeEditarNome onClose={() => setEditando(null)} />}
     </div>
   )
 }

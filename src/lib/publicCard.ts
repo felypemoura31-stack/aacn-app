@@ -4,7 +4,7 @@ import type { Player } from '../types'
 
 type PublicCardSource = Pick<
   Player,
-  'uid' | 'nomeCompleto' | 'fotoUrl' | 'timeNome' | 'timeAprovado' | 'status' | 'vencimento'
+  'uid' | 'nomeCompleto' | 'fotoUrl' | 'timeId' | 'timeNome' | 'timeAprovado' | 'status' | 'vencimento'
 >
 
 /**
@@ -18,6 +18,7 @@ export async function sincronizarCartaoPublico(player: PublicCardSource) {
     nomeCompleto: player.nomeCompleto,
     fotoUrl: player.fotoUrl,
     timeNome: player.timeAprovado ? player.timeNome : null,
+    timeId: player.timeAprovado ? player.timeId : null,
     status: player.status,
     vencimento: player.vencimento ?? null,
     atualizadoEm: serverTimestamp(),
@@ -47,9 +48,11 @@ export async function atualizarPagamentoNoCartaoPublico(
 export async function atualizarTimeNoCartaoPublico(
   uid: string,
   timeNome: string | null,
+  timeId: string | null,
 ) {
   await updateDoc(doc(db, 'publicCards', uid), {
     timeNome,
+    timeId,
     atualizadoEm: serverTimestamp(),
   })
 }

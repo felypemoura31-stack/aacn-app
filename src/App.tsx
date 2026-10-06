@@ -17,6 +17,8 @@ import { Games } from './pages/Games'
 import { AdminCredits } from './pages/admin/AdminCredits'
 import { AdminRoles } from './pages/admin/AdminRoles'
 import { AdminCheckin } from './pages/admin/AdminCheckin'
+import { Teams } from './pages/Teams'
+import { TeamProfile } from './pages/TeamProfile'
 
 function App() {
   return (
@@ -55,6 +57,22 @@ function App() {
             <CadastroCompletoRoute>
               <Games />
             </CadastroCompletoRoute>
+          }
+        />
+        <Route
+          path="/times"
+          element={
+            <ProtectedRoute>
+              <Teams />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/times/:id"
+          element={
+            <ProtectedRoute>
+              <TeamProfile />
+            </ProtectedRoute>
           }
         />
         <Route

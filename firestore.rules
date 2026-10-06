@@ -50,6 +50,34 @@ service cloud.firestore {
       return v == null || (v is string && v.size() < 70000);
     }
 
+    // Dados do perfil do time (campos de texto curtos; redes só as conhecidas).
+    function textoCurto(v, max) {
+      return v == null || (v is string && v.size() <= max);
+    }
+
+    function redesValidas(r) {
+      return r == null || (
+        r is map &&
+        r.keys().hasOnly(['instagram', 'facebook', 'youtube', 'tiktok', 'whatsapp', 'x', 'discord', 'site']) &&
+        r.get('instagram', '').size() <= 200 &&
+        r.get('facebook', '').size() <= 200 &&
+        r.get('youtube', '').size() <= 200 &&
+        r.get('tiktok', '').size() <= 200 &&
+        r.get('whatsapp', '').size() <= 200 &&
+        r.get('x', '').size() <= 200 &&
+        r.get('discord', '').size() <= 200 &&
+        r.get('site', '').size() <= 200
+      );
+    }
+
+    function perfilDoTimeValido(d) {
+      return logoValida(d.get('logoUrl', null)) &&
+        textoCurto(d.get('cidade', null), 80) &&
+        textoCurto(d.get('responsavelNome', null), 80) &&
+        textoCurto(d.get('dataCriacao', null), 10) &&
+        redesValidas(d.get('redes', null));
+    }
+
     function isRepresentativeOfTeam(timeId) {
       return isSignedIn() && timeId != null &&
         get(/databases/$(database)/documents/teams/$(timeId)).data.representanteUid == request.auth.uid;
@@ -104,11 +132,16 @@ service cloud.firestore {
 
     // Espelho público e mínimo (sem endereço/contato de emergência/condições
     // médicas), lido sem login pela página de verificação via QR code.
+    // "get" é público (a página do QR abre sem login); listar a coleção inteira só logado.
     match /publicCards/{uid} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isSignedIn();
 
       allow write: if isSignedIn() &&
         fotoValida(request.resource.data.get('fotoUrl', null)) &&
+        request.resource.data.get('timeId', null) ==
+          (get(/databases/$(database)/documents/players/$(uid)).data.get('timeAprovado', false) == true
+            ? get(/databases/$(database)/documents/players/$(uid)).data.get('timeId', null) : null) &&
         request.resource.data.status == get(/databases/$(database)/documents/players/$(uid)).data.status &&
         request.resource.data.vencimento == get(/databases/$(database)/documents/players/$(uid)).data.vencimento && (
           isOwner(uid) ||
@@ -124,12 +157,14 @@ service cloud.firestore {
     // time). Só admin cria times e define o representante.
     match /teams/{teamId} {
       allow read: if isSignedIn();
-      allow create: if isAdmin() && logoValida(request.resource.data.get('logoUrl', null));
-      // O admin edita tudo; o representante só troca a logo do próprio time.
-      allow update: if (isAdmin() && logoValida(request.resource.data.get('logoUrl', null))) || (
+      allow create: if isAdmin() && perfilDoTimeValido(request.resource.data);
+      // O admin edita tudo; o representante só edita o perfil do próprio time
+      // (logo, cidade, responsável, data de criação e redes), nunca o nome nem o representante.
+      allow update: if (isAdmin() && perfilDoTimeValido(request.resource.data)) || (
         isRepresentativeOfTeam(teamId) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['logoUrl']) &&
-        logoValida(request.resource.data.get('logoUrl', null))
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['logoUrl', 'cidade', 'responsavelNome', 'dataCriacao', 'redes']) &&
+        perfilDoTimeValido(request.resource.data)
       );
       allow delete: if isAdmin();
     }

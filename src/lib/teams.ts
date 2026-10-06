@@ -41,6 +41,7 @@ export async function aprovarSolicitacao(
   requestId: string,
   jogadorUid: string,
   timeNome: string,
+  timeId: string,
 ) {
   await updateDoc(doc(db, 'teamJoinRequests', requestId), {
     status: 'aprovado',
@@ -50,7 +51,7 @@ export async function aprovarSolicitacao(
     timeAprovado: true,
     atualizadoEm: serverTimestamp(),
   })
-  await atualizarTimeNoCartaoPublico(jogadorUid, timeNome)
+  await atualizarTimeNoCartaoPublico(jogadorUid, timeNome, timeId)
 }
 
 export async function rejeitarSolicitacao(
@@ -67,5 +68,5 @@ export async function rejeitarSolicitacao(
     timeAprovado: false,
     atualizadoEm: serverTimestamp(),
   })
-  await atualizarTimeNoCartaoPublico(jogadorUid, null)
+  // O cartão público de quem estava pendente já não mostra time; nada a atualizar.
 }

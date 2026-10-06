@@ -7,6 +7,8 @@ export interface JogadorResumo {
   uid: string
   nomeCompleto: string
   timeNome: string | null
+  timeId?: string | null
+  fotoUrl?: string | null
 }
 
 export interface Player {
@@ -40,8 +42,17 @@ export interface Team {
   representanteNome: string | null
   representanteEmail: string | null
   logoUrl?: string | null
+  dataCriacao?: string | null // yyyy-mm-dd
+  cidade?: string | null
+  responsavelNome?: string | null
+  redes?: RedesDoTime | null
   criadoEm: number
 }
+
+export type RedeSocial = 'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'whatsapp' | 'x' | 'discord' | 'site'
+
+/** Só as redes que o time tem; o valor é o que foi digitado (@usuario, número ou link). */
+export type RedesDoTime = Partial<Record<RedeSocial, string>>
 
 export type JoinRequestStatus = 'pendente' | 'aprovado' | 'rejeitado'
 

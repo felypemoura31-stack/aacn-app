@@ -9,7 +9,9 @@ import {
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { aprovarSolicitacao, rejeitarSolicitacao } from '../lib/teams'
-import { TeamLogoEditor } from '../components/TeamLogoEditor'
+import { Link } from 'react-router-dom'
+import { TeamEditor } from '../components/TeamEditor'
+import { TeamLogo } from './Teams'
 import type { Team, TeamJoinRequest } from '../types'
 
 export function RepresentativeRequests() {
@@ -17,6 +19,7 @@ export function RepresentativeRequests() {
   const [teams, setTeams] = useState<Team[]>([])
   const [requests, setRequests] = useState<TeamJoinRequest[]>([])
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [editandoTime, setEditandoTime] = useState<Team | null>(null)
 
   useEffect(() => {
     if (!currentUser) return
@@ -69,7 +72,7 @@ export function RepresentativeRequests() {
     setBusyId(r.id)
     try {
       if (action === 'aprovar')
-        await aprovarSolicitacao(r.id, r.jogadorUid, r.timeNome)
+        await aprovarSolicitacao(r.id, r.jogadorUid, r.timeNome, r.timeId)
       else await rejeitarSolicitacao(r.id, r.jogadorUid)
     } finally {
       setBusyId(null)
@@ -87,9 +90,15 @@ export function RepresentativeRequests() {
 
       <div className="mb-8 space-y-3">
         {teams.map((t) => (
-          <div key={t.id} className="panel p-4">
-            <p className="mb-3 text-sm font-semibold text-ink">Logo do time {t.nome}</p>
-            <TeamLogoEditor team={t} />
+          <div key={t.id} className="panel flex items-center gap-3 p-4">
+            <TeamLogo team={t} className="h-14 w-14" />
+            <p className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{t.nome}</p>
+            <button onClick={() => setEditandoTime(t)} className="btn-primary">
+              Editar time
+            </button>
+            <Link to={`/times/${t.id}`} className="btn-ghost">
+              Ver perfil
+            </Link>
           </div>
         ))}
       </div>
@@ -150,6 +159,8 @@ export function RepresentativeRequests() {
           </div>
         ))}
       </div>
+
+      {editandoTime && <TeamEditor team={editandoTime} podeEditarNome={false} onClose={() => setEditandoTime(null)} />}
     </div>
   )
 }

@@ -13,7 +13,7 @@ import {
   updateProfile,
   type User,
 } from 'firebase/auth'
-import { doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
+import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
 import type { Player } from '../types'
@@ -63,6 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     return unsub
   }, [currentUser])
+
+  useEffect(() => {
+    if (!player?.timeAprovado || !player.timeId) return
+    getDoc(doc(db, 'publicCards', player.uid))
+      .then((snap) => {
+        if (snap.exists() && snap.data().timeId !== player.timeId) return sincronizarCartaoPublico(player)
+      })
+      .catch(() => {})
+  }, [player])
 
   async function register({ nomeCompleto, email, senha }: RegisterInput) {
     const cred = await createUserWithEmailAndPassword(auth, email, senha)
