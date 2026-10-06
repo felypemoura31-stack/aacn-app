@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { collection, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { reais } from '../../lib/credits'
 import { DIA_MS, STATUS_COLORS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import { linkWhatsapp } from '../../lib/whatsapp'
-import type { PixConfig, PlayerStatus } from '../../types'
+import type { PixConfig, Player, PlayerStatus } from '../../types'
 
 interface Cartao {
   uid: string
@@ -58,6 +58,21 @@ export function AdminCobrancas() {
       u4()
     }
   }, [])
+
+  // Só o admin lê os cadastros: ele repõe o contato de quem tem celular no cadastro mas ainda não
+  // tem a cópia de cobrança (jogadores que não abriram o app depois da atualização).
+  const repostos = useRef(new Set<string>())
+  useEffect(() => {
+    if (staff?.role !== 'admin') return
+    return onSnapshot(collection(db, 'players'), (snap) => {
+      for (const d of snap.docs) {
+        const p = d.data() as Player
+        if (!p.celular || contatos[d.id] === p.celular || repostos.current.has(d.id + p.celular)) continue
+        repostos.current.add(d.id + p.celular)
+        setDoc(doc(db, 'contatos', d.id), { celular: p.celular, atualizadoEm: serverTimestamp() }).catch(() => {})
+      }
+    })
+  }, [staff?.role, contatos])
 
   const lista = useMemo(() => {
     const agora = Date.now()

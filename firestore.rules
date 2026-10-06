@@ -398,11 +398,11 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Contato de cobrança: espelho do celular do jogador. Só o próprio jogador grava;
-    // só ele e a tesouraria leem (para o botão "Cobrar no WhatsApp").
+    // Contato de cobrança: espelho do celular do jogador. Grava o próprio jogador (ou o admin,
+    // que repõe a cópia de quem ainda não abriu o app); leem ele e a tesouraria (botão "Cobrar no WhatsApp").
     match /contatos/{uid} {
       allow read: if isOwner(uid) || isFinanceiro();
-      allow create, update: if isOwner(uid) &&
+      allow create, update: if (isOwner(uid) || isAdmin()) &&
         request.resource.data.keys().hasOnly(['celular', 'atualizadoEm']) &&
         request.resource.data.celular is string &&
         request.resource.data.celular.size() <= 20;
