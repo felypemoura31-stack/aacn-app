@@ -191,10 +191,10 @@ O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
   a lado, cada um com **85,6 x 54 mm** (tamanho de cartão de crédito). Imprima em **tamanho real
   (100%)**, sem "ajustar à página", recorte na linha tracejada externa, dobre na linha do meio e
   plastifique.
-- **Frente:** logo da AACN, foto 3x4, nome, nascimento, time (com a logo do time, se houver) e o QR
-  Code. A situação e a validade da mensalidade **não** são impressas (mudam com o tempo); quem lê o
-  QR vê a situação atual.
-- **Verso:** normas de segurança e conduta do airsoft, com campo de assinatura. O texto está em
+- **Frente:** logo da AACN, foto 3x4, nome, nascimento, **membro desde** (data do cadastro, que é a
+  data de emissão), time (com a logo do time, se houver) e o QR Code. Não há validade na carteirinha, e
+  a situação da mensalidade **não** é impressa (muda com o tempo); quem lê o QR vê a situação atual.
+- **Verso:** normas de segurança e conduta do airsoft. O texto está em
   `src/lib/regulamento.ts`. **É um texto geral: a diretoria deve revisar e trocar pelas regras e
   limites oficiais da AACN (potência/FPS, idade mínima etc.) e conferir as referências legais com um
   advogado.** O texto precisa caber no cartão (a 5 pt, cerca de 12 itens curtos).

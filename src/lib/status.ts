@@ -47,3 +47,16 @@ export function calcularNovoVencimento(
       : dataPagamento
   return base + CICLO_DIAS * DIA_MS
 }
+
+/** Converte um carimbo de data do Firestore (Timestamp), número ou Date em milissegundos. */
+export function paraMillis(v: unknown): number | null {
+  if (typeof v === 'number') return v
+  if (v instanceof Date) return v.getTime()
+  if (v && typeof (v as { toMillis?: unknown }).toMillis === 'function') {
+    return (v as { toMillis: () => number }).toMillis()
+  }
+  if (v && typeof (v as { seconds?: unknown }).seconds === 'number') {
+    return (v as { seconds: number }).seconds * 1000
+  }
+  return null
+}

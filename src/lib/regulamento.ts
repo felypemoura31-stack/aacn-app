@@ -18,5 +18,5 @@ export const REGRAS_VERSO: string[] = [
   'Siga as instruções dos organizadores e árbitros. Menores só com autorização dos responsáveis.',
   'Informe à organização qualquer condição médica. Em emergência, procure a organização.',
   'O uso de réplicas deve respeitar a legislação brasileira (Lei 10.826/2003, Estatuto do Desarmamento, e normas do Exército). O associado responde pelo seu equipamento.',
-  'Carteirinha pessoal e intransferível. Situação e validade: leia o QR Code.',
+  'Carteirinha pessoal e intransferível. Para conferir a situação do associado, leia o QR Code.',
 ]
