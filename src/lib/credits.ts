@@ -1,8 +1,13 @@
 import {
+  collection,
+  deleteDoc,
   doc,
   getDoc,
+  getDocs,
   increment,
+  query,
   serverTimestamp,
+  where,
   writeBatch,
   type WriteBatch,
 } from 'firebase/firestore'
@@ -75,6 +80,24 @@ export function contar(
   if (d.mensalidades !== undefined) dados.mensalidades = increment(d.mensalidades)
   if (d.ultimoJogoId !== undefined) dados.ultimoJogoId = d.ultimoJogoId
   batch.set(doc(db, 'stats', uid), dados, { merge: true })
+}
+
+/**
+ * Tira jogos do contador (presença removida, jogo excluído). Lê o valor atual e grava o novo sem
+ * deixar ficar negativo (as regras do banco não aceitam contador negativo).
+ */
+export async function descontar(batch: WriteBatch, uid: string, d: { jogos: number; noturnos: number }) {
+  const atual = await getDoc(doc(db, 'stats', uid))
+  const s = atual.exists() ? (atual.data() as { jogos?: number; noturnos?: number }) : {}
+  batch.set(
+    doc(db, 'stats', uid),
+    {
+      jogos: Math.max(0, (s.jogos ?? 0) - d.jogos),
+      noturnos: Math.max(0, (s.noturnos ?? 0) - d.noturnos),
+      atualizadoEm: serverTimestamp(),
+    },
+    { merge: true },
+  )
 }
 
 /** Grava a mudança de saldo e o lançamento no extrato, sempre juntos no mesmo lote. */
@@ -257,7 +280,7 @@ export async function adminRemoverParticipante(p: Participation, admin: Autor) {
   if (p.status === 'presente') {
     // a presença deixa de contar (os bônus já resgatados continuam com o jogador)
     const jogo = await getDoc(doc(db, 'games', p.gameId))
-    contar(batch, p.uid, { jogos: -1, noturnos: jogo.exists() && ehNoturno(jogo.data() as Game) ? -1 : 0 })
+    await descontar(batch, p.uid, { jogos: 1, noturnos: jogo.exists() && ehNoturno(jogo.data() as Game) ? 1 : 0 })
   }
   if (p.creditosDebitados > 0) {
     const c = await lerCarteira(p.uid)
@@ -303,4 +326,37 @@ export async function adminAjustarSaldo(
     existe: c.existe,
   })
   await batch.commit()
+}
+
+/**
+ * Admin/tesoureiro exclui um jogo de vez. Cada inscrição vai embora no seu próprio lote: quem já
+ * jogou e pagou com créditos recebe o estorno no extrato, e a presença sai dos contadores
+ * (jogos jogados e noturnos). O jogo em si é apagado por último; se algo falhar no meio, dá para
+ * tentar de novo (o que já foi estornado não é estornado outra vez, porque a inscrição já sumiu).
+ */
+export async function excluirJogo(game: Game, admin: Autor) {
+  const inscricoes = await getDocs(query(collection(db, 'participations'), where('gameId', '==', game.id)))
+  for (const d of inscricoes.docs) {
+    const p = { id: d.id, ...d.data() } as Participation
+    const batch = writeBatch(db)
+    if (p.status === 'presente') {
+      if (p.creditosDebitados > 0) {
+        const c = await lerCarteira(p.uid)
+        lancar(batch, {
+          uid: p.uid,
+          saldoAntes: c.saldo,
+          delta: p.creditosDebitados,
+          tipo: 'estorno',
+          descricao: `Estorno: jogo excluído (${game.nome})`,
+          refId: game.id,
+          autor: admin,
+          existe: c.existe,
+        })
+      }
+      await descontar(batch, p.uid, { jogos: 1, noturnos: ehNoturno(game) ? 1 : 0 })
+    }
+    batch.delete(d.ref)
+    await batch.commit()
+  }
+  await deleteDoc(doc(db, 'games', game.id))
 }

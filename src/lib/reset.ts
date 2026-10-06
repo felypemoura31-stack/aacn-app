@@ -47,7 +47,7 @@ export const ROTULOS_RESET: { id: keyof OpcoesReset; titulo: string; detalhe: st
 ]
 
 /** Apaga em lotes (o Firestore aceita até 500 operações por lote). */
-async function apagar(refs: DocumentReference[]) {
+export async function apagar(refs: DocumentReference[]) {
   for (let i = 0; i < refs.length; i += 400) {
     const batch = writeBatch(db)
     refs.slice(i, i + 400).forEach((r) => batch.delete(r))
@@ -55,8 +55,31 @@ async function apagar(refs: DocumentReference[]) {
   }
 }
 
-const docsDoJogador = async (colecao: string, uid: string) =>
-  (await getDocs(query(collection(db, colecao), where('uid', '==', uid)))).docs
+export const docsDoJogador = async (colecao: string, uid: string, campo = 'uid') =>
+  (await getDocs(query(collection(db, colecao), where(campo, '==', uid)))).docs
+
+/** Apaga as inscrições/presenças do jogador e devolve as vagas dos jogos (contadores). Retorna quantas eram. */
+export async function apagarInscricoesDoJogador(uid: string) {
+  const inscricoes = await docsDoJogador('participations', uid)
+  const ajustes = new Map<string, { inscritos: number; espera: number }>()
+  for (const d of inscricoes) {
+    const p = d.data() as Participation
+    const a = ajustes.get(p.gameId) ?? { inscritos: 0, espera: 0 }
+    if (p.status === 'ativa' || p.status === 'presente') a.inscritos++
+    else if (p.status === 'espera') a.espera++
+    ajustes.set(p.gameId, a)
+  }
+  await apagar(inscricoes.map((d) => d.ref))
+  for (const [gameId, a] of ajustes) {
+    if (!a.inscritos && !a.espera) continue
+    // o jogo pode já ter sido apagado: aí não há contador para acertar
+    await updateDoc(doc(db, 'games', gameId), {
+      ...(a.inscritos ? { inscritos: increment(-a.inscritos) } : {}),
+      ...(a.espera ? { espera: increment(-a.espera) } : {}),
+    }).catch(() => {})
+  }
+  return inscricoes.length
+}
 
 /**
  * Admin: apaga dados de teste de um jogador (só o que foi marcado). Cada parte se basta, mas o
@@ -85,26 +108,9 @@ export async function resetarJogador(uid: string, o: OpcoesReset): Promise<strin
   }
 
   if (o.jogos) {
-    const inscricoes = await docsDoJogador('participations', uid)
-    const ajustes = new Map<string, { inscritos: number; espera: number }>()
-    for (const d of inscricoes) {
-      const p = d.data() as Participation
-      const a = ajustes.get(p.gameId) ?? { inscritos: 0, espera: 0 }
-      if (p.status === 'ativa' || p.status === 'presente') a.inscritos++
-      else if (p.status === 'espera') a.espera++
-      ajustes.set(p.gameId, a)
-    }
-    await apagar(inscricoes.map((d) => d.ref))
-    for (const [gameId, a] of ajustes) {
-      if (!a.inscritos && !a.espera) continue
-      // o jogo pode já ter sido apagado: aí não há contador para acertar
-      await updateDoc(doc(db, 'games', gameId), {
-        ...(a.inscritos ? { inscritos: increment(-a.inscritos) } : {}),
-        ...(a.espera ? { espera: increment(-a.espera) } : {}),
-      }).catch(() => {})
-    }
+    const apagadas = await apagarInscricoesDoJogador(uid)
     await setDoc(doc(db, 'stats', uid), { jogos: 0, noturnos: 0, atualizadoEm: serverTimestamp() }, { merge: true })
-    feito.push(`Jogos: ${inscricoes.length} inscrição(ões)/presença(s) apagada(s) e contadores zerados.`)
+    feito.push(`Jogos: ${apagadas} inscrição(ões)/presença(s) apagada(s) e contadores zerados.`)
   }
 
   if (o.mensalidades) {

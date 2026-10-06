@@ -14,6 +14,7 @@ import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { PhotoUploader } from '../components/PhotoUploader'
 import { SelosConquistas } from '../components/SelosConquistas'
+import { ExcluirMinhaConta } from '../components/ExcluirMinhaConta'
 import { solicitarEntradaNoTime } from '../lib/teams'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
 import { cepValido, dataNascimentoValida, ehMenor, faltasDoCadastro, formatarCep, formatarTelefone, telefoneValido } from '../lib/cadastro'
@@ -356,6 +357,8 @@ export function Profile() {
           {saving ? 'Salvando...' : 'Salvar alterações'}
         </button>
       </form>
+
+      <ExcluirMinhaConta />
     </div>
   )
 }

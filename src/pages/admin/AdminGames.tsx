@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import {
   adminAdicionarParticipante,
   adminRemoverParticipante,
+  excluirJogo,
   formatarCreditos,
   promoverDaEspera,
   reais,
@@ -191,6 +192,25 @@ export function AdminGames() {
     await updateDoc(doc(db, 'games', g.id), { status: g.status === 'aberto' ? 'encerrado' : 'aberto' })
   }
 
+  async function excluir(g: Game, doJogo: Participation[]) {
+    const presentes = doJogo.filter((p) => p.status === 'presente')
+    const estornos = presentes.reduce((s, p) => s + (p.creditosDebitados ?? 0), 0)
+    const aviso =
+      `Excluir o jogo "${g.nome}" de vez?\n\n` +
+      `• ${doJogo.length} inscrição(ões)/presença(s) serão apagadas.\n` +
+      (estornos > 0 ? `• ${formatarCreditos(estornos)} créditos serão devolvidos a quem já jogou (aparece no extrato como estorno).\n` : '') +
+      (presentes.length > 0 ? '• A presença deles deixa de contar nos jogos jogados e nas conquistas (bônus já pagos ficam).\n' : '') +
+      '\nNão dá para desfazer.'
+    if (!window.confirm(aviso)) return
+    setErro(null)
+    try {
+      await excluirJogo(g, autor())
+      if (aberto === g.id) setAberto(null)
+    } catch (e) {
+      setErro((e as Error).message)
+    }
+  }
+
   async function adicionar(g: Game) {
     const jogador = players.find((p) => p.uid === novoUid)
     if (!jogador) return
@@ -299,6 +319,11 @@ export function AdminGames() {
                   <button onClick={() => setAberto(expandido ? null : g.id)} className="btn-ghost">
                     {expandido ? 'Fechar' : 'Inscritos'}
                   </button>
+                  {gerenciaInscricoes && (
+                    <button onClick={() => excluir(g, doJogo)} className="btn-ghost text-danger">
+                      Excluir
+                    </button>
+                  )}
                 </div>
               </div>
 

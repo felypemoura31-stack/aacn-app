@@ -63,3 +63,17 @@ export async function sendPasswordResetEmail() {}
 export async function signOut() {
   setCurrent(null)
 }
+
+export const EmailAuthProvider = {
+  credential: (email, senha) => ({ email, senha }),
+}
+
+export async function reauthenticateWithCredential(user, cred) {
+  if (user.email !== cred.email || user.senha !== cred.senha) throw authError('auth/invalid-credential')
+}
+
+export async function deleteUser(user) {
+  const i = users.findIndex((x) => x.uid === user.uid)
+  if (i >= 0) users.splice(i, 1)
+  setCurrent(null)
+}

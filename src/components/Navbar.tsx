@@ -48,7 +48,7 @@ const GRUPOS: Grupo[] = [
 ]
 
 export function Navbar() {
-  const { currentUser, player, logout } = useAuth()
+  const { currentUser, player, logout, cadastroExcluido } = useAuth()
   const { pathname } = useLocation()
   const [aberto, setAberto] = useState(false)
   const ehRepresentante = useEhRepresentante(currentUser?.uid)
@@ -62,7 +62,7 @@ export function Navbar() {
     return () => window.removeEventListener('keydown', onKey)
   }, [aberto])
 
-  if (!currentUser) return null
+  if (!currentUser || cadastroExcluido) return null
 
   const grupos = GRUPOS.filter((g) => player && g.roles.includes(player.role))
 

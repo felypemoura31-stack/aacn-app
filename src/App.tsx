@@ -1,5 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Navbar } from './components/Navbar'
 import { ProtectedRoute, AdminRoute, FinanceiroRoute, JogosRoute, CadastroCompletoRoute } from './components/ProtectedRoute'
 import { Login } from './pages/Login'
@@ -30,6 +30,17 @@ import { OfflineBanner } from './components/OfflineBanner'
 import { TeamProfile } from './pages/TeamProfile'
 import { Validar } from './pages/Validar'
 import { ConquistasProvider } from './contexts/ConquistasContext'
+import { CadastroExcluido } from './pages/CadastroExcluido'
+
+/** Páginas que continuam abertas mesmo quando o cadastro de quem está logado foi excluído. */
+const PUBLICAS = ['/validar', '/verificar/', '/termos']
+
+function GuardaCadastro({ children }: { children: React.ReactNode }) {
+  const { cadastroExcluido } = useAuth()
+  const { pathname } = useLocation()
+  if (cadastroExcluido && !PUBLICAS.some((p) => pathname.startsWith(p))) return <CadastroExcluido />
+  return <>{children}</>
+}
 
 function App() {
   return (
@@ -43,6 +54,7 @@ function App() {
       )}
       <OfflineBanner />
       <Navbar />
+      <GuardaCadastro>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Register />} />
@@ -222,6 +234,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </GuardaCadastro>
       </ConquistasProvider>
     </AuthProvider>
   )

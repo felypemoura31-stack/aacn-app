@@ -307,6 +307,26 @@ deixa o **admin** apagar, parte por parte, os dados que sobraram de testes. Cada
 Cadastro, foto, cargo e time **não** são tocados. As regras do banco só deixam o admin apagar extrato, conquistas e
 pagamentos (tesoureiro, organizador e jogador não).
 
+## Excluir jogador, excluir a própria conta e excluir jogo
+
+**Admin exclui um jogador** (ficha do jogador, painel "Excluir jogador", confirmando com o nome): apaga cadastro,
+cartão público, contato, carteira, contadores, conquistas, inscrições/presenças (as vagas dos jogos voltam) e pedidos
+de time; se era representante, o time fica sem representante. Há a opção **"Manter registros financeiros"**
+(marcada por padrão): pagamentos Pix e extrato ficam guardados. Admins (cargo definido no console) não são excluídos
+pelo app. **Limite:** o app não consegue apagar o e-mail/senha do jogador no Firebase Authentication (isso exige
+servidor ou o console). Se ele entrar de novo, vê a tela **"Cadastro excluído"**, que oferece criar o cadastro do
+zero; para bloquear de vez, apague o usuário em Authentication no console do Firebase.
+
+**O jogador exclui a própria conta** (Meus dados, no fim da página): pede a senha de novo e uma confirmação. Cancela
+as inscrições ainda sem check-in, apaga cadastro, foto, contato e cartão público e, por fim, a conta de acesso.
+Pagamentos, extrato e presenças em jogos já realizados ficam com a associação (registro financeiro/histórico).
+Quem é representante de time precisa pedir ao admin para trocar o representante antes. Admin não exclui a própria
+conta pelo app.
+
+**Excluir jogo** (Admin: Jogos, botão "Excluir", só admin e tesoureiro; o organizador não vê): apaga o jogo e todas as
+inscrições; quem já jogou e pagou com créditos recebe o **estorno** no extrato e a presença sai dos contadores
+(jogos e jogos noturnos). Os bônus de conquista já pagos não são retirados.
+
 ## Meu histórico e conquistas
 
 **Histórico** (todos): jogos jogados, frequência (presenças ÷ presenças + faltas em jogos já passados),
@@ -429,7 +449,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (233 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (264 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

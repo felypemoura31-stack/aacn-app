@@ -180,7 +180,9 @@ service cloud.firestore {
           (resource.data.vencimento == null ? 0 : resource.data.vencimento)
       );
 
-      allow delete: if false;
+      // Excluir: o próprio jogador (conta dele) ou o admin. Um admin (cargo definido só no console)
+      // nunca é excluído pelo app.
+      allow delete: if (isOwner(uid) || isAdmin()) && resource.data.role != 'admin';
     }
 
     // Espelho público e mínimo (sem endereço/contato de emergência/condições
@@ -190,7 +192,9 @@ service cloud.firestore {
       allow get: if true;
       allow list: if isSignedIn();
 
-      allow write: if isSignedIn() &&
+      allow delete: if isOwner(uid) || isAdmin();
+
+      allow create, update: if isSignedIn() &&
         fotoValida(request.resource.data.get('fotoUrl', null)) &&
         request.resource.data.get('timeId', null) ==
           (get(/databases/$(database)/documents/players/$(uid)).data.get('timeAprovado', false) == true
@@ -233,7 +237,7 @@ service cloud.firestore {
 
       allow update: if isAdmin() || isRepresentativeOfTeam(resource.data.timeId);
 
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
     // Chave Pix e valor da mensalidade: todos leem, só admin altera (o
@@ -292,7 +296,7 @@ service cloud.firestore {
           resource.data.creditos + getAfter(conquistaPath(uid, request.resource.data.ultimaConquistaId)).data.creditos
       );
 
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
     // Contadores de confiança (jogos, jogos noturnos, mensalidades) que sustentam as conquistas.
@@ -324,7 +328,7 @@ service cloud.firestore {
         (isOrganizador() && checkinConta(uid, 0, 0, 0));
       allow update: if (isFinanceiro() && statsValidos(request.resource.data)) ||
         (isOrganizador() && checkinConta(uid, resource.data.get('jogos', 0), resource.data.get('noturnos', 0), resource.data.get('mensalidades', 0)));
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
     // Conquistas resgatadas: um documento por jogador e conquista ("<uid>_<conquista>"), criado só
@@ -394,7 +398,7 @@ service cloud.firestore {
       allow update: if (podeGerirJogos() && jogoValido(request.resource.data)) || (
         isSignedIn() && (entraNoJogo() || entraNaEspera() || saiDoJogo() || saiDaEspera())
       );
-      allow delete: if isAdmin();
+      allow delete: if isFinanceiro();
     }
 
     // Inscrições em jogos. O id é sempre "<jogo>_<uid>" (uma por jogador).
@@ -524,7 +528,7 @@ service cloud.firestore {
         request.resource.data.keys().hasOnly(['celular', 'atualizadoEm']) &&
         request.resource.data.celular is string &&
         request.resource.data.celular.size() <= 20;
-      allow delete: if false;
+      allow delete: if isOwner(uid) || isAdmin();
     }
 
     // Registro de quando cada associado foi cobrado (tesouraria).
@@ -533,7 +537,7 @@ service cloud.firestore {
       allow create, update: if isFinanceiro() &&
         request.resource.data.keys().hasOnly(['ultimaEm', 'porUid', 'porNome']) &&
         request.resource.data.porUid == request.auth.uid;
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
     // Mural de avisos: admin, tesoureiro e organizador publicam; todos os logados leem.

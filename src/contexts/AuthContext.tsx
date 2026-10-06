@@ -17,6 +17,7 @@ import {
 import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
+import { excluirMinhaConta } from '../lib/conta'
 import { VERSAO_TERMOS } from '../lib/termos'
 import type { Player } from '../types'
 
@@ -35,6 +36,11 @@ interface AuthContextValue {
   login: (email: string, senha: string) => Promise<void>
   resetPassword: (email: string) => Promise<void>
   logout: () => Promise<void>
+  /** Entrou com e-mail/senha, mas o cadastro foi excluído (pelo admin). */
+  cadastroExcluido: boolean
+  recriarCadastro: () => Promise<void>
+  /** Exclui a própria conta (pede a senha de novo). */
+  excluirConta: (senha: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -44,6 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [player, setPlayer] = useState<Player | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [playerLoading, setPlayerLoading] = useState(true)
+  // true enquanto o app cria/exclui o cadastro: evita mostrar a tela de "cadastro excluído" nesse meio tempo
+  const [ocupado, setOcupado] = useState(false)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -90,12 +98,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function register({ nomeCompleto, email, senha, aceitaTermos }: RegisterInput) {
     if (!aceitaTermos) throw new Error('É preciso aceitar o termo de responsabilidade.')
-    const cred = await createUserWithEmailAndPassword(auth, email, senha)
-    await updateProfile(cred.user, { displayName: nomeCompleto })
+    setOcupado(true)
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, senha)
+      await updateProfile(cred.user, { displayName: nomeCompleto })
+      await criarCadastro(cred.user.uid, email, nomeCompleto)
+    } finally {
+      setOcupado(false)
+    }
+  }
 
+  /** Cria o cadastro inicial (jogador, inadimplente) e o cartão público; a carteira só se ainda não existir. */
+  async function criarCadastro(uid: string, email: string, nomeCompleto: string) {
     const now = Date.now()
     const newPlayer: Player = {
-      uid: cred.user.uid,
+      uid,
       nomeCompleto,
       email,
       endereco: '',
@@ -118,17 +135,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       criadoEm: now,
       atualizadoEm: now,
     }
-    await setDoc(doc(db, 'players', cred.user.uid), {
+    await setDoc(doc(db, 'players', uid), {
       ...newPlayer,
       aceiteTermosEm: serverTimestamp(),
       criadoEm: serverTimestamp(),
       atualizadoEm: serverTimestamp(),
     })
-    await setDoc(doc(db, 'wallets', cred.user.uid), {
-      creditos: 0,
-      ultimoJogoId: null,
-      atualizadoEm: serverTimestamp(),
-    })
+    if (!(await getDoc(doc(db, 'wallets', uid))).exists()) {
+      await setDoc(doc(db, 'wallets', uid), {
+        creditos: 0,
+        ultimoJogoId: null,
+        atualizadoEm: serverTimestamp(),
+      })
+    }
     await sincronizarCartaoPublico(newPlayer)
   }
 
@@ -144,6 +163,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth)
   }
 
+  async function recriarCadastro() {
+    if (!currentUser?.email) return
+    setOcupado(true)
+    try {
+      await criarCadastro(currentUser.uid, currentUser.email, currentUser.displayName || currentUser.email)
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  async function excluirConta(senha: string) {
+    if (!currentUser || !player) return
+    setOcupado(true)
+    try {
+      await excluirMinhaConta(currentUser, player, senha)
+    } finally {
+      setOcupado(false)
+    }
+  }
+
   const value: AuthContextValue = {
     currentUser,
     player,
@@ -152,6 +191,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     resetPassword,
     logout,
+    cadastroExcluido: !authLoading && !playerLoading && !ocupado && !!currentUser && !player,
+    recriarCadastro,
+    excluirConta,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

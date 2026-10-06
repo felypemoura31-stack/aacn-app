@@ -7,6 +7,7 @@ import { sincronizarCartaoPublico } from '../../lib/publicCard'
 import { rotuloDoCargo } from '../../lib/roles'
 import { SelosConquistas } from '../../components/SelosConquistas'
 import { ResetJogador } from '../../components/ResetJogador'
+import { ExcluirJogador } from '../../components/ExcluirJogador'
 import { formatarCep, formatarTelefone } from '../../lib/cadastro'
 import type { Player, PlayerStatus } from '../../types'
 
@@ -262,6 +263,14 @@ export function AdminPlayerDetail() {
           getDoc(doc(db, 'players', player.uid)).then((snap) => snap.exists() && setPlayer(snap.data() as Player))
         }
       />
+
+      {player.role !== 'admin' && (
+        <ExcluirJogador
+          uid={player.uid}
+          nome={player.nomeCompleto || 'este jogador'}
+          aoExcluir={() => navigate('/admin')}
+        />
+      )}
     </div>
   )
 }
