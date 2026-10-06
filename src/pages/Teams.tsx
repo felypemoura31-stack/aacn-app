@@ -38,8 +38,13 @@ export function Teams() {
     for (const j of membros) {
       if (j.timeId) m.set(j.timeId, (m.get(j.timeId) ?? 0) + 1)
     }
+    // o representante conta como membro do time que lidera, mesmo sem pedido aprovado
+    for (const t of teams ?? []) {
+      const rep = t.representanteUid ? membros.find((j) => j.uid === t.representanteUid) : null
+      if (rep && rep.timeId !== t.id) m.set(t.id, (m.get(t.id) ?? 0) + 1)
+    }
     return m
-  }, [membros])
+  }, [membros, teams])
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">

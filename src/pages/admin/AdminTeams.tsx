@@ -3,15 +3,18 @@ import {
   addDoc,
   collection,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  where,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { Link } from 'react-router-dom'
 import { TeamEditor } from '../../components/TeamEditor'
+import { atualizarTimeNoCartaoPublico } from '../../lib/publicCard'
 import { TeamLogo } from '../Teams'
 import type { Player, Team } from '../../types'
 
@@ -65,6 +68,29 @@ export function AdminTeams() {
       // Quem vira representante já entra como responsável, se o time ainda não tem um.
       ...(jogador && !team.responsavelNome ? { responsavelNome: jogador.nomeCompleto } : {}),
     })
+
+    // O representante também é membro do time que lidera (se ainda não é de outro time),
+    // sem precisar de aprovação: o pedido pendente dele, se houver, é aprovado.
+    if (jogador && (!jogador.timeId || (jogador.timeId === team.id && !jogador.timeAprovado))) {
+      await updateDoc(doc(db, 'players', jogador.uid), {
+        timeId: team.id,
+        timeNome: team.nome,
+        timeAprovado: true,
+        atualizadoEm: serverTimestamp(),
+      })
+      await atualizarTimeNoCartaoPublico(jogador.uid, team.nome, team.id)
+      const pendentes = await getDocs(
+        query(
+          collection(db, 'teamJoinRequests'),
+          where('jogadorUid', '==', jogador.uid),
+          where('timeId', '==', team.id),
+          where('status', '==', 'pendente'),
+        ),
+      )
+      for (const p of pendentes.docs) {
+        await updateDoc(doc(db, 'teamJoinRequests', p.id), { status: 'aprovado', resolvidoEm: serverTimestamp() })
+      }
+    }
   }
 
   return (

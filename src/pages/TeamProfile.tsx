@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { collection, onSnapshot, query, where } from 'firebase/firestore'
+import { collection, doc, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { TeamEditor } from '../components/TeamEditor'
@@ -30,6 +30,7 @@ export function TeamProfile() {
   const team = useTeam(id)
   const [membros, setMembros] = useState<JogadorResumo[] | null>(null)
   const [editando, setEditando] = useState(false)
+  const [rep, setRep] = useState<JogadorResumo | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -42,6 +43,13 @@ export function TeamProfile() {
       ),
     )
   }, [id])
+
+  useEffect(() => {
+    if (!team?.representanteUid) return setRep(null)
+    return onSnapshot(doc(db, 'publicCards', team.representanteUid), (snap) =>
+      setRep(snap.exists() ? ({ uid: snap.id, ...snap.data() } as JogadorResumo) : null),
+    )
+  }, [team?.representanteUid])
 
   if (!team) {
     return (
@@ -57,6 +65,9 @@ export function TeamProfile() {
   const ehAdmin = player?.role === 'admin'
   const ehRepresentante = !!currentUser && team.representanteUid === currentUser.uid
   const redesAtivas = REDES.filter((r) => team.redes?.[r.id])
+  // membros aprovados + o representante (que lidera o time mesmo sem pedido aprovado)
+  const lista =
+    membros === null ? null : rep && !membros.some((m) => m.uid === rep.uid) ? [rep, ...membros] : membros
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -86,7 +97,7 @@ export function TeamProfile() {
               </div>
               <div>
                 <dt className="text-[11px] uppercase tracking-widest text-mute/80">Membros</dt>
-                <dd className="text-ink">{membros?.length ?? '…'}</dd>
+                <dd className="text-ink">{lista?.length ?? '…'}</dd>
               </div>
             </dl>
 
@@ -119,10 +130,10 @@ export function TeamProfile() {
       </div>
 
       <h2 className="mb-3 mt-8 text-sm font-semibold text-ink">Membros</h2>
-      {membros === null && <p className="text-sm text-mute">Carregando...</p>}
-      {membros?.length === 0 && <p className="text-sm text-mute/70">Este time ainda não tem membros aprovados.</p>}
+      {lista === null && <p className="text-sm text-mute">Carregando...</p>}
+      {lista?.length === 0 && <p className="text-sm text-mute/70">Este time ainda não tem membros aprovados.</p>}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {membros?.map((m) => {
+        {lista?.map((m) => {
           const foto = m.fotoUrl
           return (
             <div key={m.uid} className="panel p-3 text-center">
