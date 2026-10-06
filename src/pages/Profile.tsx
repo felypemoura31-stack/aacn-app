@@ -13,6 +13,7 @@ import {
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { PhotoUploader } from '../components/PhotoUploader'
+import { CpfEmUsoError, trocarCpf } from '../lib/cpf'
 import { SelosConquistas } from '../components/SelosConquistas'
 import { ExcluirMinhaConta } from '../components/ExcluirMinhaConta'
 import { solicitarEntradaNoTime } from '../lib/teams'
@@ -99,6 +100,13 @@ export function Profile() {
     setSaving(true)
     setSavedMessage(null)
     try {
+      // o CPF é único: a troca vai antes, junto com o documento do CPF
+      try {
+        await trocarCpf(currentUser!.uid, player!.cpf ?? '', soDigitos(cpf))
+      } catch (e) {
+        if (e instanceof CpfEmUsoError) return setErroForm('Este CPF já está cadastrado em outra conta. Confira os números.')
+        throw e
+      }
       await updateDoc(doc(db, 'players', currentUser!.uid), {
         nomeCompleto,
         endereco,

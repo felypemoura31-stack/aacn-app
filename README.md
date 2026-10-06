@@ -235,7 +235,7 @@ médicas continuam opcionais. A regra é aplicada na tela (não nas regras do ba
 confere os dois dígitos verificadores (não aceita CPF inventado nem números repetidos) e guarda só os 11 dígitos;
 as regras do banco só aceitam esse formato. Ele fica no cadastro, que só o próprio jogador e o admin leem: **não** vai
 para o cartão público, para a cópia da tesouraria nem para a carteirinha impressa; sai na planilha de associados
-(admin). **Não** há trava de CPF repetido (duas contas com o mesmo CPF são aceitas). Jogadores antigos, sem CPF,
+(admin). **CPF repetido é bloqueado**: cada CPF vira um documento `cpfs/<11 dígitos>` (o id único impede o segundo cadastro). O documento é criado/trocado no mesmo lote do cadastro (as regras amarram: só vale se o cadastro passa a ter aquele CPF, e o antigo é liberado); só o dono e o admin leem o próprio documento (ninguém consegue "sondar" quais CPFs existem). Ao criar a conta com CPF já usado, a conta de acesso recém-criada é desfeita e o app avisa; em Meus dados e na ficha do admin aparece o aviso de CPF em uso. Excluir o jogador ou a própria conta libera o CPF. Limite: o aviso de "CPF em uso" vem da recusa do banco (não dá para consultar antes sem expor a lista). Jogadores antigos, sem CPF,
 são levados a Meus dados para informar. A versão do termo foi para `2026-10-v2` (o CPF entrou na lista de dados
 coletados), então todos aceitam o termo de novo.
 
@@ -473,7 +473,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (286 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (311 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

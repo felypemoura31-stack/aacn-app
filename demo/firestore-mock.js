@@ -11,6 +11,7 @@ const store = {
   config: {},
   payments: {},
   wallets: {},
+  cpfs: {},
   stats: {},
   conquistas: {},
   games: {},
@@ -94,6 +95,12 @@ const seedPlayers = [
     timeAprovado: false,
   }),
 ]
+
+// um CPF válido e diferente para cada jogador (o CPF é único)
+const CPFS_DEMO = ['10000791989', '10001583816', '10002375753', '10003167690', '10003959520', '10004751400', '10005543339', '10006335276']
+seedPlayers.forEach((p, i) => {
+  p.cpf = CPFS_DEMO[i % CPFS_DEMO.length]
+})
 
 for (const p of seedPlayers) {
   store.players[p.uid] = p
@@ -213,6 +220,7 @@ store.participations['g-1_u-jogador'] = {
   criadoEm: now - day,
 }
 
+for (const p of seedPlayers) if (p.cpf) store.cpfs[p.cpf] = { uid: p.uid }
 store.stats['u-jogador'] = { jogos: 5, noturnos: 1, mensalidades: 1 }
 store.stats['u-pedro'] = { jogos: 1, noturnos: 0, mensalidades: 3 }
 
@@ -362,6 +370,12 @@ export function writeBatch() {
     update: (ref, data) => (ops.push(['update', ref, data]), batch),
     delete: (ref) => (ops.push(['delete', ref]), batch),
     async commit() {
+      // imita a regra do banco: o documento do CPF só pode ser criado se ainda não existe
+      for (const [op, ref] of ops) {
+        if (op === 'set' && ref.col === 'cpfs' && store.cpfs?.[ref.id]) {
+          throw Object.assign(new Error('permission-denied'), { code: 'permission-denied' })
+        }
+      }
       for (const [op, ref, data, opts] of ops) {
         store[ref.col] ??= {}
         if (op === 'set') {

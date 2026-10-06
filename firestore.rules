@@ -133,6 +133,22 @@ service cloud.firestore {
       return d.get('cpf', '') == '' || (d.cpf is string && d.cpf.matches('^[0-9]{11}$'));
     }
 
+    // CPF único: cada CPF vira um documento cpfs/<11 dígitos> (id único = ninguém repete). Quem grava
+    // ou troca o CPF no cadastro precisa criar o documento do CPF novo no mesmo lote (e apagar o antigo).
+    function cpfPath(c) {
+      return /databases/$(database)/documents/cpfs/$(c);
+    }
+
+    function cpfTrocaOk(uid, antes, depois) {
+      return depois.get('cpf', '') == antes.get('cpf', '') || (
+        (depois.get('cpf', '') == '' ||
+          (!exists(cpfPath(depois.get('cpf', ''))) &&
+           existsAfter(cpfPath(depois.get('cpf', ''))) &&
+           getAfter(cpfPath(depois.get('cpf', ''))).data.uid == uid)) &&
+        (antes.get('cpf', '') == '' || !existsAfter(cpfPath(antes.get('cpf', ''))))
+      );
+    }
+
     function isRepresentativeOfTeam(timeId) {
       return isSignedIn() && timeId != null &&
         get(/databases/$(database)/documents/teams/$(timeId)).data.representanteUid == request.auth.uid;
@@ -147,6 +163,9 @@ service cloud.firestore {
       // Cadastro novo: sempre jogador, inadimplente, sem vencimento e sem time aprovado.
       allow create: if isOwner(uid) &&
         cpfFormatoValido(request.resource.data) &&
+        (request.resource.data.get('cpf', '') == '' ||
+          (existsAfter(cpfPath(request.resource.data.cpf)) &&
+           getAfter(cpfPath(request.resource.data.cpf)).data.uid == uid)) &&
         request.resource.data.role == 'player' &&
         request.resource.data.status == 'inadimplente' &&
         request.resource.data.vencimento == null &&
@@ -158,7 +177,8 @@ service cloud.firestore {
       // nem se aprovar em um time; isso é só do admin/representante.
       // Cargos: o app NUNCA cria nem remove um admin (isso é só no console do
       // Firebase). O admin delega os demais cargos, mas não mexe no de outro admin.
-      allow update: if cpfFormatoValido(request.resource.data) && ((isAdmin() && (
+      allow update: if cpfFormatoValido(request.resource.data) &&
+        cpfTrocaOk(uid, resource.data, request.resource.data) && ((isAdmin() && (
         request.resource.data.role == resource.data.role ||
         (request.resource.data.role != 'admin' && resource.data.role != 'admin')
       )) || (
@@ -189,6 +209,26 @@ service cloud.firestore {
       // Excluir: o próprio jogador (conta dele) ou o admin. Um admin (cargo definido só no console)
       // nunca é excluído pelo app.
       allow delete: if (isOwner(uid) || isAdmin()) && resource.data.role != 'admin';
+    }
+
+    // Um documento por CPF cadastrado (o id é o CPF, só 11 dígitos), com o dono. Serve só para impedir CPF
+    // repetido: não se lê a lista (só o dono e o admin leem o próprio documento), e não se edita.
+    // Cria o dono (ou o admin, ao corrigir um cadastro) e só se o cadastro, no mesmo lote, passa a ter esse CPF.
+    // Apaga o admin, ou o dono quando o cadastro deixa de ter esse CPF (troca de CPF ou exclusão da conta).
+    match /cpfs/{c} {
+      allow read: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() &&
+        c.matches('^[0-9]{11}$') &&
+        request.resource.data.keys().hasOnly(['uid', 'criadoEm']) &&
+        request.resource.data.uid is string &&
+        (isOwner(request.resource.data.uid) || isAdmin()) &&
+        getAfter(/databases/$(database)/documents/players/$(request.resource.data.uid)).data.get('cpf', '') == c;
+      allow update: if false;
+      allow delete: if isAdmin() || (
+        isSignedIn() && resource.data.uid == request.auth.uid &&
+        (!existsAfter(/databases/$(database)/documents/players/$(request.auth.uid)) ||
+          getAfter(/databases/$(database)/documents/players/$(request.auth.uid)).data.get('cpf', '') != c)
+      );
     }
 
     // Espelho público e mínimo (sem endereço/contato de emergência/condições

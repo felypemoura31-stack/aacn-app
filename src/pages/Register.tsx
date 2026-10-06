@@ -46,6 +46,8 @@ export function Register() {
       const code = (err as { code?: string }).code
       if (code === 'auth/email-already-in-use') {
         setError('Este e-mail já está cadastrado.')
+      } else if (code === 'cpf-em-uso') {
+        setError('Este CPF já está cadastrado em outra conta. Se for seu, entre com a conta que você já tem ou use "Esqueci minha senha".')
       } else {
         setError('Não foi possível criar sua conta. Tente novamente.')
       }

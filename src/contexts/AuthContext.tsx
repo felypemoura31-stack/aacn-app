@@ -7,6 +7,7 @@ import {
 } from 'react'
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
@@ -14,11 +15,12 @@ import {
   updateProfile,
   type User,
 } from 'firebase/auth'
-import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
+import { doc, getDoc, onSnapshot, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
 import { excluirMinhaConta } from '../lib/conta'
 import { cpfValido, soDigitos } from '../lib/cadastro'
+import { CpfEmUsoError, ehNegadoPeloBanco } from '../lib/cpf'
 import { contatoDesatualizado, contatoDoCadastro, type Contato } from '../lib/useContatos'
 import { VERSAO_TERMOS } from '../lib/termos'
 import type { Player } from '../types'
@@ -107,7 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, senha)
       await updateProfile(cred.user, { displayName: nomeCompleto })
-      await criarCadastro(cred.user.uid, email, nomeCompleto, soDigitos(cpf))
+      try {
+        await criarCadastro(cred.user.uid, email, nomeCompleto, soDigitos(cpf))
+      } catch (e) {
+        // sem cadastro não fica conta de acesso solta: desfaz a criação (e o CPF repetido pode tentar de novo)
+        await deleteUser(cred.user).catch(() => {})
+        throw e
+      }
     } finally {
       setOcupado(false)
     }
@@ -141,12 +149,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       criadoEm: now,
       atualizadoEm: now,
     }
-    await setDoc(doc(db, 'players', uid), {
+    // cadastro e documento do CPF vão juntos: se o CPF já é de outra conta, o banco recusa tudo
+    const lote = writeBatch(db)
+    lote.set(doc(db, 'players', uid), {
       ...newPlayer,
       aceiteTermosEm: serverTimestamp(),
       criadoEm: serverTimestamp(),
       atualizadoEm: serverTimestamp(),
     })
+    if (cpf) lote.set(doc(db, 'cpfs', cpf), { uid, criadoEm: serverTimestamp() })
+    try {
+      await lote.commit()
+    } catch (e) {
+      throw cpf && ehNegadoPeloBanco(e) ? new CpfEmUsoError() : e
+    }
     if (!(await getDoc(doc(db, 'wallets', uid))).exists()) {
       await setDoc(doc(db, 'wallets', uid), {
         creditos: 0,

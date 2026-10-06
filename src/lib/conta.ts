@@ -4,7 +4,7 @@ import {
   reauthenticateWithCredential,
   type User,
 } from 'firebase/auth'
-import { collection, doc, getDocs, query, updateDoc, where, writeBatch } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, updateDoc, where, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { cancelarMinhaInscricao } from './credits'
 import { apagar, apagarInscricoesDoJogador, docsDoJogador } from './reset'
@@ -43,6 +43,9 @@ export async function excluirJogador(uid: string, opcoes: { manterFinanceiro: bo
 
   // documentos de id = uid; o cadastro é o último, para o jogador não ficar "meio apagado"
   const lote = writeBatch(db)
+  const cadastro = await getDoc(doc(db, 'players', uid))
+  const cpf = cadastro.exists() ? ((cadastro.data() as Player).cpf ?? '') : ''
+  if (cpf) lote.delete(doc(db, 'cpfs', cpf)) // o CPF fica livre para um novo cadastro
   for (const col of ['stats', 'wallets', 'contatos', 'cobrancas', 'publicCards', 'players']) lote.delete(doc(db, col, uid))
   await lote.commit()
   feito.push('Cadastro e cartão público excluídos.')
@@ -80,6 +83,7 @@ export async function excluirMinhaConta(user: User, player: Player, senha: strin
   }
 
   const lote = writeBatch(db)
+  if (player.cpf) lote.delete(doc(db, 'cpfs', player.cpf)) // o CPF fica livre para um novo cadastro
   for (const col of ['contatos', 'publicCards', 'players']) lote.delete(doc(db, col, user.uid))
   await lote.commit()
 

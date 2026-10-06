@@ -7,6 +7,7 @@ import { sincronizarCartaoPublico } from '../../lib/publicCard'
 import { rotuloDoCargo } from '../../lib/roles'
 import { SelosConquistas } from '../../components/SelosConquistas'
 import { ResetJogador } from '../../components/ResetJogador'
+import { CpfEmUsoError, trocarCpf } from '../../lib/cpf'
 import { ExcluirJogador } from '../../components/ExcluirJogador'
 import { formatarCep, formatarCpf, formatarTelefone, soDigitos } from '../../lib/cadastro'
 import type { Player, PlayerStatus } from '../../types'
@@ -16,6 +17,7 @@ export function AdminPlayerDetail() {
   const navigate = useNavigate()
   const [player, setPlayer] = useState<Player | null>(null)
   const [loading, setLoading] = useState(true)
+  const [cpfInicial, setCpfInicial] = useState('')
   const [saving, setSaving] = useState(false)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
 
@@ -23,6 +25,7 @@ export function AdminPlayerDetail() {
     if (!uid) return
     getDoc(doc(db, 'players', uid)).then((snap) => {
       setPlayer(snap.exists() ? (snap.data() as Player) : null)
+      setCpfInicial(snap.exists() ? ((snap.data() as Player).cpf ?? '') : '')
       setLoading(false)
     })
   }, [uid])
@@ -47,6 +50,16 @@ export function AdminPlayerDetail() {
     try {
       // O cargo é gerenciado só em Admin: Cargos; não vai neste salvamento (evita sobrescrever com valor antigo).
       const { role: _role, cargoAlteradoPor: _por, cargoAlteradoEm: _em, ...resto } = player
+      // o CPF é único: a troca vai antes, junto com o documento do CPF
+      if ((player.cpf ?? '') !== cpfInicial) {
+        try {
+          await trocarCpf(uid, cpfInicial, player.cpf ?? '')
+          setCpfInicial(player.cpf ?? '')
+        } catch (e) {
+          if (e instanceof CpfEmUsoError) return setSavedMessage('Este CPF já está cadastrado em outra conta.')
+          throw e
+        }
+      }
       await updateDoc(doc(db, 'players', uid), {
         ...resto,
         atualizadoEm: serverTimestamp(),
