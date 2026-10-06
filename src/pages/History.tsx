@@ -3,7 +3,9 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { formatarCreditos, reais } from '../lib/credits'
-import { DIA_MS, formatarData, paraMillis } from '../lib/status'
+import { formatarData, paraMillis } from '../lib/status'
+import { GRUPOS } from '../lib/conquistas'
+import { useConquistas } from '../contexts/ConquistasContext'
 import type { Game, LedgerEntry, Participation, Payment } from '../types'
 
 function Kpi({ titulo, valor, detalhe }: { titulo: string; valor: string | number; detalhe?: string }) {
@@ -22,6 +24,7 @@ export function History() {
   const [games, setGames] = useState<Game[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [ledger, setLedger] = useState<LedgerEntry[]>([])
+  const { conquistas, contexto, bonusRecebido } = useConquistas()
 
   useEffect(() => {
     if (!player) return
@@ -57,17 +60,6 @@ export function History() {
   if (!player) return null
 
   const desde = paraMillis(player.criadoEm)
-  const dias = desde ? (Date.now() - desde) / DIA_MS : 0
-  const conquistas = [
-    { id: 'primeiro', titulo: 'Primeiro jogo', desc: 'Jogou o primeiro jogo', ok: dados.presentes >= 1 },
-    { id: 'campo', titulo: 'Em campo', desc: '5 jogos jogados', ok: dados.presentes >= 5 },
-    { id: 'veterano', titulo: 'Veterano', desc: '10 jogos jogados', ok: dados.presentes >= 10 },
-    { id: 'lenda', titulo: 'Lenda', desc: '25 jogos jogados', ok: dados.presentes >= 25 },
-    { id: 'assiduo', titulo: 'Assíduo', desc: 'Frequência de 80% ou mais (a partir de 5 jogos)', ok: dados.presentes + dados.faltas >= 5 && (dados.frequencia ?? 0) >= 80 },
-    { id: 'emdia', titulo: 'Em dia', desc: '3 ou mais mensalidades pagas', ok: dados.pagas >= 3 },
-    { id: 'ano', titulo: '1 ano de AACN', desc: 'Associado há um ano ou mais', ok: dias >= 365 },
-    { id: 'time', titulo: 'Parte de um time', desc: 'Membro aprovado de um time', ok: player.timeAprovado },
-  ]
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -81,16 +73,43 @@ export function History() {
         <Kpi titulo="Créditos usados" valor={formatarCreditos(dados.usados)} detalhe={`${formatarCreditos(dados.recebidos)} recebidos`} />
       </div>
 
-      <h2 className="mb-2 text-sm font-semibold text-ink">Conquistas</h2>
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {conquistas.map((c) => (
-          <div key={c.id} className={`panel p-3 text-center ${c.ok ? '' : 'opacity-40'}`} title={c.desc}>
-            <p className="text-2xl">{c.ok ? '★' : '☆'}</p>
-            <p className="mt-1 text-sm font-semibold text-ink">{c.titulo}</p>
-            <p className="mt-1 text-[11px] text-mute">{c.desc}</p>
-          </div>
-        ))}
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <h2 className="text-sm font-semibold text-ink">Conquistas</h2>
+        <p className="text-xs text-mute">
+          {conquistas.filter((c) => c.resgatada).length}/{conquistas.length} · bônus recebidos:{' '}
+          <span className="font-semibold text-gold">{formatarCreditos(bonusRecebido)} créditos</span>
+        </p>
       </div>
+      <p className="mb-3 text-xs text-mute/80">
+        Cada conquista paga um bônus único em créditos de jogo, que cai sozinho na sua carteira quando você a desbloqueia.
+      </p>
+      {GRUPOS.map((g) => (
+        <div key={g.id} className="mb-6">
+          <h3 className="mb-2 text-[11px] uppercase tracking-widest text-mute/80">{g.titulo}</h3>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {conquistas
+              .filter((c) => c.grupo === g.id)
+              .map((c) => {
+                const atual = c.campo ? contexto[c.campo] : null
+                return (
+                  <div key={c.id} className={`panel p-3 text-center ${c.atingida ? '' : 'opacity-50'}`} title={c.desc}>
+                    <p className="text-2xl">{c.atingida ? c.icone : '☆'}</p>
+                    <p className="mt-1 text-sm font-semibold text-ink">{c.titulo}</p>
+                    <p className="mt-1 text-[11px] text-mute">{c.desc}</p>
+                    {!c.atingida && c.meta != null && atual != null && (
+                      <p className="mt-1 text-[11px] text-mute/80">
+                        {Math.min(atual, c.meta)}/{c.meta}
+                      </p>
+                    )}
+                    <p className={`mt-2 text-xs font-semibold ${c.resgatada ? 'text-ok' : c.atingida ? 'text-gold' : 'text-mute'}`}>
+                      {c.resgatada ? `✓ +${formatarCreditos(c.bonus)} recebidos` : c.atingida ? 'Creditando...' : `+${formatarCreditos(c.bonus)} créditos`}
+                    </p>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+      ))}
 
       <h2 className="mb-2 text-sm font-semibold text-ink">Jogos que você jogou</h2>
       <div className="space-y-2">

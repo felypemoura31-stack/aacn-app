@@ -88,6 +88,46 @@ service cloud.firestore {
         (d.get('vagas', null) == null || (d.vagas is number && d.vagas >= 0 && d.vagas <= 1000));
     }
 
+    // ===== Conquistas =====
+    // Cada conquista paga um bônus único de créditos. Os valores e as metas abaixo precisam
+    // ser iguais aos de src/lib/conquistas.ts.
+    function bonusConquista(c) {
+      return {
+        'primeiro': 5, 'campo': 10, 'veterano': 15, 'lenda': 20, 'assiduo': 20,
+        'noturno1': 5, 'penumbra': 5, 'escuridao': 10, 'sombras': 20,
+        'emdia': 30, 'ano': 100, 'time': 5
+      }.get(c, 0);
+    }
+
+    function metaJogos(c) {
+      return { 'primeiro': 1, 'campo': 5, 'veterano': 10, 'lenda': 25, 'assiduo': 5 }.get(c, 1000000);
+    }
+
+    function metaNoturnos(c) {
+      return { 'noturno1': 1, 'penumbra': 5, 'escuridao': 10, 'sombras': 25 }.get(c, 1000000);
+    }
+
+    // Só vale se o jogador de fato atingiu a conquista: os contadores (stats) são gravados apenas
+    // pela organização/tesouraria no check-in e na confirmação de mensalidade. O "assíduo" depende
+    // também das faltas, que o banco não tem como contar: aqui só se exigem os 5 jogos.
+    function conquistaElegivel(uid, c) {
+      return (c == 'time' &&
+          get(/databases/$(database)/documents/players/$(uid)).data.timeAprovado == true) ||
+        (c == 'ano' &&
+          get(/databases/$(database)/documents/players/$(uid)).data.get('criadoEm', null) is timestamp &&
+          get(/databases/$(database)/documents/players/$(uid)).data.criadoEm + duration.value(365, 'd') <= request.time) ||
+        (c in ['primeiro', 'campo', 'veterano', 'lenda', 'assiduo'] &&
+          get(/databases/$(database)/documents/stats/$(uid)).data.get('jogos', 0) >= metaJogos(c)) ||
+        (c in ['noturno1', 'penumbra', 'escuridao', 'sombras'] &&
+          get(/databases/$(database)/documents/stats/$(uid)).data.get('noturnos', 0) >= metaNoturnos(c)) ||
+        (c == 'emdia' &&
+          get(/databases/$(database)/documents/stats/$(uid)).data.get('mensalidades', 0) >= 3);
+    }
+
+    function conquistaPath(uid, c) {
+      return /databases/$(database)/documents/conquistas/$(uid + '_' + c);
+    }
+
     function isRepresentativeOfTeam(timeId) {
       return isSignedIn() && timeId != null &&
         get(/databases/$(database)/documents/teams/$(timeId)).data.representanteUid == request.auth.uid;
@@ -216,9 +256,10 @@ service cloud.firestore {
 
     // Carteira de créditos de jogo (R$ 1 = 2 créditos). Quem credita é só o admin
     // ou o tesoureiro (ao confirmar um pagamento ou ajustar). O jogador NUNCA
-    // altera o próprio saldo. O organizador só consegue DEBITAR, e apenas no
-    // check-in: o saldo cai exatamente o custo do jogo e, no mesmo lote, a
-    // inscrição desse jogador passa de "ativa" para "presente" (getAfter).
+    // altera o próprio saldo, exceto para somar o bônus de uma conquista nova (o saldo sobe
+    // exatamente o bônus e, no mesmo lote, nasce o documento dessa conquista, que não se repete).
+    // O organizador só consegue DEBITAR, e apenas no check-in: o saldo cai exatamente o custo
+    // do jogo e, no mesmo lote, a inscrição desse jogador passa de "ativa" para "presente" (getAfter).
     match /wallets/{uid} {
       allow read: if isOwner(uid) || isFinanceiro() || isOrganizador();
 
@@ -240,9 +281,67 @@ service cloud.firestore {
         get(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + uid)).data.status == 'ativa' &&
         getAfter(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + uid)).data.status == 'presente' &&
         getAfter(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + uid)).data.pagoCom == 'creditos'
+      ) || (
+        isOwner(uid) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['creditos', 'ultimaConquistaId', 'atualizadoEm']) &&
+        request.resource.data.ultimaConquistaId is string &&
+        !exists(conquistaPath(uid, request.resource.data.ultimaConquistaId)) &&
+        existsAfter(conquistaPath(uid, request.resource.data.ultimaConquistaId)) &&
+        request.resource.data.creditos ==
+          resource.data.creditos + getAfter(conquistaPath(uid, request.resource.data.ultimaConquistaId)).data.creditos
       );
 
       allow delete: if false;
+    }
+
+    // Contadores de confiança (jogos, jogos noturnos, mensalidades) que sustentam as conquistas.
+    // O jogador só lê o seu. Admin e tesoureiro gravam (confirmação de mensalidade, inclusão e
+    // remoção de presença). O organizador só soma 1 jogo no check-in: no mesmo lote a inscrição
+    // passa de "ativa" para "presente"; o jogo noturno (a partir das 18:00) soma 1 noturno.
+    match /stats/{uid} {
+      function statsValidos(d) {
+        return d.keys().hasOnly(['jogos', 'noturnos', 'mensalidades', 'ultimoJogoId', 'atualizadoEm']) &&
+          d.get('jogos', 0) is number && d.get('jogos', 0) >= 0 &&
+          d.get('noturnos', 0) is number && d.get('noturnos', 0) >= 0 &&
+          d.get('mensalidades', 0) is number && d.get('mensalidades', 0) >= 0;
+      }
+
+      function checkinConta(u, j, n, m) {
+        return request.resource.data.keys().hasOnly(['jogos', 'noturnos', 'mensalidades', 'ultimoJogoId', 'atualizadoEm']) &&
+          request.resource.data.ultimoJogoId is string &&
+          request.resource.data.jogos == j + 1 &&
+          request.resource.data.get('noturnos', 0) == n + (
+            (get(/databases/$(database)/documents/games/$(request.resource.data.ultimoJogoId)).data.get('horario', null) is string &&
+             get(/databases/$(database)/documents/games/$(request.resource.data.ultimoJogoId)).data.get('horario', '') >= '18:00') ? 1 : 0) &&
+          request.resource.data.get('mensalidades', 0) == m &&
+          get(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + u)).data.status == 'ativa' &&
+          getAfter(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + u)).data.status == 'presente';
+      }
+
+      allow read: if isOwner(uid) || isFinanceiro();
+      allow create: if (isFinanceiro() && statsValidos(request.resource.data)) ||
+        (isOrganizador() && checkinConta(uid, 0, 0, 0));
+      allow update: if (isFinanceiro() && statsValidos(request.resource.data)) ||
+        (isOrganizador() && checkinConta(uid, resource.data.get('jogos', 0), resource.data.get('noturnos', 0), resource.data.get('mensalidades', 0)));
+      allow delete: if false;
+    }
+
+    // Conquistas resgatadas: um documento por jogador e conquista ("<uid>_<conquista>"), criado só
+    // pelo próprio jogador, só se ele atingiu a meta, com o valor exato do bônus, e nunca editado
+    // nem apagado (o bônus não se repete). Os logados leem (para mostrar os selos).
+    match /conquistas/{cid} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasOnly(['uid', 'conquista', 'creditos', 'criadoEm']) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.conquista is string &&
+        cid == request.auth.uid + '_' + request.resource.data.conquista &&
+        request.resource.data.creditos == bonusConquista(request.resource.data.conquista) &&
+        request.resource.data.creditos > 0 &&
+        request.resource.data.get('criadoEm', request.time) == request.time &&
+        conquistaElegivel(request.auth.uid, request.resource.data.conquista);
+      allow update, delete: if false;
     }
 
     // Jogos: admin, tesoureiro e organizador criam e editam (inclusive valores e vagas).
@@ -375,7 +474,8 @@ service cloud.firestore {
     // Extrato de créditos: livro-razão imutável (ninguém edita nem apaga, nem o
     // admin). Admin e tesoureiro criam qualquer lançamento. O organizador só
     // cria o lançamento do check-in, e só se o saldo do jogador caiu exatamente
-    // aquele valor no mesmo lote. O jogador não escreve no extrato.
+    // aquele valor no mesmo lote. O jogador só lança o bônus de uma conquista, amarrado
+    // ao documento da conquista e ao aumento exato do próprio saldo.
     match /ledger/{lid} {
       allow read: if isFinanceiro() || (isSignedIn() && resource.data.uid == request.auth.uid);
 
@@ -393,6 +493,22 @@ service cloud.firestore {
         request.resource.data.saldoApos ==
           getAfter(/databases/$(database)/documents/wallets/$(request.resource.data.uid)).data.creditos &&
         getAfter(/databases/$(database)/documents/participations/$(request.resource.data.refId + '_' + request.resource.data.uid)).data.status == 'presente'
+      ) || (
+        isSignedIn() &&
+        request.resource.data.keys().hasOnly(['uid', 'tipo', 'creditos', 'saldoApos', 'descricao', 'refId', 'porUid', 'porNome', 'criadoEm']) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.porUid == request.auth.uid &&
+        request.resource.data.tipo == 'bonus' &&
+        request.resource.data.refId is string &&
+        lid == 'bonus_' + request.auth.uid + '_' + request.resource.data.refId &&
+        existsAfter(conquistaPath(request.auth.uid, request.resource.data.refId)) &&
+        request.resource.data.creditos ==
+          getAfter(conquistaPath(request.auth.uid, request.resource.data.refId)).data.creditos &&
+        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.ultimaConquistaId == request.resource.data.refId &&
+        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos ==
+          get(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos + request.resource.data.creditos &&
+        request.resource.data.saldoApos ==
+          getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos
       );
 
       allow update, delete: if false;

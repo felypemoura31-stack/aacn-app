@@ -11,6 +11,8 @@ const store = {
   config: {},
   payments: {},
   wallets: {},
+  stats: {},
+  conquistas: {},
   games: {},
   participations: {},
   ledger: {},
@@ -180,6 +182,7 @@ store.games['g-1'] = {
 store.games['g-2'] = {
   nome: 'Operação Noturna',
   data: iso(21),
+  horario: '19:00',
   vagas: null,
   inscritos: 0,
   espera: 0,
@@ -208,6 +211,9 @@ store.participations['g-1_u-jogador'] = {
   status: 'ativa',
   criadoEm: now - day,
 }
+
+store.stats['u-jogador'] = { jogos: 5, noturnos: 1, mensalidades: 1 }
+store.stats['u-pedro'] = { jogos: 1, noturnos: 0, mensalidades: 3 }
 
 store.partners['pt-1'] = {
   nome: 'Mercado do Atirador',
@@ -320,9 +326,10 @@ export async function getDoc(ref) {
   return docSnap(ref.col, ref.id)
 }
 
-export async function setDoc(ref, data) {
+export async function setDoc(ref, data, opts) {
   store[ref.col] ??= {}
-  store[ref.col][ref.id] = resolveValues(data)
+  const atual = store[ref.col][ref.id]
+  store[ref.col][ref.id] = opts?.merge && atual ? { ...atual, ...resolveValues(data, atual) } : resolveValues(data)
   notify()
 }
 
@@ -348,13 +355,16 @@ export async function addDoc(colRef, data) {
 export function writeBatch() {
   const ops = []
   const batch = {
-    set: (ref, data) => (ops.push(['set', ref, data]), batch),
+    set: (ref, data, opts) => (ops.push(['set', ref, data, opts]), batch),
     update: (ref, data) => (ops.push(['update', ref, data]), batch),
     delete: (ref) => (ops.push(['delete', ref]), batch),
     async commit() {
-      for (const [op, ref, data] of ops) {
+      for (const [op, ref, data, opts] of ops) {
         store[ref.col] ??= {}
-        if (op === 'set') store[ref.col][ref.id] = resolveValues(data)
+        if (op === 'set') {
+          const atual = store[ref.col][ref.id]
+          store[ref.col][ref.id] = opts?.merge && atual ? { ...atual, ...resolveValues(data, atual) } : resolveValues(data)
+        }
         else if (op === 'update') {
           if (!store[ref.col][ref.id]) throw new Error('Documento não existe: ' + ref.col + '/' + ref.id)
           Object.assign(store[ref.col][ref.id], resolveValues(data, store[ref.col][ref.id]))

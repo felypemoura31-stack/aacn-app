@@ -7,7 +7,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../firebase'
-import { creditosDoPagamento, lancar, lerCarteira, reais, type Autor } from './credits'
+import { contar, creditosDoPagamento, lancar, lerCarteira, reais, type Autor } from './credits'
 import { novoTxid } from './pix'
 import { atualizarPagamentoNoCartaoPublico } from './publicCard'
 import { calcularNovoVencimento, formatarData } from './status'
@@ -72,6 +72,7 @@ export async function confirmarPagamento(
     autor: admin,
     existe: carteira.existe,
   })
+  contar(batch, payment.uid, { mensalidades: 1 })
   batch.update(doc(db, 'payments', payment.id), {
     status: 'confirmado',
     confirmadoEm: serverTimestamp(),

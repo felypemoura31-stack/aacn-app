@@ -2,25 +2,16 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
-import { STATUS_COLORS, STATUS_LABELS, formatarData, isEmDia, statusEfetivo } from '../lib/status'
-import type { PlayerStatus } from '../types'
-
-interface PublicCard {
-  nomeCompleto: string
-  fotoUrl: string | null
-  timeNome: string | null
-  status: PlayerStatus
-  vencimento: number | null
-}
+import { CartaoVerificado, type CartaoPublico } from '../components/CartaoVerificado'
 
 export function Verify() {
   const { uid } = useParams<{ uid: string }>()
-  const [card, setCard] = useState<PublicCard | null | undefined>(undefined)
+  const [card, setCard] = useState<CartaoPublico | null | undefined>(undefined)
 
   useEffect(() => {
     if (!uid) return
     getDoc(doc(db, 'publicCards', uid)).then((snap) => {
-      setCard(snap.exists() ? (snap.data() as PublicCard) : null)
+      setCard(snap.exists() ? (snap.data() as CartaoPublico) : null)
     })
   }, [uid])
 
@@ -42,38 +33,7 @@ export function Verify() {
           <p className="text-danger">Carteirinha não encontrada.</p>
         )}
 
-        {card && (
-          <>
-            <div className="mx-auto mb-3 h-28 w-24 overflow-hidden rounded border border-line bg-surface2">
-              {card.fotoUrl && (
-                <img
-                  src={card.fotoUrl}
-                  alt={card.nomeCompleto}
-                  className="h-full w-full object-cover"
-                />
-              )}
-            </div>
-            <p className="text-lg font-bold text-ink">
-              {card.nomeCompleto}
-            </p>
-            <p className="mb-3 text-sm text-mute">
-              Time: {card.timeNome ?? 'Nenhum'}
-            </p>
-            <span
-              className={`inline-block rounded-full border px-3 py-1 text-sm font-semibold ${STATUS_COLORS[statusEfetivo(card)]}`}
-            >
-              {STATUS_LABELS[statusEfetivo(card)]}
-            </span>
-            <p className="mt-4 text-xs text-mute/70">
-              {isEmDia(statusEfetivo(card))
-                ? 'Associado em dia — elegível a descontos de parceiros.'
-                : 'Associado não está em dia com a associação.'}
-            </p>
-            <p className="mt-1 text-xs text-mute/70">
-              Vencimento: {formatarData(card.vencimento)}
-            </p>
-          </>
-        )}
+        {card && <CartaoVerificado card={card} />}
       </div>
     </div>
   )

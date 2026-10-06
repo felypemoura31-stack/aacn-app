@@ -26,7 +26,10 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 py-6">
+      <Link to="/validar" className="btn-primary flex w-full max-w-sm items-center justify-center gap-2 py-3 text-center">
+        Sou parceiro: validar carteirinha
+      </Link>
       <form
         onSubmit={handleSubmit}
         className="chamfer w-full max-w-sm panel p-6"

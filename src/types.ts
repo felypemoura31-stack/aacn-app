@@ -99,6 +99,23 @@ export interface Payment {
 export interface Wallet {
   creditos: number
   ultimoJogoId: string | null
+  ultimaConquistaId?: string | null
+}
+
+/** Contadores de confiança (só a organização e a tesouraria incrementam): base das conquistas. */
+export interface Estatisticas {
+  jogos?: number
+  noturnos?: number
+  mensalidades?: number
+  ultimoJogoId?: string
+}
+
+/** Conquista já resgatada (um documento por jogador e conquista; cria o bônus de créditos). */
+export interface ConquistaResgatada {
+  uid: string
+  conquista: string
+  creditos: number
+  criadoEm: unknown
 }
 
 export type GameStatus = 'aberto' | 'encerrado'
@@ -141,7 +158,7 @@ export interface Participation {
   checkInPorNome?: string
 }
 
-export type LedgerTipo = 'pagamento' | 'jogo' | 'estorno' | 'ajuste'
+export type LedgerTipo = 'pagamento' | 'jogo' | 'estorno' | 'ajuste' | 'bonus'
 
 export interface LedgerEntry {
   id: string

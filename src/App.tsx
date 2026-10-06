@@ -28,10 +28,13 @@ import { History } from './pages/History'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { OfflineBanner } from './components/OfflineBanner'
 import { TeamProfile } from './pages/TeamProfile'
+import { Validar } from './pages/Validar'
+import { ConquistasProvider } from './contexts/ConquistasContext'
 
 function App() {
   return (
     <AuthProvider>
+      <ConquistasProvider>
       {import.meta.env.MODE === 'demo' && (
         <div className="no-print bg-gold/15 px-3 py-1 text-center text-xs text-gold">
           Modo demonstração (dados fictícios). Logins: admin@teste.com,
@@ -46,6 +49,7 @@ function App() {
         <Route path="/esqueci-senha" element={<ForgotPassword />} />
         <Route path="/termos" element={<Terms />} />
         <Route path="/verificar/:uid" element={<Verify />} />
+        <Route path="/validar" element={<Validar />} />
 
         <Route
           path="/"
@@ -218,6 +222,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </ConquistasProvider>
     </AuthProvider>
   )
 }

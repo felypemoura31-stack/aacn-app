@@ -17,6 +17,13 @@ import type {
 
 export const CREDITOS_POR_REAL = 2
 
+/** Jogo noturno: começa às 18:00 ou depois (o horário é "HH:MM"; sem horário, não é noturno). */
+export const HORA_NOTURNO = '18:00'
+
+export function ehNoturno(game: Pick<Game, 'horario'>) {
+  return typeof game.horario === 'string' && game.horario >= HORA_NOTURNO
+}
+
 export interface Autor {
   uid: string
   nome: string
@@ -51,6 +58,23 @@ export async function lerCarteira(uid: string) {
     saldo: snap.exists() ? (snap.data() as Wallet).creditos : 0,
     ultimoJogoId: snap.exists() ? (snap.data() as Wallet).ultimoJogoId : null,
   }
+}
+
+/**
+ * Contadores que alimentam as conquistas (jogos jogados, jogos noturnos, mensalidades pagas).
+ * Vão no mesmo lote do fato que contam (check-in, pagamento), para nunca ficarem fora de sincronia.
+ */
+export function contar(
+  batch: WriteBatch,
+  uid: string,
+  d: { jogos?: number; noturnos?: number; mensalidades?: number; ultimoJogoId?: string },
+) {
+  const dados: Record<string, unknown> = { atualizadoEm: serverTimestamp() }
+  if (d.jogos !== undefined) dados.jogos = increment(d.jogos)
+  if (d.noturnos !== undefined) dados.noturnos = increment(d.noturnos)
+  if (d.mensalidades !== undefined) dados.mensalidades = increment(d.mensalidades)
+  if (d.ultimoJogoId !== undefined) dados.ultimoJogoId = d.ultimoJogoId
+  batch.set(doc(db, 'stats', uid), dados, { merge: true })
 }
 
 /** Grava a mudança de saldo e o lançamento no extrato, sempre juntos no mesmo lote. */
@@ -174,6 +198,7 @@ export async function fazerCheckIn(
     checkInPor: autor.uid,
     checkInPorNome: autor.nome,
   })
+  contar(batch, p.uid, { jogos: 1, noturnos: ehNoturno(game) ? 1 : 0, ultimoJogoId: game.id })
   await batch.commit()
 }
 
@@ -219,12 +244,21 @@ export async function adminAdicionarParticipante(
     checkInPorNome: admin.nome,
     criadoEm: serverTimestamp(),
   })
+  // quem já estava presente (reinclusão) não conta de novo
+  if (statusAtual !== 'presente') {
+    contar(batch, jogador.uid, { jogos: 1, noturnos: ehNoturno(game) ? 1 : 0, ultimoJogoId: game.id })
+  }
   await batch.commit()
 }
 
 /** Admin/tesoureiro cancela a inscrição (fica no histórico como "removida") e estorna o que foi debitado. */
 export async function adminRemoverParticipante(p: Participation, admin: Autor) {
   const batch = writeBatch(db)
+  if (p.status === 'presente') {
+    // a presença deixa de contar (os bônus já resgatados continuam com o jogador)
+    const jogo = await getDoc(doc(db, 'games', p.gameId))
+    contar(batch, p.uid, { jogos: -1, noturnos: jogo.exists() && ehNoturno(jogo.data() as Game) ? -1 : 0 })
+  }
   if (p.creditosDebitados > 0) {
     const c = await lerCarteira(p.uid)
     lancar(batch, {

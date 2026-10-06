@@ -9,6 +9,7 @@ const ROTULO: Record<LedgerTipo, string> = {
   jogo: 'Jogo',
   estorno: 'Estorno',
   ajuste: 'Ajuste',
+  bonus: 'Bônus',
 }
 
 export function ExtratoCreditos({ uid }: { uid: string }) {

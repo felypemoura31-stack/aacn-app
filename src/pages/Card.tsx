@@ -2,6 +2,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { CarteirinhaImpressao } from '../components/CarteirinhaImpressao'
 import { PagamentoPix } from '../components/PagamentoPix'
 import { SaldoCreditos } from '../components/SaldoCreditos'
+import { SelosConquistas } from '../components/SelosConquistas'
 import { AvisosPanel } from '../components/AvisosPanel'
 import { AvisoMensalidade } from '../components/AvisoMensalidade'
 import { useTeam } from '../lib/useTeam'
@@ -47,6 +48,7 @@ export function Card() {
         A carteirinha não traz a situação da mensalidade, porque ela muda. Quem lê o QR vê a situação atual.
       </p>
 
+      <SelosConquistas uid={player.uid} />
       <SaldoCreditos uid={player.uid} />
       <PagamentoPix player={player} />
     </div>

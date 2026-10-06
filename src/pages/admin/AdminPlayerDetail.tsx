@@ -5,6 +5,7 @@ import { db } from '../../firebase'
 import { DIA_MS, CICLO_DIAS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import { sincronizarCartaoPublico } from '../../lib/publicCard'
 import { rotuloDoCargo } from '../../lib/roles'
+import { SelosConquistas } from '../../components/SelosConquistas'
 import { formatarCep, formatarTelefone } from '../../lib/cadastro'
 import type { Player, PlayerStatus } from '../../types'
 
@@ -82,6 +83,8 @@ export function AdminPlayerDetail() {
       <h1 className="mb-6 mt-2 text-xl font-bold text-ink">
         {player.nomeCompleto || '(sem nome)'}
       </h1>
+
+      <SelosConquistas uid={player.uid} className="mb-6" />
 
       <form
         onSubmit={handleSubmit}

@@ -13,6 +13,7 @@ import {
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { PhotoUploader } from '../components/PhotoUploader'
+import { SelosConquistas } from '../components/SelosConquistas'
 import { solicitarEntradaNoTime } from '../lib/teams'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
 import { cepValido, dataNascimentoValida, ehMenor, faltasDoCadastro, formatarCep, formatarTelefone, telefoneValido } from '../lib/cadastro'
@@ -145,6 +146,8 @@ export function Profile() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="mb-6 text-xl font-bold text-ink">Meus dados</h1>
+
+      <SelosConquistas uid={player.uid} className="mb-6" />
 
       {faltas.length > 0 && (
         <div className="mb-6 rounded-sm border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">

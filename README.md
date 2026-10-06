@@ -125,6 +125,11 @@ necessidade de login) que mostra nome, foto, time e status de pagamento —
 essa é a página que o comerciante parceiro abre ao escanear o código para
 validar se o associado está em dia e pode receber desconto.
 
+**Validador do parceiro (`/validar`, sem login):** na tela inicial (login) há o botão
+**"Sou parceiro: validar carteirinha"**. Ele abre a câmera, lê o QR da carteirinha do cliente e mostra na hora
+foto, nome, time e se está **adimplente** (ou inadimplente/inativo) e o vencimento. Há também um campo para colar
+o link/código caso a câmera não abra. A consulta usa só o cartão público (`publicCards`), sem dados pessoais.
+
 ## Mensalidade por Pix
 
 - O admin cadastra a chave Pix, o nome/cidade do recebedor e o valor (ex: R$ 5,00)
@@ -285,12 +290,44 @@ injeção quando abertas no Excel.
 - **Aba Parceiros** (todos os logados): lista com busca e filtro por categoria e aviso se a mensalidade do
   associado está em dia (benefício vale para quem está em dia; o parceiro confere lendo o QR).
 
-## Meu histórico
+## Meu histórico e conquistas
 
 **Histórico** (todos): jogos jogados, frequência (presenças ÷ presenças + faltas em jogos já passados),
-mensalidades pagas e total, créditos recebidos/usados e **conquistas** (primeiro jogo, 5/10/25 jogos,
-assíduo, em dia, 1 ano de AACN, parte de um time). Ranking entre associados não foi feito (precisaria de
-contadores públicos de presença).
+mensalidades pagas e total, créditos recebidos/usados e as **conquistas**. Ranking entre associados não foi
+feito (precisaria de contadores públicos de presença).
+
+**Conquistas com bônus de créditos.** Cada conquista paga um bônus **único** em créditos de jogo, que cai sozinho
+na carteira (e aparece no extrato como "Bônus") assim que ela é atingida:
+
+| Conquista | Meta | Bônus |
+| --- | --- | --- |
+| Primeiro jogo | 1 jogo | 5 |
+| Em campo | 5 jogos | 10 |
+| Veterano | 10 jogos | 15 |
+| Lenda | 25 jogos | 20 |
+| Assíduo | frequência ≥ 80% (a partir de 5 jogos) | 20 |
+| Em dia | 3 mensalidades pagas | 30 |
+| 1 ano de AACN | 1 ano de associado | 100 |
+| Parte de um time | membro aprovado de um time | 5 |
+| Primeiro noturno | 1 jogo noturno | 5 |
+| Na penumbra | 5 jogos noturnos | 5 |
+| Na escuridão | 10 jogos noturnos | 10 |
+| Senhor das sombras | 25 jogos noturnos | 20 |
+
+Jogo **noturno** = jogo com horário de início **às 18:00 ou depois** (jogo sem horário não conta como noturno).
+Conta como "jogo jogado" quem teve o **check-in** feito.
+
+Os selos das conquistas aparecem em **Minha carteirinha**, em **Meus dados** e na ficha do jogador (admin).
+
+Como é seguro sem servidor: o app só soma os bônus se as regras do banco confirmarem. Os contadores
+(`stats/{uid}`: jogos, noturnos, mensalidades) só são incrementados pela organização/tesouraria, no mesmo lote do
+check-in e da confirmação de mensalidade (o organizador só pode somar 1 jogo por check-in, com a presença
+passando de "ativa" para "presente"). O resgate cria o documento `conquistas/{uid}_{id}` (um por jogador e conquista,
+nunca editado nem apagado), soma exatamente o bônus na carteira e lança no extrato, tudo em um lote que as regras
+amarram. Os valores e metas estão em `src/lib/conquistas.ts` **e** em `firestore.rules` (mude nos dois).
+Se a diretoria remover uma presença, o contador desce, mas bônus já pagos continuam com o jogador.
+Limite conhecido: o banco não consegue contar **faltas**, então no **Assíduo** ele confere só os 5 jogos; o
+percentual de 80% é calculado no app.
 
 ## Barra de navegação
 
