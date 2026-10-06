@@ -1,5 +1,5 @@
 import QRCode from 'react-qr-code'
-import { REGRAS_VERSO, TITULO_VERSO } from '../lib/regulamento'
+import { ITENS_LEGAIS, NOTA_LEGAL, REGRAS_CONDUTA, TITULO_CONDUTA, TITULO_LEGAL } from '../lib/regulamento'
 import { formatarData, paraMillis } from '../lib/status'
 import type { Player } from '../types'
 
@@ -85,12 +85,22 @@ export function CarteirinhaImpressao({ player, verifyUrl, timeNome, timeLogoUrl 
         </div>
 
         <div className="cc-face cc-verso">
-          <p className="cc-titulo-verso">{TITULO_VERSO}</p>
-          <ol className="cc-regras">
-            {REGRAS_VERSO.map((r) => (
+          <p className="cc-titulo-verso">{TITULO_LEGAL}</p>
+          <ul className="cc-legal">
+            {ITENS_LEGAIS.map((i) => (
+              <li key={i.ref}>
+                {i.texto} <b>{i.ref}</b>
+              </li>
+            ))}
+          </ul>
+          <p className="cc-nota-legal">{NOTA_LEGAL}</p>
+
+          <p className="cc-titulo-verso cc-titulo-conduta">{TITULO_CONDUTA}</p>
+          <ul className="cc-regras">
+            {REGRAS_CONDUTA.map((r) => (
               <li key={r}>{r}</li>
             ))}
-          </ol>
+          </ul>
         </div>
       </div>
     </div>

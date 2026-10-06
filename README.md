@@ -194,10 +194,24 @@ O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
 - **Frente:** logo da AACN, foto 3x4, nome, nascimento, **membro desde** (data do cadastro, que é a
   data de emissão), time (com a logo do time, se houver) e o QR Code. Não há validade na carteirinha, e
   a situação da mensalidade **não** é impressa (muda com o tempo); quem lê o QR vê a situação atual.
-- **Verso:** normas de segurança e conduta do airsoft. O texto está em
-  `src/lib/regulamento.ts`. **É um texto geral: a diretoria deve revisar e trocar pelas regras e
-  limites oficiais da AACN (potência/FPS, idade mínima etc.) e conferir as referências legais com um
-  advogado.** O texto precisa caber no cartão (a 5 pt, cerca de 12 itens curtos).
+- **Verso:** "Base legal: airsoft (armas de pressão)", para esclarecimento em caso de abordagem, com a
+  norma e o artigo de cada ponto, e abaixo a conduta do associado. O texto está em
+   e foi conferido em 10/2026 contra:
+  - Portaria nº 02-COLOG/2010 (Comando Logístico do Exército), art. 2º, II e parágrafo único
+    (airsoft é arma de pressão), art. 13, §§2º e 3º (comprovante de origem; não conduzir
+    ostensivamente) e art. 18 (ponta do cano laranja/vermelha);
+  - Decreto nº 11.615/2023, art. 11, §1º, na redação do Decreto nº 12.345/2024 (uso permitido de armas
+    de pressão até 6,35 mm). Texto oficial:
+    https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/decreto/d12345.htm;
+  - Portaria nº 56-COLOG/2017, art. 2º (pessoa física dispensada de registro para usar armas de
+    pressão). Texto no site do Exército (SGEx):
+    http://www.sgex.eb.mil.br/sg8/006_outras_publicacoes/07_publicacoes_diversas/06_comando_logistico/port_n_056_colog_05jun2017.html.
+  **Cuidados:** a Portaria 02/2010 foi lida em bases de legislação (não no Diário Oficial) e cita o
+  R-105, que já foi substituído; não consegui abrir a página do Exército (DFPC) para confirmar se
+  segue integralmente vigente. A carteirinha é um esclarecimento, **não** substitui documento oficial
+  nem garante a liberação numa abordagem. A diretoria deve confirmar com advogado ou com o Exército
+  (DFPC) antes de imprimir e revisar quando houver norma nova. O texto precisa caber no cartão
+  (a ~5 pt, 5 pontos legais e 6 regras curtas).
 
 ## Cadastro obrigatório
 
