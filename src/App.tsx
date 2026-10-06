@@ -16,6 +16,7 @@ import { AdminGames } from './pages/admin/AdminGames'
 import { Games } from './pages/Games'
 import { AdminCredits } from './pages/admin/AdminCredits'
 import { AdminRoles } from './pages/admin/AdminRoles'
+import { AdminCheckin } from './pages/admin/AdminCheckin'
 
 function App() {
   return (
@@ -123,6 +124,15 @@ function App() {
             <AdminRoute>
               <AdminRoles />
             </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/checkin"
+          element={
+            <JogosRoute>
+              <AdminCheckin />
+            </JogosRoute>
           }
         />
 

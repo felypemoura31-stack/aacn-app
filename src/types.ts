@@ -93,9 +93,10 @@ export interface Game {
   criadoEm: number
 }
 
-export type PagoCom = 'creditos' | 'dinheiro'
+export type PagoCom = 'creditos' | 'dinheiro' | 'pendente'
 
-export type ParticipationStatus = 'ativa' | 'removida'
+// ativa = inscrito (débito só no check-in); presente = check-in feito; removida = cancelada pela diretoria
+export type ParticipationStatus = 'ativa' | 'presente' | 'removida'
 
 export interface Participation {
   id: string
@@ -107,6 +108,9 @@ export interface Participation {
   creditosDebitados: number
   status: ParticipationStatus
   criadoEm: number
+  presenteEm?: number
+  checkInPor?: string
+  checkInPorNome?: string
 }
 
 export type LedgerTipo = 'pagamento' | 'jogo' | 'estorno' | 'ajuste'

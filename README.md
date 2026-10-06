@@ -149,11 +149,14 @@ para receber o aviso de pagamento.
 - O admin cria jogos em **Admin: Jogos** com o valor em dinheiro (ex: R$ 10) e o custo em
   créditos (padrão: o mesmo número, ex: 10 créditos). Assim, R$ 10 pagos na mensalidade
   (20 créditos) valem 2 jogos.
-- O jogador vê o saldo na carteirinha e em **Jogos**, onde se inscreve gastando créditos.
-  Sem saldo, o app avisa quanto falta e que dá para pagar em dinheiro no local.
-- O admin pode inscrever alguém (debitando créditos ou marcando "pagou em dinheiro") e
-  cancelar inscrições; ao cancelar, os créditos debitados voltam (estorno) e a inscrição fica
-  no histórico como "cancelada" (o jogador não consegue se reinscrever sozinho nesse jogo).
+- **Inscrição e cobrança em dois momentos.** O jogador se inscreve em **Jogos** sem pagar nada
+  (e pode cancelar enquanto não houver check-in). O débito só acontece **no dia do jogo**,
+  quando a organização lê o QR da carteirinha dele (veja "Check-in por QR" abaixo). Se o saldo
+  não cobre o jogo, o app avisa quanto falta e que dá para pagar em dinheiro no local.
+- Admin/tesoureiro também podem inscrever alguém na hora (já com check-in) em **Gerenciar
+  jogos → Inscritos**, e cancelar inscrições; ao cancelar uma presença paga com créditos, eles
+  voltam (estorno) e a inscrição fica no histórico como "cancelada" (o jogador não consegue se
+  reinscrever sozinho nesse jogo).
 - **Extrato detalhado:** todo movimento de saldo (pagamento, inscrição, estorno, ajuste) vira
   uma linha com data, descrição, quem fez, valor e saldo após. O jogador vê o dele em **Jogos**;
   o admin vê o de qualquer um em **Admin: Créditos**. O extrato é imutável (nem o admin edita
@@ -162,10 +165,9 @@ para receber o aviso de pagamento.
   informando obrigatoriamente o motivo, que fica no extrato. Não deixa o saldo ficar negativo.
 - Pagamento confirmado, crédito e mudança de vencimento são gravados juntos; confirmar duas
   vezes o mesmo pagamento é bloqueado.
-- Segurança (`firestore.rules`): o jogador não consegue aumentar o próprio saldo. Só consegue
-  gastar exatamente o custo de um jogo aberto, junto com a própria inscrição. Essas regras
-  ainda não foram testadas com o emulador do Firebase (exige Java); teste no "Rules Playground"
-  do console assim que o projeto existir.
+- Segurança (`firestore.rules`): o jogador não altera o próprio saldo nem o extrato. Só
+  admin e tesoureiro creditam/ajustam. O organizador só consegue debitar, no check-in: o saldo
+  cai exatamente o custo do jogo e, no mesmo lote, a inscrição passa a "presente".
 - Créditos não expiram.
 
 ## Cargo de tesoureiro
@@ -183,23 +185,41 @@ O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
 - Tudo isso é imposto nas regras do Firestore (`firestore.rules`), não só escondido na tela.
  
 
+## Check-in por QR (dia do jogo)
+
+Disponível em **Gestão → Check-in por QR** para admin, tesoureiro e organizador.
+
+1. Escolha o jogo (por padrão vem o mais próximo de hoje).
+2. Toque em "Ligar câmera e ler QR" e aponte para o QR da carteirinha do jogador (no celular
+   dele ou impressa). Se a câmera não funcionar, cole o link/código no campo ao lado ou use
+   "Fazer check-in" na lista de inscritos.
+3. Aparecem foto, nome, situação da mensalidade e saldo. Confira a foto e o nome com a pessoa e
+   toque em **Debitar X créditos e confirmar presença** (ou **Recebi em dinheiro**, quando o saldo
+   não cobre). O débito, o extrato e a presença são gravados juntos, uma única vez por jogador.
+4. A lista de inscritos mostra quem já está presente e como pagou.
+
+O QR da carteirinha é público (é o mesmo link de verificação dos parceiros). Por isso o app
+mostra a foto e o nome para conferência visual antes de cobrar. A câmera exige HTTPS (o site
+publicado já é).
+
 ## Cargo de organizador
 
 O admin delega em **Gestão → Cargos**.
 
-- **Faz:** criar jogos, editar nome/data e os valores cobrados (em dinheiro e em créditos) e
-  abrir/encerrar inscrições. Vê quem está inscrito em cada jogo.
-- **Não faz:** inscrever ou cancelar jogadores (isso mexe em créditos/dinheiro, é do tesoureiro),
-  ver pagamentos, créditos e extrato, alterar a chave Pix, ver dados pessoais, apagar jogos
-  nem alterar cargos.
+- **Faz:** criar jogos, editar nome/data e os valores cobrados (em dinheiro e em créditos),
+  abrir/encerrar inscrições, ver quem está inscrito e fazer o **check-in por QR** no dia do jogo
+  (marca presença e debita os créditos, ou registra que recebeu em dinheiro). Vê o saldo da pessoa
+  no momento do check-in.
+- **Não faz:** inscrever ou cancelar jogadores, ajustar saldo, confirmar pagamentos Pix, ver o
+  extrato, alterar a chave Pix, ver dados pessoais, apagar jogos nem alterar cargos.
 - Alterar o valor de um jogo vale para as próximas inscrições; quem já se inscreveu mantém o que
   foi cobrado.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (28 casos: o que
-organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo gastar créditos
-sem inflar o saldo). O script é descartável e não está no repositório; refaça-o ao mudar
+As regras foram verificadas contra o Firebase com a API de testes de regras (54 casos: o que
+organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
+proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.
 
 ## Ícones do app

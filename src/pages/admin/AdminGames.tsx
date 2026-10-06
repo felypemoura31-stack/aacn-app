@@ -17,7 +17,7 @@ import {
   formatarCreditos,
   reais,
 } from '../../lib/credits'
-import type { Game, JogadorResumo, PagoCom, Participation } from '../../types'
+import type { Game, JogadorResumo, Participation } from '../../types'
 
 export function AdminGames() {
   const { player: admin } = useAuth()
@@ -39,7 +39,7 @@ export function AdminGames() {
   const [eCusto, setECusto] = useState(0)
 
   const [novoUid, setNovoUid] = useState('')
-  const [novoModo, setNovoModo] = useState<PagoCom>('creditos')
+  const [novoModo, setNovoModo] = useState<'creditos' | 'dinheiro'>('creditos')
 
   useEffect(() => {
     const unsubG = onSnapshot(query(collection(db, 'games'), orderBy('data', 'desc')), (snap) =>
@@ -185,7 +185,7 @@ export function AdminGames() {
                   <p className="font-semibold text-ink">{g.nome}</p>
                   <p className="text-xs text-mute">
                     {new Date(g.data + 'T12:00').toLocaleDateString('pt-BR')} · {reais(g.valor)} /{' '}
-                    {formatarCreditos(g.custoCreditos)} créditos · {lista.length} inscritos ·{' '}
+                    {formatarCreditos(g.custoCreditos)} créditos · {lista.length} inscritos ({lista.filter((x) => x.status === 'presente').length} presentes) ·{' '}
                     {g.status === 'aberto' ? 'inscrições abertas' : 'encerrado'}
                   </p>
                 </div>
@@ -251,9 +251,11 @@ export function AdminGames() {
                     <div key={p.id} className="flex items-center justify-between text-sm text-mute">
                       <span className="text-ink">{p.jogadorNome}</span>
                       <span className="flex items-center gap-3">
-                        {p.pagoCom === 'creditos'
-                          ? `${formatarCreditos(p.creditosDebitados)} créditos`
-                          : 'dinheiro'}
+                        {p.status === 'ativa'
+                          ? 'aguardando check-in'
+                          : p.pagoCom === 'creditos'
+                            ? `presente · ${formatarCreditos(p.creditosDebitados)} créditos`
+                            : 'presente · dinheiro'}
                         {gerenciaInscricoes && (
                           <button onClick={() => remover(p)} className="text-xs text-danger hover:underline">
                             Remover
@@ -267,7 +269,7 @@ export function AdminGames() {
                   {gerenciaInscricoes && (
                   <div className="flex flex-wrap gap-2 pt-2">
                     <select value={novoUid} onChange={(e) => setNovoUid(e.target.value)} className="input w-auto flex-1">
-                      <option value="">Adicionar jogador...</option>
+                      <option value="">Inscrever na hora (com check-in)...</option>
                       {players
                         .filter((p) => !lista.some((x) => x.uid === p.uid))
                         .map((p) => (
@@ -276,9 +278,9 @@ export function AdminGames() {
                           </option>
                         ))}
                     </select>
-                    <select value={novoModo} onChange={(e) => setNovoModo(e.target.value as PagoCom)} className="input w-auto">
-                      <option value="creditos">Debitar créditos</option>
-                      <option value="dinheiro">Pagou em dinheiro</option>
+                    <select value={novoModo} onChange={(e) => setNovoModo(e.target.value as 'creditos' | 'dinheiro')} className="input w-auto">
+                      <option value="creditos">Check-in debitando créditos</option>
+                      <option value="dinheiro">Check-in pago em dinheiro</option>
                     </select>
                     <button disabled={!novoUid} onClick={() => adicionar(g)} className="btn-primary">
                       Adicionar

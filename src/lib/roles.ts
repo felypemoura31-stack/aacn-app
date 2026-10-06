@@ -21,7 +21,7 @@ export const CARGOS_DELEGAVEIS: CargoInfo[] = [
   {
     value: 'organizador',
     label: 'Organizador',
-    descricao: 'Cria jogos e define os valores cobrados (não mexe em pagamentos nem créditos)',
+    descricao: 'Cria jogos, define os valores e faz o check-in por QR no dia (debita créditos e marca presença)',
   },
 ]
 

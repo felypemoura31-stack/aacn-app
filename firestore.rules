@@ -27,8 +27,9 @@ service cloud.firestore {
       return isAdmin() || isTesoureiro();
     }
 
-    // Organizador: cria/edita jogos e os valores cobrados. NÃO mexe em créditos,
-    // pagamentos nem inscrições (só enxerga quem está inscrito).
+    // Organizador: cria/edita jogos e valores e faz o check-in por QR (marca presença
+    // e debita os créditos do jogo). NÃO ajusta saldo, não confirma pagamentos e não
+    // lê extrato nem dados pessoais.
     function isOrganizador() {
       return isSignedIn() &&
         get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'organizador';
@@ -153,12 +154,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Carteira de créditos de jogo (R$ 1 = 2 créditos). Quem credita é só o
-    // admin (ao confirmar um pagamento). O jogador só consegue GASTAR: o saldo
-    // só pode diminuir exatamente o custo de um jogo aberto, e no mesmo lote
-    // precisa nascer a inscrição dele nesse jogo (verificado com getAfter).
+    // Carteira de créditos de jogo (R$ 1 = 2 créditos). Quem credita é só o admin
+    // ou o tesoureiro (ao confirmar um pagamento ou ajustar). O jogador NUNCA
+    // altera o próprio saldo. O organizador só consegue DEBITAR, e apenas no
+    // check-in: o saldo cai exatamente o custo do jogo e, no mesmo lote, a
+    // inscrição desse jogador passa de "ativa" para "presente" (getAfter).
     match /wallets/{uid} {
-      allow read: if isOwner(uid) || isFinanceiro();
+      allow read: if isOwner(uid) || isFinanceiro() || isOrganizador();
 
       allow create: if isFinanceiro() || (
         isOwner(uid) &&
@@ -167,23 +169,23 @@ service cloud.firestore {
       );
 
       allow update: if isFinanceiro() || (
-        isOwner(uid) &&
+        isOrganizador() &&
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['creditos', 'ultimoJogoId', 'atualizadoEm']) &&
         request.resource.data.ultimoJogoId is string &&
-        get(/databases/$(database)/documents/games/$(request.resource.data.ultimoJogoId)).data.status == 'aberto' &&
         request.resource.data.creditos ==
           resource.data.creditos -
           get(/databases/$(database)/documents/games/$(request.resource.data.ultimoJogoId)).data.custoCreditos &&
         request.resource.data.creditos >= 0 &&
-        !exists(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + uid)) &&
-        existsAfter(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + uid))
+        get(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + uid)).data.status == 'ativa' &&
+        getAfter(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + uid)).data.status == 'presente' &&
+        getAfter(/databases/$(database)/documents/participations/$(request.resource.data.ultimoJogoId + '_' + uid)).data.pagoCom == 'creditos'
       );
 
       allow delete: if false;
     }
 
-    // Jogos criados pelo admin; todos os associados logados podem ver.
+    // Jogos: admin, tesoureiro e organizador criam e editam (inclusive valores).
     match /games/{gameId} {
       allow read: if isSignedIn();
       allow create, update: if podeGerirJogos();
@@ -191,50 +193,75 @@ service cloud.firestore {
     }
 
     // Inscrições em jogos. O id é sempre "<jogo>_<uid>" (uma por jogador).
-    // O jogador só cria a própria inscrição paga com créditos, e só se o saldo
-    // dele caiu exatamente o custo do jogo no mesmo lote.
+    // O jogador se inscreve sozinho (status "ativa", nada cobrado) e pode
+    // desistir enquanto não houver check-in. A cobrança e a presença são
+    // feitas pela organização no check-in (ver wallets acima).
     match /participations/{pid} {
       allow read: if podeGerirJogos() || (isSignedIn() && resource.data.uid == request.auth.uid);
 
       allow create: if isFinanceiro() || (
         isSignedIn() &&
+        request.resource.data.keys().hasOnly(['gameId', 'gameNome', 'uid', 'jogadorNome', 'pagoCom', 'creditosDebitados', 'status', 'criadoEm']) &&
         request.resource.data.uid == request.auth.uid &&
         pid == request.resource.data.gameId + '_' + request.auth.uid &&
-        request.resource.data.pagoCom == 'creditos' &&
         request.resource.data.status == 'ativa' &&
-        request.resource.data.creditosDebitados ==
-          get(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.custoCreditos &&
-        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.ultimoJogoId == request.resource.data.gameId &&
-        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos ==
-          get(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos -
-          request.resource.data.creditosDebitados
+        request.resource.data.pagoCom == 'pendente' &&
+        request.resource.data.creditosDebitados == 0 &&
+        get(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.status == 'aberto'
       );
 
-      // Cancelar não apaga: o admin marca como "removida" (fica no histórico).
-      allow update: if isFinanceiro();
-      allow delete: if false;
+      // Admin/tesoureiro: qualquer ajuste. Organizador: só o check-in
+      // (ativa -> presente), em dinheiro ou com o débito correspondente.
+      allow update: if isFinanceiro() || (
+        isOrganizador() &&
+        resource.data.status == 'ativa' &&
+        request.resource.data.status == 'presente' &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'pagoCom', 'creditosDebitados', 'presenteEm', 'checkInPor', 'checkInPorNome']) &&
+        request.resource.data.checkInPor == request.auth.uid &&
+        (
+          (request.resource.data.pagoCom == 'dinheiro' && request.resource.data.creditosDebitados == 0) ||
+          (
+            request.resource.data.pagoCom == 'creditos' &&
+            request.resource.data.creditosDebitados ==
+              get(/databases/$(database)/documents/games/$(resource.data.gameId)).data.custoCreditos &&
+            getAfter(/databases/$(database)/documents/wallets/$(resource.data.uid)).data.ultimoJogoId == resource.data.gameId &&
+            getAfter(/databases/$(database)/documents/wallets/$(resource.data.uid)).data.creditos ==
+              get(/databases/$(database)/documents/wallets/$(resource.data.uid)).data.creditos -
+              request.resource.data.creditosDebitados
+          )
+        )
+      );
+
+      allow delete: if isFinanceiro() || (
+        isSignedIn() &&
+        resource.data.uid == request.auth.uid &&
+        resource.data.status == 'ativa' &&
+        resource.data.pagoCom == 'pendente'
+      );
     }
 
     // Extrato de créditos: livro-razão imutável (ninguém edita nem apaga, nem o
-    // admin). O admin cria qualquer lançamento (pagamento, ajuste, estorno). O
-    // jogador só cria o lançamento da própria inscrição, e só se o saldo dele
-    // caiu exatamente aquele valor no mesmo lote.
+    // admin). Admin e tesoureiro criam qualquer lançamento. O organizador só
+    // cria o lançamento do check-in, e só se o saldo do jogador caiu exatamente
+    // aquele valor no mesmo lote. O jogador não escreve no extrato.
     match /ledger/{lid} {
       allow read: if isFinanceiro() || (isSignedIn() && resource.data.uid == request.auth.uid);
 
       allow create: if isFinanceiro() || (
-        isSignedIn() &&
-        request.resource.data.uid == request.auth.uid &&
+        isOrganizador() &&
         request.resource.data.tipo == 'jogo' &&
         request.resource.data.refId is string &&
-        lid == 'jogo_' + request.resource.data.refId + '_' + request.auth.uid &&
+        request.resource.data.porUid == request.auth.uid &&
+        lid == 'checkin_' + request.resource.data.refId + '_' + request.resource.data.uid &&
         request.resource.data.creditos ==
           -get(/databases/$(database)/documents/games/$(request.resource.data.refId)).data.custoCreditos &&
-        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.ultimoJogoId == request.resource.data.refId &&
-        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos ==
-          get(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos + request.resource.data.creditos &&
+        getAfter(/databases/$(database)/documents/wallets/$(request.resource.data.uid)).data.ultimoJogoId == request.resource.data.refId &&
+        getAfter(/databases/$(database)/documents/wallets/$(request.resource.data.uid)).data.creditos ==
+          get(/databases/$(database)/documents/wallets/$(request.resource.data.uid)).data.creditos + request.resource.data.creditos &&
         request.resource.data.saldoApos ==
-          getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos
+          getAfter(/databases/$(database)/documents/wallets/$(request.resource.data.uid)).data.creditos &&
+        getAfter(/databases/$(database)/documents/participations/$(request.resource.data.refId + '_' + request.resource.data.uid)).data.status == 'presente'
       );
 
       allow update, delete: if false;

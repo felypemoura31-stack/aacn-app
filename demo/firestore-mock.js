@@ -154,7 +154,17 @@ store.participations['g-1_u-pedro'] = {
   gameNome: 'Jogo de domingo',
   uid: 'u-pedro',
   jogadorNome: 'Pedro Alves',
-  pagoCom: 'dinheiro',
+  pagoCom: 'pendente',
+  creditosDebitados: 0,
+  status: 'ativa',
+  criadoEm: now - day,
+}
+store.participations['g-1_u-jogador'] = {
+  gameId: 'g-1',
+  gameNome: 'Jogo de domingo',
+  uid: 'u-jogador',
+  jogadorNome: 'Carlos Silva',
+  pagoCom: 'pendente',
   creditosDebitados: 0,
   status: 'ativa',
   criadoEm: now - day,
@@ -229,6 +239,11 @@ export async function setDoc(ref, data) {
 export async function updateDoc(ref, data) {
   if (!store[ref.col]?.[ref.id]) throw new Error('Documento não existe: ' + ref.col + '/' + ref.id)
   Object.assign(store[ref.col][ref.id], resolveValues(data))
+  notify()
+}
+
+export async function deleteDoc(ref) {
+  delete store[ref.col]?.[ref.id]
   notify()
 }
 

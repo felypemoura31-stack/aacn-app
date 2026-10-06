@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
-import { formatarCreditos, participarComCreditos, reais } from '../lib/credits'
+import { cancelarMinhaInscricao, formatarCreditos, inscreverNoJogo, reais } from '../lib/credits'
 import { useWallet } from '../lib/useWallet'
 import { ExtratoCreditos } from '../components/ExtratoCreditos'
 import type { Game, Participation } from '../types'
@@ -33,17 +33,16 @@ export function Games() {
   if (!player) return null
 
   const saldo = wallet?.creditos ?? 0
-  const inscritoEm = new Set(minhas.filter((p) => p.status !== 'removida').map((p) => p.gameId))
-  const canceladoEm = new Set(minhas.filter((p) => p.status === 'removida').map((p) => p.gameId))
-  const abertos = games.filter((g) => g.status === 'aberto')
+  const porJogo = new Map(minhas.map((p) => [p.gameId, p]))
+  const abertos = games.filter((g) => g.status === 'aberto' || porJogo.has(g.id))
 
-  async function participar(g: Game) {
+  async function agir(g: Game, acao: () => Promise<void>) {
     setErro(null)
     setBusyId(g.id)
     try {
-      await participarComCreditos(player!, g)
+      await acao()
     } catch (e) {
-      setErro((e as Error).message || 'Não foi possível se inscrever. Tente novamente.')
+      setErro((e as Error).message || 'Não foi possível concluir. Tente novamente.')
     } finally {
       setBusyId(null)
     }
@@ -52,18 +51,20 @@ export function Games() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="mb-1 text-xl font-bold text-ink">Jogos</h1>
-      <p className="mb-6 text-sm text-mute">
+      <p className="mb-2 text-sm text-mute">
         Seu saldo: <b className="text-gold">{formatarCreditos(saldo)} créditos</b>
+      </p>
+      <p className="mb-6 text-xs text-mute/80">
+        A inscrição é grátis. O pagamento é feito no dia do jogo: a organização lê o QR da sua carteirinha, marca sua
+        presença e debita os créditos. Leve a carteirinha no celular ou impressa.
       </p>
 
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
 
       <div className="mb-8 space-y-3">
-        {abertos.length === 0 && (
-          <p className="text-sm text-mute/70">Nenhum jogo com inscrições abertas.</p>
-        )}
+        {abertos.length === 0 && <p className="text-sm text-mute/70">Nenhum jogo com inscrições abertas.</p>}
         {abertos.map((g) => {
-          const jaInscrito = inscritoEm.has(g.id)
+          const p = porJogo.get(g.id)
           const faltam = g.custoCreditos - saldo
           return (
             <div key={g.id} className="panel flex flex-wrap items-center justify-between gap-3 p-4">
@@ -74,27 +75,41 @@ export function Games() {
                   {formatarCreditos(g.custoCreditos)} créditos
                 </p>
               </div>
-              {canceladoEm.has(g.id) ? (
+
+              {p?.status === 'removida' && (
                 <span className="text-xs text-mute">Inscrição cancelada. Fale com a diretoria.</span>
-              ) : jaInscrito ? (
+              )}
+
+              {p?.status === 'presente' && (
                 <span className="rounded-full border border-ok/40 bg-ok/15 px-3 py-1 text-xs font-semibold text-ok">
-                  Inscrito
+                  Presença confirmada
                 </span>
-              ) : (
+              )}
+
+              {p?.status === 'ativa' && (
                 <div className="text-right">
+                  <span className="rounded-full border border-accent-hi/40 bg-accent/15 px-3 py-1 text-xs font-semibold text-accent-hi">
+                    Inscrito
+                  </span>
+                  <p className="mt-1 text-[11px] text-mute">
+                    {faltam > 0
+                      ? `Seu saldo não cobre o jogo (faltam ${formatarCreditos(faltam)}). Pague ${reais(g.valor)} no local.`
+                      : `${formatarCreditos(g.custoCreditos)} créditos serão debitados no dia.`}
+                  </p>
                   <button
-                    disabled={busyId === g.id || faltam > 0}
-                    onClick={() => participar(g)}
-                    className="btn-primary"
+                    disabled={busyId === g.id}
+                    onClick={() => agir(g, () => cancelarMinhaInscricao(p))}
+                    className="mt-1 text-[11px] text-danger hover:underline"
                   >
-                    Participar ({formatarCreditos(g.custoCreditos)} créditos)
+                    Cancelar inscrição
                   </button>
-                  {faltam > 0 && (
-                    <p className="mt-1 text-[11px] text-mute">
-                      Faltam {formatarCreditos(faltam)} créditos. Pague {reais(g.valor)} no local.
-                    </p>
-                  )}
                 </div>
+              )}
+
+              {!p && (
+                <button disabled={busyId === g.id} onClick={() => agir(g, () => inscreverNoJogo(player, g))} className="btn-primary">
+                  Inscrever-se
+                </button>
               )}
             </div>
           )
@@ -113,9 +128,11 @@ export function Games() {
             <span>
               {p.status === 'removida'
                 ? 'cancelada'
-                : p.pagoCom === 'creditos'
-                ? `−${formatarCreditos(p.creditosDebitados)} créditos`
-                : 'pago em dinheiro'}
+                : p.status === 'ativa'
+                  ? 'aguardando check-in'
+                  : p.pagoCom === 'creditos'
+                    ? `presente · −${formatarCreditos(p.creditosDebitados)} créditos`
+                    : 'presente · pago em dinheiro'}
             </span>
           </div>
         ))}

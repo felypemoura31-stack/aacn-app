@@ -86,7 +86,7 @@ export function Card() {
             Parceiros: escaneie para validar associado e status de pagamento.
           </p>
           <div className="rounded-sm bg-[#ffffff] p-1.5">
-            <QRCode value={verifyUrl} size={72} />
+            <QRCode value={verifyUrl} size={88} />
           </div>
         </div>
       </div>

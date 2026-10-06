@@ -31,7 +31,10 @@ const GRUPOS: Grupo[] = [
   {
     titulo: 'Jogos',
     roles: ['admin', 'tesoureiro', 'organizador'],
-    itens: [{ to: '/admin/jogos', rotulo: 'Gerenciar jogos' }],
+    itens: [
+      { to: '/admin/checkin', rotulo: 'Check-in por QR' },
+      { to: '/admin/jogos', rotulo: 'Gerenciar jogos' },
+    ],
   },
 ]
 

@@ -1,7 +1,9 @@
 import {
+  deleteDoc,
   doc,
   getDoc,
   serverTimestamp,
+  setDoc,
   writeBatch,
   type WriteBatch,
 } from 'firebase/firestore'
@@ -9,7 +11,6 @@ import { db } from '../firebase'
 import type {
   Game,
   LedgerTipo,
-  PagoCom,
   Participation,
   Player,
   Wallet,
@@ -96,41 +97,71 @@ export function lancar(
   })
 }
 
-/** O jogador gasta os próprios créditos. Débito, extrato e inscrição vão no mesmo lote (as regras exigem). */
-export async function participarComCreditos(player: Player, game: Game) {
-  const { saldo } = await lerCarteira(player.uid)
-  if (saldo < game.custoCreditos) throw new Error('Saldo de créditos insuficiente')
-
-  const batch = writeBatch(db)
-  lancar(batch, {
-    uid: player.uid,
-    saldoAntes: saldo,
-    delta: -game.custoCreditos,
-    tipo: 'jogo',
-    descricao: `Inscrição: ${game.nome}`,
-    refId: game.id,
-    autor: { uid: player.uid, nome: player.nomeCompleto },
-    ledgerId: `jogo_${game.id}_${player.uid}`,
-    ultimoJogoId: game.id,
-  })
-  batch.set(doc(db, 'participations', participationId(game.id, player.uid)), {
+/** O jogador se inscreve no site. NÃO debita nada: o débito acontece no dia, no check-in por QR. */
+export async function inscreverNoJogo(player: Player, game: Game) {
+  await setDoc(doc(db, 'participations', participationId(game.id, player.uid)), {
     gameId: game.id,
     gameNome: game.nome,
     uid: player.uid,
     jogadorNome: player.nomeCompleto,
-    pagoCom: 'creditos',
-    creditosDebitados: game.custoCreditos,
+    pagoCom: 'pendente',
+    creditosDebitados: 0,
     status: 'ativa',
     criadoEm: serverTimestamp(),
+  })
+}
+
+/** O jogador desiste da inscrição enquanto ainda não houve check-in (nada foi cobrado). */
+export async function cancelarMinhaInscricao(p: Participation) {
+  await deleteDoc(doc(db, 'participations', p.id))
+}
+
+/**
+ * Check-in no dia do jogo (admin, tesoureiro ou organizador): marca a presença e
+ * cobra. Com créditos, o débito, o extrato e a presença vão no mesmo lote; em
+ * dinheiro, só registra a presença e quem recebeu.
+ */
+export async function fazerCheckIn(
+  game: Game,
+  p: Participation,
+  modo: 'creditos' | 'dinheiro',
+  autor: Autor,
+) {
+  const batch = writeBatch(db)
+  let debitado = 0
+  if (modo === 'creditos') {
+    const c = await lerCarteira(p.uid)
+    if (c.saldo < game.custoCreditos) throw new Error('Saldo de créditos insuficiente')
+    debitado = game.custoCreditos
+    lancar(batch, {
+      uid: p.uid,
+      saldoAntes: c.saldo,
+      delta: -debitado,
+      tipo: 'jogo',
+      descricao: `Check-in: ${game.nome}`,
+      refId: game.id,
+      autor,
+      ledgerId: `checkin_${game.id}_${p.uid}`,
+      ultimoJogoId: game.id,
+      existe: c.existe,
+    })
+  }
+  batch.update(doc(db, 'participations', p.id), {
+    status: 'presente',
+    pagoCom: modo,
+    creditosDebitados: debitado,
+    presenteEm: serverTimestamp(),
+    checkInPor: autor.uid,
+    checkInPorNome: autor.nome,
   })
   await batch.commit()
 }
 
-/** Admin inscreve um jogador, debitando créditos ou registrando pagamento em dinheiro. */
+/** Admin/tesoureiro inscreve alguém na hora (sem inscrição prévia) já com check-in feito. */
 export async function adminAdicionarParticipante(
   game: Game,
   jogador: Pick<Player, 'uid' | 'nomeCompleto'>,
-  pagoCom: PagoCom,
+  pagoCom: 'creditos' | 'dinheiro',
   admin: Autor,
 ) {
   const batch = writeBatch(db)
@@ -144,7 +175,7 @@ export async function adminAdicionarParticipante(
       saldoAntes: c.saldo,
       delta: -debitado,
       tipo: 'jogo',
-      descricao: `Inscrição (feita pela diretoria): ${game.nome}`,
+      descricao: `Inscrição e check-in (feitos pela diretoria): ${game.nome}`,
       refId: game.id,
       autor: admin,
       existe: c.existe,
@@ -157,13 +188,16 @@ export async function adminAdicionarParticipante(
     jogadorNome: jogador.nomeCompleto,
     pagoCom,
     creditosDebitados: debitado,
-    status: 'ativa',
+    status: 'presente',
+    presenteEm: serverTimestamp(),
+    checkInPor: admin.uid,
+    checkInPorNome: admin.nome,
     criadoEm: serverTimestamp(),
   })
   await batch.commit()
 }
 
-/** Admin cancela a inscrição (ela fica no histórico como "removida") e estorna os créditos debitados. */
+/** Admin/tesoureiro cancela a inscrição (fica no histórico como "removida") e estorna o que foi debitado. */
 export async function adminRemoverParticipante(p: Participation, admin: Autor) {
   const batch = writeBatch(db)
   if (p.creditosDebitados > 0) {
