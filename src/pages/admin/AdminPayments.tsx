@@ -42,8 +42,8 @@ export function AdminPayments() {
     setCfgMsg('Configuração salva.')
   }
 
-  async function excluirCobranca(p: Payment) {
-    if (!window.confirm(`Excluir a cobrança de ${reais(p.valor)} de ${p.jogadorNome}? Nada é creditado e o jogador pode gerar outro Pix quando quiser.`)) return
+  async function cancelarCobranca(p: Payment) {
+    if (!window.confirm(`Cancelar a cobrança de ${reais(p.valor)} de ${p.jogadorNome}? Nada é creditado e o jogador pode gerar outro Pix quando quiser.`)) return
     setBusyId(p.id)
     setErro(null)
     try {
@@ -164,7 +164,7 @@ export function AdminPayments() {
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
       <h2 className="mb-1 text-sm font-semibold text-ink">Aguardando confirmação</h2>
       <p className="mb-2 text-xs text-mute">
-        Confirme quando o Pix cair na conta, ou exclua a cobrança se o jogador desistiu de pagar.
+        Confirme quando o Pix cair na conta, ou cancele a cobrança se o jogador desistiu de pagar.
       </p>
       {pendentes.length === 0 && (
         <p className="mb-6 text-sm text-mute/70">Nenhuma cobrança pendente.</p>
@@ -181,7 +181,7 @@ export function AdminPayments() {
                 {reais(p.valor)} · {p.txid}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <input
                 type="date"
                 max={hoje()}
@@ -192,8 +192,8 @@ export function AdminPayments() {
               <button disabled={busyId === p.id} onClick={() => confirmar(p)} className="btn-primary">
                 Confirmar
               </button>
-              <button disabled={busyId === p.id} onClick={() => excluirCobranca(p)} className="btn-ghost text-danger">
-                Excluir
+              <button disabled={busyId === p.id} onClick={() => cancelarCobranca(p)} className="btn-ghost text-danger">
+                Cancelar cobrança
               </button>
             </div>
           </div>

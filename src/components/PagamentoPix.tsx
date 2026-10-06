@@ -109,7 +109,7 @@ export function PagamentoPix({ player }: { player: Player }) {
             {copiado ? 'Copiado!' : 'Copiar Pix copia e cola'}
           </button>
           <button onClick={cancelar} className="btn-ghost w-full text-danger">
-            Cancelar este Pix (não vou pagar)
+            Cancelar este Pix
           </button>
           <p className="text-xs text-mute">
             Pague no app do seu banco. Assim que a diretoria confirmar o recebimento, seu
