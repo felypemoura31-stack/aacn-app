@@ -67,7 +67,7 @@ export function Navbar() {
   const grupos = GRUPOS.filter((g) => player && g.roles.includes(player.role))
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-2 rounded-sm text-sm font-medium ${
+    `shrink-0 px-2.5 py-2 rounded-sm text-sm font-medium ${
       isActive ? 'bg-accent text-white' : 'text-mute hover:bg-surface2'
     }`
 
@@ -79,13 +79,13 @@ export function Navbar() {
   return (
     <>
       <nav className="no-print sticky top-0 z-30 border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-1 px-4 py-2">
+        <div className="mx-auto flex max-w-5xl items-center gap-1 px-4 py-2">
           {grupos.length > 0 && (
             <button
               onClick={() => setAberto(true)}
               aria-label="Abrir menu de gestão"
               aria-expanded={aberto}
-              className="mr-1 flex items-center gap-2 rounded-sm border border-line px-3 py-2 text-sm font-medium text-ink hover:bg-surface2"
+              className="mr-1 flex shrink-0 items-center gap-2 rounded-sm border border-line px-3 py-2 text-sm font-medium text-ink hover:bg-surface2"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                 <path d="M2 4h12M2 8h12M2 12h12" />
@@ -93,33 +93,36 @@ export function Navbar() {
               Gestão
             </button>
           )}
-          <img src="/logo.png" alt="AACN" className="mr-2 h-8 w-8 rounded-full ring-1 ring-accent-hi/60" />
-          <NavLink to="/" end className={linkClass}>
-            Minha carteirinha
-          </NavLink>
-          <NavLink to="/perfil" className={linkClass}>
-            Meus dados
-          </NavLink>
-          <NavLink to="/jogos" className={linkClass}>
-            Jogos
-          </NavLink>
-          <NavLink to="/times" className={linkClass}>
-            Times
-          </NavLink>
-          <NavLink to="/parceiros" className={linkClass}>
-            Parceiros
-          </NavLink>
-          <NavLink to="/historico" className={linkClass}>
-            Histórico
-          </NavLink>
-          {ehRepresentante && (
-            <NavLink to="/solicitacoes" className={linkClass}>
-              Solicitações do time
+          <img src="/logo.png" alt="AACN" className="mr-1 h-8 w-8 shrink-0 rounded-full ring-1 ring-accent-hi/60" />
+          {/* Os links ficam numa faixa que rola de lado quando a tela é estreita; o Sair não quebra de linha. */}
+          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <NavLink to="/" end className={linkClass}>
+              Minha carteirinha
             </NavLink>
-          )}
+            <NavLink to="/perfil" className={linkClass}>
+              Meus dados
+            </NavLink>
+            <NavLink to="/jogos" className={linkClass}>
+              Jogos
+            </NavLink>
+            <NavLink to="/times" className={linkClass}>
+              Times
+            </NavLink>
+            <NavLink to="/parceiros" className={linkClass}>
+              Parceiros
+            </NavLink>
+            <NavLink to="/historico" className={linkClass}>
+              Histórico
+            </NavLink>
+            {ehRepresentante && (
+              <NavLink to="/solicitacoes" className={linkClass}>
+                Solicitações do time
+              </NavLink>
+            )}
+          </div>
           <button
             onClick={() => logout()}
-            className="ml-auto rounded-sm px-3 py-2 text-sm font-medium text-mute hover:bg-surface2"
+            className="shrink-0 rounded-sm px-3 py-2 text-sm font-medium text-mute hover:bg-surface2"
           >
             Sair
           </button>
