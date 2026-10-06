@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { doc, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
-import { DIA_MS, CICLO_DIAS, STATUS_LABELS, formatarData, statusEfetivo } from '../../lib/status'
+import { DIA_MS, CICLO_DIAS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import { sincronizarCartaoPublico } from '../../lib/publicCard'
 import { rotuloDoCargo } from '../../lib/roles'
 import { formatarTelefone } from '../../lib/cadastro'
@@ -192,6 +192,28 @@ export function AdminPlayerDetail() {
             Para registrar um pagamento recebido, use Admin: Pagamentos.
           </p>
         </Field>
+
+        <Field label="Termo de responsabilidade">
+          <input
+            disabled
+            className="input"
+            value={
+              player.aceiteTermosVersao
+                ? `Aceito (versão ${player.aceiteTermosVersao}) em ${formatarData(paraMillis(player.aceiteTermosEm))}`
+                : 'Ainda não aceitou'
+            }
+          />
+        </Field>
+
+        {player.responsavelLegalNome && (
+          <Field label="Responsável legal (menor de idade)">
+            <input
+              disabled
+              className="input"
+              value={`${player.responsavelLegalNome} · ${player.responsavelLegalTelefone ?? ''} · ${player.responsavelLegalAutoriza ? 'autorizou' : 'sem autorização'}`}
+            />
+          </Field>
+        )}
 
         <Field label="Cargo">
           <input value={rotuloDoCargo(player.role)} disabled className="input" />

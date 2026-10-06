@@ -1,3 +1,4 @@
+import { VERSAO_TERMOS } from './termos'
 import type { Player } from '../types'
 
 export function soDigitos(v: string) {
@@ -24,6 +25,20 @@ export function dataNascimentoValida(v: string | undefined) {
   return !Number.isNaN(t) && t < Date.now() && t > new Date('1900-01-01').getTime()
 }
 
+export function idadeEmAnos(iso: string | undefined) {
+  if (!dataNascimentoValida(iso)) return null
+  const n = new Date(iso + 'T12:00')
+  const h = new Date()
+  let idade = h.getFullYear() - n.getFullYear()
+  if (h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) idade--
+  return idade
+}
+
+export function ehMenor(p: Pick<Player, 'dataNascimento'>) {
+  const i = idadeEmAnos(p.dataNascimento)
+  return i !== null && i < 18
+}
+
 /** Campos obrigatórios que ainda faltam no cadastro (vazio = cadastro completo). */
 export function faltasDoCadastro(p: Player): string[] {
   const faltas: string[] = []
@@ -34,5 +49,11 @@ export function faltasDoCadastro(p: Player): string[] {
   if (!telefoneValido(p.celular)) faltas.push('celular')
   if (!p.contatoEmergenciaNome?.trim()) faltas.push('nome do contato de emergência')
   if (!telefoneValido(p.contatoEmergenciaTelefone)) faltas.push('telefone do contato de emergência')
+  if (ehMenor(p)) {
+    if (!p.responsavelLegalNome?.trim()) faltas.push('nome do responsável legal (menor de 18 anos)')
+    if (!telefoneValido(p.responsavelLegalTelefone)) faltas.push('telefone do responsável legal')
+    if (!p.responsavelLegalAutoriza) faltas.push('autorização do responsável legal')
+  }
+  if (p.aceiteTermosVersao !== VERSAO_TERMOS) faltas.push('aceite do termo de responsabilidade')
   return faltas
 }

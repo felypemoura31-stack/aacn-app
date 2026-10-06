@@ -62,6 +62,12 @@ export function Login() {
           className="input mb-4"
         />
 
+        <p className="-mt-2 mb-4 text-right text-xs">
+          <Link to="/esqueci-senha" className="text-mute underline hover:text-ink">
+            Esqueci minha senha
+          </Link>
+        </p>
+
         {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 
         <button

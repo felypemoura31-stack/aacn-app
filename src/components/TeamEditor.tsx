@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { doc, updateDoc } from 'firebase/firestore'
+import { useEffect, useState, type FormEvent } from 'react'
+import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { TeamLogoEditor } from './TeamLogoEditor'
 import { useTeam } from '../lib/useTeam'
@@ -18,11 +18,19 @@ export function TeamEditor({ team, podeEditarNome, onClose }: Props) {
   const [nome, setNome] = useState(team.nome)
   const [dataCriacao, setDataCriacao] = useState(team.dataCriacao ?? '')
   const [cidade, setCidade] = useState(team.cidade ?? '')
-  const [responsavel, setResponsavel] = useState(team.responsavelNome ?? '')
+  // Se ainda não há responsável, já entra o representante do time (jogador cadastrado).
+  const [responsavel, setResponsavel] = useState(team.responsavelNome || team.representanteNome || '')
+  const [nomes, setNomes] = useState<string[]>([])
   const [redes, setRedes] = useState<RedesDoTime>(team.redes ?? {})
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const vivo = useTeam(team.id)
+
+  useEffect(() => {
+    return onSnapshot(collection(db, 'publicCards'), (snap) =>
+      setNomes(snap.docs.map((d) => String(d.data().nomeCompleto ?? '')).filter(Boolean).sort((a, b) => a.localeCompare(b))),
+    )
+  }, [])
 
   function alternarRede(id: RedeSocial, ligada: boolean) {
     setRedes((r) => {
@@ -101,7 +109,19 @@ export function TeamEditor({ team, podeEditarNome, onClose }: Props) {
 
         <label className="block text-sm text-mute">
           Nome do responsável pelo time
-          <input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} maxLength={80} className="input mt-1" />
+          <input
+            list="aacn-jogadores"
+            value={responsavel}
+            onChange={(e) => setResponsavel(e.target.value)}
+            maxLength={80}
+            placeholder="Digite para escolher um jogador cadastrado"
+            className="input mt-1"
+          />
+          <datalist id="aacn-jogadores">
+            {nomes.map((n) => (
+              <option key={n} value={n} />
+            ))}
+          </datalist>
         </label>
 
         <fieldset>

@@ -95,6 +95,7 @@ service cloud.firestore {
         request.resource.data.status == 'inadimplente' &&
         request.resource.data.vencimento == null &&
         request.resource.data.timeAprovado == false &&
+        request.resource.data.get('aceiteTermosEm', request.time) == request.time &&
         fotoValida(request.resource.data.get('fotoUrl', null));
 
       // O próprio jogador NÃO pode mexer em papel, status, vencimento, e-mail
@@ -109,6 +110,8 @@ service cloud.firestore {
         !request.resource.data.diff(resource.data).affectedKeys()
           .hasAny(['role', 'cargoAlteradoPor', 'cargoAlteradoEm', 'status', 'vencimento', 'ultimoPagamento', 'uid', 'email']) &&
         fotoValida(request.resource.data.get('fotoUrl', null)) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['aceiteTermosEm']) ||
+          request.resource.data.aceiteTermosEm == request.time) &&
         (request.resource.data.timeAprovado == resource.data.timeAprovado ||
          request.resource.data.timeAprovado == false)
       ) || (

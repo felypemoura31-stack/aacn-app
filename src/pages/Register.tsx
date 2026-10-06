@@ -11,6 +11,7 @@ export function Register() {
   const [confirmarSenha, setConfirmarSenha] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [aceita, setAceita] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -25,9 +26,14 @@ export function Register() {
       return
     }
 
+    if (!aceita) {
+      setError('Para criar a conta, aceite o termo de responsabilidade e a política de privacidade.')
+      return
+    }
+
     setLoading(true)
     try {
-      await register({ nomeCompleto, email, senha })
+      await register({ nomeCompleto, email, senha, aceitaTermos: aceita })
       navigate('/perfil')
     } catch (err) {
       const code = (err as { code?: string }).code
@@ -99,6 +105,17 @@ export function Register() {
           onChange={(e) => setConfirmarSenha(e.target.value)}
           className="input mb-4"
         />
+
+        <label className="mb-4 flex items-start gap-2 text-xs text-mute">
+          <input type="checkbox" checked={aceita} onChange={(e) => setAceita(e.target.checked)} className="mt-0.5" />
+          <span>
+            Li e aceito o{' '}
+            <Link to="/termos" target="_blank" className="text-ink underline">
+              termo de responsabilidade e a política de privacidade
+            </Link>{' '}
+            da AACN.
+          </span>
+        </label>
 
         {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 

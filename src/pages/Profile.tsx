@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   collection,
   doc,
@@ -14,7 +14,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { PhotoUploader } from '../components/PhotoUploader'
 import { solicitarEntradaNoTime } from '../lib/teams'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
-import { dataNascimentoValida, faltasDoCadastro, formatarTelefone, telefoneValido } from '../lib/cadastro'
+import { dataNascimentoValida, ehMenor, faltasDoCadastro, formatarTelefone, telefoneValido } from '../lib/cadastro'
+import { VERSAO_TERMOS } from '../lib/termos'
 import type { Team } from '../types'
 
 export function Profile() {
@@ -33,6 +34,10 @@ export function Profile() {
   const [contatoEmergenciaTelefone, setContatoEmergenciaTelefone] = useState('')
   const [condicoesMedicas, setCondicoesMedicas] = useState('')
   const [timeSelecionado, setTimeSelecionado] = useState('')
+  const [respNome, setRespNome] = useState('')
+  const [respTel, setRespTel] = useState('')
+  const [respAutoriza, setRespAutoriza] = useState(false)
+  const [aceitaTermo, setAceitaTermo] = useState(false)
 
   useEffect(() => {
     const q = query(collection(db, 'teams'), orderBy('nome'))
@@ -51,6 +56,9 @@ export function Profile() {
     setContatoEmergenciaTelefone(formatarTelefone(player.contatoEmergenciaTelefone ?? ''))
     setCondicoesMedicas(player.condicoesMedicas ?? '')
     setTimeSelecionado(player.timeId ?? '')
+    setRespNome(player.responsavelLegalNome ?? '')
+    setRespTel(formatarTelefone(player.responsavelLegalTelefone ?? ''))
+    setRespAutoriza(!!player.responsavelLegalAutoriza)
   }, [player])
 
   if (!currentUser || !player) return null
@@ -63,6 +71,10 @@ export function Profile() {
     if (!dataNascimentoValida(dataNascimento)) return setErroForm('Informe uma data de nascimento válida.')
     if (!telefoneValido(celular)) return setErroForm('Informe o celular com DDD, por exemplo (64) 99999-9999.')
     if (!telefoneValido(contatoEmergenciaTelefone)) return setErroForm('Informe o telefone do contato de emergência com DDD.')
+    const menor = ehMenor({ dataNascimento })
+    if (menor && !respNome.trim()) return setErroForm('Informe o nome do responsável legal (menor de 18 anos).')
+    if (menor && !telefoneValido(respTel)) return setErroForm('Informe o telefone do responsável legal com DDD.')
+    if (menor && !respAutoriza) return setErroForm('O responsável legal precisa autorizar a participação do menor.')
     setSaving(true)
     setSavedMessage(null)
     try {
@@ -74,6 +86,9 @@ export function Profile() {
         contatoEmergenciaNome,
         contatoEmergenciaTelefone,
         condicoesMedicas,
+        responsavelLegalNome: menor ? respNome.trim() : '',
+        responsavelLegalTelefone: menor ? respTel : '',
+        responsavelLegalAutoriza: menor ? respAutoriza : false,
         atualizadoEm: serverTimestamp(),
       })
       await sincronizarCartaoPublico({ ...player!, nomeCompleto })
@@ -84,12 +99,20 @@ export function Profile() {
       }
 
       setSavedMessage('Dados salvos com sucesso.')
-      if (faltasDoCadastro({ ...player!, nomeCompleto, endereco, dataNascimento, celular, contatoEmergenciaNome, contatoEmergenciaTelefone }).length === 0) {
+      if (faltasDoCadastro({ ...player!, nomeCompleto, endereco, dataNascimento, celular, contatoEmergenciaNome, contatoEmergenciaTelefone, responsavelLegalNome: respNome, responsavelLegalTelefone: respTel, responsavelLegalAutoriza: respAutoriza }).length === 0) {
         navigate('/')
       }
     } finally {
       setSaving(false)
     }
+  }
+
+  async function aceitarTermo() {
+    await updateDoc(doc(db, 'players', currentUser!.uid), {
+      aceiteTermosVersao: VERSAO_TERMOS,
+      aceiteTermosEm: serverTimestamp(),
+      atualizadoEm: serverTimestamp(),
+    })
   }
 
   async function handleFoto(dataUrl: string) {
@@ -111,6 +134,30 @@ export function Profile() {
             O preenchimento dos dados pessoais é obrigatório para usar a carteirinha, os jogos e o time. Faltam:{' '}
             {faltas.join(', ')}.
           </p>
+        </div>
+      )}
+
+      {player.aceiteTermosVersao !== VERSAO_TERMOS && (
+        <div className="panel mb-6 p-5">
+          <h2 className="mb-2 text-sm font-semibold text-ink">Termo de responsabilidade e privacidade</h2>
+          <p className="mb-3 text-sm text-mute">
+            {player.aceiteTermosVersao
+              ? 'O termo foi atualizado. Leia e aceite novamente para continuar.'
+              : 'Leia e aceite o termo de responsabilidade e a política de privacidade da AACN para continuar.'}
+          </p>
+          <label className="mb-3 flex items-start gap-2 text-sm text-ink">
+            <input type="checkbox" checked={aceitaTermo} onChange={(e) => setAceitaTermo(e.target.checked)} className="mt-1" />
+            <span>
+              Li e aceito o{' '}
+              <Link to="/termos" target="_blank" className="underline">
+                termo de responsabilidade e a política de privacidade
+              </Link>
+              .
+            </span>
+          </label>
+          <button type="button" disabled={!aceitaTermo} onClick={aceitarTermo} className="btn-primary">
+            Aceitar
+          </button>
         </div>
       )}
 
@@ -184,6 +231,33 @@ export function Profile() {
             />
           </Field>
         </div>
+
+        {ehMenor({ dataNascimento }) && (
+          <div className="space-y-3 rounded-sm border border-warn/40 bg-warn/5 p-4">
+            <p className="text-sm font-semibold text-warn">Menor de 18 anos: dados do responsável legal</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Nome do responsável legal">
+                <input value={respNome} onChange={(e) => setRespNome(e.target.value)} maxLength={80} className="input" />
+              </Field>
+              <Field label="Telefone do responsável">
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="(64) 99999-9999"
+                  value={respTel}
+                  onChange={(e) => setRespTel(formatarTelefone(e.target.value))}
+                  className="input"
+                />
+              </Field>
+            </div>
+            <label className="flex items-start gap-2 text-sm text-ink">
+              <input type="checkbox" checked={respAutoriza} onChange={(e) => setRespAutoriza(e.target.checked)} className="mt-1" />
+              <span>
+                Sou o responsável legal, autorizo a participação do menor nas atividades da AACN e concordo com o termo de responsabilidade.
+              </span>
+            </label>
+          </div>
+        )}
 
         <Field label="Condições médicas ou especiais (opcional)">
           <textarea

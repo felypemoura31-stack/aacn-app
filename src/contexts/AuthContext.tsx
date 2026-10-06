@@ -8,6 +8,7 @@ import {
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -16,12 +17,14 @@ import {
 import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
+import { VERSAO_TERMOS } from '../lib/termos'
 import type { Player } from '../types'
 
 interface RegisterInput {
   nomeCompleto: string
   email: string
   senha: string
+  aceitaTermos: boolean
 }
 
 interface AuthContextValue {
@@ -30,6 +33,7 @@ interface AuthContextValue {
   loading: boolean
   register: (input: RegisterInput) => Promise<void>
   login: (email: string, senha: string) => Promise<void>
+  resetPassword: (email: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -73,7 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
   }, [player])
 
-  async function register({ nomeCompleto, email, senha }: RegisterInput) {
+  async function register({ nomeCompleto, email, senha, aceitaTermos }: RegisterInput) {
+    if (!aceitaTermos) throw new Error('É preciso aceitar o termo de responsabilidade.')
     const cred = await createUserWithEmailAndPassword(auth, email, senha)
     await updateProfile(cred.user, { displayName: nomeCompleto })
 
@@ -96,11 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       vencimento: null,
       ultimoPagamento: null,
       role: 'player',
+      aceiteTermosVersao: VERSAO_TERMOS,
       criadoEm: now,
       atualizadoEm: now,
     }
     await setDoc(doc(db, 'players', cred.user.uid), {
       ...newPlayer,
+      aceiteTermosEm: serverTimestamp(),
       criadoEm: serverTimestamp(),
       atualizadoEm: serverTimestamp(),
     })
@@ -116,6 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithEmailAndPassword(auth, email, senha)
   }
 
+  async function resetPassword(email: string) {
+    await sendPasswordResetEmail(auth, email)
+  }
+
   async function logout() {
     await signOut(auth)
   }
@@ -126,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading: authLoading || playerLoading,
     register,
     login,
+    resetPassword,
     logout,
   }
 

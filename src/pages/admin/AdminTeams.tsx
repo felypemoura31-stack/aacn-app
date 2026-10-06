@@ -62,6 +62,8 @@ export function AdminTeams() {
       representanteUid: uid || null,
       representanteNome: jogador ? jogador.nomeCompleto : null,
       representanteEmail: jogador ? jogador.email : null,
+      // Quem vira representante já entra como responsável, se o time ainda não tem um.
+      ...(jogador && !team.responsavelNome ? { responsavelNome: jogador.nomeCompleto } : {}),
     })
   }
 

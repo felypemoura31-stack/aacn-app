@@ -33,6 +33,11 @@ function player(uid, nome, email, extra = {}) {
     contatoEmergenciaNome: 'Maria Silva',
     contatoEmergenciaTelefone: '(64) 99999-1234',
     celular: '(64) 98888-0000',
+    aceiteTermosVersao: '2026-10-v1',
+    aceiteTermosEm: now - 20 * day,
+    responsavelLegalNome: '',
+    responsavelLegalTelefone: '',
+    responsavelLegalAutoriza: false,
     condicoesMedicas: '',
     fotoUrl: fotoDemo('#cbd5e1'),
     timeId: null,
@@ -64,6 +69,7 @@ const seedPlayers = [
     condicoesMedicas: 'Alergia a picada de abelha',
   }),
   player('u-ana', 'Ana Souza', 'ana@teste.com', {
+    aceiteTermosVersao: null,
     celular: '',
     fotoUrl: null,
     status: 'inativo',
@@ -73,6 +79,7 @@ const seedPlayers = [
     timeAprovado: true,
   }),
   player('u-pedro', 'Pedro Alves', 'pedro@teste.com', {
+    dataNascimento: '2010-06-01',
     timeId: 't-alpha',
     timeNome: 'Alpha Squad',
     timeAprovado: false,
@@ -291,3 +298,7 @@ export function writeBatch() {
   }
   return batch
 }
+
+export const initializeFirestore = () => ({})
+export const persistentLocalCache = () => ({})
+export const persistentMultipleTabManager = () => ({})

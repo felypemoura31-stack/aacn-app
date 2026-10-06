@@ -18,6 +18,9 @@ import { AdminCredits } from './pages/admin/AdminCredits'
 import { AdminRoles } from './pages/admin/AdminRoles'
 import { AdminCheckin } from './pages/admin/AdminCheckin'
 import { Teams } from './pages/Teams'
+import { Terms } from './pages/Terms'
+import { ForgotPassword } from './pages/ForgotPassword'
+import { OfflineBanner } from './components/OfflineBanner'
 import { TeamProfile } from './pages/TeamProfile'
 
 function App() {
@@ -29,10 +32,13 @@ function App() {
           tesoureiro@teste.com ou jogador@teste.com, senha 123456
         </div>
       )}
+      <OfflineBanner />
       <Navbar />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Register />} />
+        <Route path="/esqueci-senha" element={<ForgotPassword />} />
+        <Route path="/termos" element={<Terms />} />
         <Route path="/verificar/:uid" element={<Verify />} />
 
         <Route

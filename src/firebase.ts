@@ -1,6 +1,11 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore'
 
 // Storage (fotos 3x4) fica desativado por enquanto: o bucket do Firebase
 // Storage exige o plano Blaze (cartão vinculado). Ver README para reativar.
@@ -14,4 +19,17 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
-export const db = getFirestore(app)
+// e-mails do Firebase (ex: recuperar senha) em português
+auth.languageCode = 'pt-BR'
+
+// Cache persistente: a carteirinha e o QR abrem sem internet com os dados já carregados antes.
+function criarDb() {
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    })
+  } catch {
+    return getFirestore(app)
+  }
+}
+export const db = criarDb()

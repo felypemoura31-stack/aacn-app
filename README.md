@@ -220,6 +220,35 @@ foto 3x4, endereço, data de nascimento, **celular** (com DDD), nome e telefone 
 emergência. Enquanto faltar algo, o app leva para **Meus dados** e lista o que falta. Condições
 médicas continuam opcionais. A regra é aplicada na tela (não nas regras do banco).
 
+## Recuperar senha
+
+Na tela de login, "Esqueci minha senha" envia o link de redefinição pelo Firebase Auth (e-mail em
+português, `auth.languageCode = 'pt-BR'`). A mensagem de confirmação é a mesma exista ou não a
+conta. O texto/remetente do e-mail pode ser personalizado em Authentication → Templates no console.
+
+## Termo de responsabilidade e LGPD
+
+- No cadastro é obrigatório aceitar o **termo de responsabilidade** e a **política de privacidade**
+  (página pública `/termos`). O aceite grava a versão (`VERSAO_TERMOS`, em `src/lib/termos.ts`) e a
+  data do servidor (as regras do banco impedem datar para trás). O admin vê o aceite no cadastro do
+  jogador.
+- Se o texto mudar, altere `VERSAO_TERMOS`: todos precisam aceitar de novo (o app bloqueia a
+  carteirinha, os jogos e o time até aceitarem).
+- **Menores de 18 anos:** o cadastro pede nome e telefone do responsável legal e a autorização dele
+  (marcada por quem cadastra).
+- **Os textos são um modelo geral.** A diretoria deve revisar com um advogado antes de usar. O aceite
+  eletrônico de menores pode não bastar juridicamente; considere também um termo impresso assinado
+  pelo responsável.
+
+## Carteirinha sem internet
+
+O app guarda um cache dos dados no aparelho (cache persistente do Firestore) e o service worker
+guarda o próprio app. Depois de abrir a carteirinha com internet pelo menos uma vez, ela e o QR abrem
+sem sinal (aparece um aviso "Sem conexão"). Alterações feitas offline são enviadas quando a internet
+volta. O check-in da organização e a leitura do QR por parceiros continuam precisando de internet.
+Não foi possível testar o modo offline de ponta a ponta no ambiente de desenvolvimento; teste no
+celular (abra a carteirinha, ative o modo avião e abra de novo).
+
 ## Times: perfil, logo e membros
 
 - **Aba "Times"** (barra de cima, para todos os logados): mostra os times com logo, cidade e número
@@ -229,6 +258,9 @@ médicas continuam opcionais. A regra é aplicada na tela (não nas regras do ba
   time** (representante). Campos: logo, data de criação, cidade, nome do responsável e redes sociais.
   Nas redes, o time marca só as que tem (Instagram, Facebook, YouTube, TikTok, WhatsApp, X, Discord,
   site) e informa o @usuário, o número (WhatsApp) ou o link; só aparecem no perfil as marcadas.
+- **Responsável:** o campo sugere os jogadores cadastrados (digite para escolher; também aceita texto
+  livre). Se o time não tem responsável, entra automaticamente o representante; ao definir um
+  representante em Gestão → Times, ele já vira o responsável se o campo estiver vazio.
 - **Quem edita:** o admin edita tudo (inclusive o nome do time); o representante edita só o perfil do
   próprio time. A logo é reduzida (até 192 px, ~10–40 KB) e guardada no Firestore.
 - **Links seguros:** só são aceitos endereços http/https (ou @usuário/número); `javascript:`, `data:`

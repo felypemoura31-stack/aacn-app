@@ -31,6 +31,11 @@ export interface Player {
   role: UserRole
   cargoAlteradoPor?: string
   cargoAlteradoEm?: number
+  aceiteTermosVersao?: string | null
+  aceiteTermosEm?: unknown
+  responsavelLegalNome?: string
+  responsavelLegalTelefone?: string
+  responsavelLegalAutoriza?: boolean
   criadoEm: number
   atualizadoEm: number
 }

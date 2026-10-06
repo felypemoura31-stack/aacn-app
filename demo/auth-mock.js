@@ -58,6 +58,8 @@ export async function updateProfile(user, { displayName }) {
   user.displayName = displayName
 }
 
+export async function sendPasswordResetEmail() {}
+
 export async function signOut() {
   setCurrent(null)
 }
