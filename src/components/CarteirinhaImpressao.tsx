@@ -30,7 +30,7 @@ function dataBr(iso: string) {
 export function CarteirinhaImpressao({ player, verifyUrl, timeNome, timeLogoUrl }: Props) {
   return (
     <div id="print-sheet">
-      <p className="cc-instrucoes">
+      <p className="cc-instrucoes so-impressao">
         <b>Como montar:</b> imprima em tamanho real (100%, papel A4, sem “ajustar à página”). Recorte na linha tracejada
         externa, dobre na linha tracejada do meio (frente de um lado, verso do outro) e plastifique.
       </p>
@@ -84,7 +84,7 @@ export function CarteirinhaImpressao({ player, verifyUrl, timeNome, timeLogoUrl 
           </div>
         </div>
 
-        <div className="cc-face cc-verso">
+        <div className="cc-face cc-verso so-impressao">
           <p className="cc-titulo-verso">{TITULO_LEGAL}</p>
           <ul className="cc-legal">
             {ITENS_LEGAIS.map((i) => (

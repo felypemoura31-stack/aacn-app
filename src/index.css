@@ -297,6 +297,13 @@ h2 {
   margin: 12mm;
 }
 
+/* instruções e verso da carteirinha: só aparecem na impressão */
+@media not print {
+  .so-impressao {
+    display: none !important;
+  }
+}
+
 @media print {
   body {
     background: #fff !important;

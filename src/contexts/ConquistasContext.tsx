@@ -44,6 +44,8 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
     setStats(undefined)
     setResgatadas(null)
     setParts([])
+    setAvisos([])
+    falhou.current.clear()
     if (!uid) return
     const unsubs = [
       onSnapshot(doc(db, 'stats', uid), (s) => setStats(s.exists() ? (s.data() as Estatisticas) : null), () => setStats(null)),

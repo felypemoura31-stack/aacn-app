@@ -195,7 +195,7 @@ O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
 - Em **Minha carteirinha**, o botão "Imprimir carteirinha" gera uma folha A4 com frente e verso lado
   a lado, cada um com **85,6 x 54 mm** (tamanho de cartão de crédito). Imprima em **tamanho real
   (100%)**, sem "ajustar à página", recorte na linha tracejada externa, dobre na linha do meio e
-  plastifique.
+  plastifique. Na tela só a **frente** aparece; as instruções e o **verso** só aparecem na impressão.
 - **Frente:** logo da AACN, foto 3x4, nome, nascimento, **membro desde** (data do cadastro, que é a
   data de emissão), time (com a logo do time, se houver) e o QR Code. Não há validade na carteirinha, e
   a situação da mensalidade **não** é impressa (muda com o tempo); quem lê o QR vê a situação atual.
