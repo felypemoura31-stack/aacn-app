@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { confirmarPagamento } from '../../lib/payments'
@@ -40,6 +40,19 @@ export function AdminPayments() {
     await setDoc(doc(db, 'config', 'pix'), { ...cfg, chave, valor: Number(cfg.valor) })
     setCfg((c) => ({ ...c, chave }))
     setCfgMsg('Configuração salva.')
+  }
+
+  async function excluirCobranca(p: Payment) {
+    if (!window.confirm(`Excluir a cobrança de ${reais(p.valor)} de ${p.jogadorNome}? Nada é creditado e o jogador pode gerar outro Pix quando quiser.`)) return
+    setBusyId(p.id)
+    setErro(null)
+    try {
+      await deleteDoc(doc(db, 'payments', p.id))
+    } catch (e) {
+      setErro((e as Error).message)
+    } finally {
+      setBusyId(null)
+    }
   }
 
   async function confirmar(p: Payment) {
@@ -149,7 +162,10 @@ export function AdminPayments() {
       )}
 
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
-      <h2 className="mb-2 text-sm font-semibold text-ink">Aguardando confirmação</h2>
+      <h2 className="mb-1 text-sm font-semibold text-ink">Aguardando confirmação</h2>
+      <p className="mb-2 text-xs text-mute">
+        Confirme quando o Pix cair na conta, ou exclua a cobrança se o jogador desistiu de pagar.
+      </p>
       {pendentes.length === 0 && (
         <p className="mb-6 text-sm text-mute/70">Nenhuma cobrança pendente.</p>
       )}
@@ -175,6 +191,9 @@ export function AdminPayments() {
               />
               <button disabled={busyId === p.id} onClick={() => confirmar(p)} className="btn-primary">
                 Confirmar
+              </button>
+              <button disabled={busyId === p.id} onClick={() => excluirCobranca(p)} className="btn-ghost text-danger">
+                Excluir
               </button>
             </div>
           </div>

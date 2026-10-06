@@ -301,7 +301,12 @@ service cloud.firestore {
         request.resource.data.uid == request.auth.uid &&
         request.resource.data.status == 'pendente';
       allow update: if isFinanceiro();
-      allow delete: if isAdmin(); // só para o reset de dados de teste (Admin > ficha do jogador)
+      // Cobrança PENDENTE (Pix ainda não pago): o próprio jogador, o tesoureiro ou o admin cancelam.
+      // Pagamento já confirmado só o admin apaga (reset de dados de teste na ficha do jogador).
+      allow delete: if isAdmin() || (
+        resource.data.status == 'pendente' &&
+        (isFinanceiro() || (isSignedIn() && resource.data.uid == request.auth.uid))
+      );
     }
 
     // Carteira de créditos de jogo (R$ 1 = 2 créditos). Quem credita é só o admin

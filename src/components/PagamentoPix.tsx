@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, doc, onSnapshot, query, where } from 'firebase/firestore'
+import { collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore'
 import QRCode from 'react-qr-code'
 import { db } from '../firebase'
 import { creditosDoPagamento, formatarCreditos } from '../lib/credits'
@@ -39,6 +39,12 @@ export function PagamentoPix({ player }: { player: Player }) {
     } finally {
       setGerando(false)
     }
+  }
+
+  async function cancelar() {
+    if (!pendente) return
+    if (!window.confirm('Cancelar este Pix? Se você já pagou, não cancele: a diretoria precisa confirmar o pagamento.')) return
+    await deleteDoc(doc(db, 'payments', pendente.id))
   }
 
   const payload = pendente && configurado ? gerarPixCopiaECola({ ...cfg, valor: pendente.valor }, pendente.txid) : null
@@ -101,6 +107,9 @@ export function PagamentoPix({ player }: { player: Player }) {
           <textarea readOnly value={payload} rows={3} className="input font-mono text-[10px]" />
           <button onClick={copiar} className="btn-primary w-full">
             {copiado ? 'Copiado!' : 'Copiar Pix copia e cola'}
+          </button>
+          <button onClick={cancelar} className="btn-ghost w-full text-danger">
+            Cancelar este Pix (não vou pagar)
           </button>
           <p className="text-xs text-mute">
             Pague no app do seu banco. Assim que a diretoria confirmar o recebimento, seu
