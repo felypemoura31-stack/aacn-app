@@ -106,9 +106,9 @@ function App() {
         <Route
           path="/solicitacoes"
           element={
-            <CadastroCompletoRoute>
+            <ProtectedRoute>
               <RepresentativeRequests />
-            </CadastroCompletoRoute>
+            </ProtectedRoute>
           }
         />
 

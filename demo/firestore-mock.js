@@ -296,7 +296,7 @@ function runQuery(q) {
       return ((x ?? 0) - (y ?? 0)) * dir
     })
   }
-  return { docs: rows.map(([id]) => docSnap(q.col, id)) }
+  return { docs: rows.map(([id]) => docSnap(q.col, id)), empty: rows.length === 0, size: rows.length }
 }
 
 export const getFirestore = () => ({})

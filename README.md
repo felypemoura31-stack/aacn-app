@@ -327,6 +327,10 @@ A aba **Solicitações do time** só aparece para quem é representante de algum
 - **Responsável:** o campo sugere os jogadores cadastrados (digite para escolher; também aceita texto
   livre). Se o time não tem responsável, entra automaticamente o representante; ao definir um
   representante em Gestão → Times, ele já vira o responsável se o campo estiver vazio.
+- **Representante vale na hora:** quando o admin escolhe o representante em Gestão → Times, ele passa a ter acesso
+  imediato (aba Solicitações do time, aprovar/recusar, Editar time), sem aceitar nada e mesmo com o cadastro
+  incompleto ou o termo pendente (isso só bloqueia a carteirinha, os jogos e o time dele como jogador). Quem
+  deixa de ser representante perde o acesso na hora. Ser representante não o torna membro do time.
 - **Quem edita:** o admin edita tudo (inclusive o nome do time); o representante edita só o perfil do
   próprio time. A logo é reduzida (até 192 px, ~10–40 KB) e guardada no Firestore.
 - **Links seguros:** só são aceitos endereços http/https (ou @usuário/número); `javascript:`, `data:`
