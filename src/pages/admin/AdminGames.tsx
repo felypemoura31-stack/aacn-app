@@ -19,6 +19,7 @@ import {
   reais,
 } from '../../lib/credits'
 import { baixarCsv } from '../../lib/csv'
+import { linkEnviarWhatsapp, montarListaWhatsapp } from '../../lib/listaPresenca'
 import { urlHttp } from '../../lib/redes'
 import { formatarData, paraMillis } from '../../lib/status'
 import type { Game, JogadorResumo, Participation } from '../../types'
@@ -113,6 +114,9 @@ export function AdminGames() {
   const [novo, setNovo] = useState<FormJogo>(VAZIO)
   const [editando, setEditando] = useState<string | null>(null)
   const [edit, setEdit] = useState<FormJogo>(VAZIO)
+
+  const [lista, setLista] = useState<{ nome: string; texto: string } | null>(null)
+  const [copiado, setCopiado] = useState(false)
 
   const [novoUid, setNovoUid] = useState('')
   const [novoModo, setNovoModo] = useState<'creditos' | 'dinheiro'>('creditos')
@@ -215,6 +219,18 @@ export function AdminGames() {
     } catch {
       setErro('Não foi possível chamar essa pessoa da lista de espera.')
     }
+  }
+
+  function abrirLista(g: Game) {
+    setCopiado(false)
+    setLista({ nome: g.nome, texto: montarListaWhatsapp(g, parts.filter((p) => p.gameId === g.id && p.status !== 'removida')) })
+  }
+
+  async function copiarLista() {
+    if (!lista) return
+    await navigator.clipboard.writeText(lista.texto)
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 2000)
   }
 
   function exportar(g: Game, lista: Participation[]) {
@@ -360,15 +376,48 @@ export function AdminGames() {
                     </div>
                   )}
 
-                  <button onClick={() => exportar(g, [...lista, ...espera])} className="btn-ghost mt-2">
-                    Exportar inscritos (CSV)
-                  </button>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button onClick={() => abrirLista(g)} className="btn-primary">
+                      Lista para WhatsApp
+                    </button>
+                    <button onClick={() => exportar(g, [...lista, ...espera])} className="btn-ghost">
+                      Exportar inscritos (CSV)
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           )
         })}
       </div>
+
+      {lista && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/85 p-4">
+          <div className="panel my-4 w-full max-w-md space-y-3 p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-ink">Lista para WhatsApp: {lista.nome}</h2>
+              <button onClick={() => setLista(null)} aria-label="Fechar" className="px-2 text-lg leading-none text-mute hover:text-ink">
+                ×
+              </button>
+            </div>
+            <p className="text-xs text-mute">Confira e, se quiser, edite o texto antes de enviar. Ao enviar, o WhatsApp abre para você escolher o grupo.</p>
+            <textarea
+              value={lista.texto}
+              onChange={(e) => setLista({ ...lista, texto: e.target.value })}
+              rows={16}
+              className="input font-mono text-xs"
+            />
+            <div className="flex flex-wrap justify-end gap-2">
+              <button onClick={copiarLista} className="btn-ghost">
+                {copiado ? 'Copiado!' : 'Copiar texto'}
+              </button>
+              <a href={linkEnviarWhatsapp(lista.texto)} target="_blank" rel="noopener noreferrer" className="btn-primary">
+                Enviar no WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

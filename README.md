@@ -260,6 +260,10 @@ celular (abra a carteirinha, ative o modo avião e abra de novo).
 - Quem desiste (ou sai da espera) devolve a vaga. **Chamar da lista de espera** é manual: em
   Gerenciar jogos → Inscritos, "Chamar para o jogo" (admin, tesoureiro ou organizador). O check-in só vale
   para inscritos, não para quem está na espera.
+- **Lista para WhatsApp** (Gestão → Gerenciar jogos → Inscritos, para admin, tesoureiro e organizador): gera o texto
+  com nome, local, data, "chegada às", valor em dinheiro, valor em créditos e a "Lista de operadores" numerada na
+  ordem das inscrições (a lista de espera vem separada, se houver). O texto pode ser editado; "Copiar texto" ou
+  "Enviar no WhatsApp" (abre o WhatsApp para escolher o grupo; o WhatsApp não permite escolher o grupo por link).
 - **Exportar inscritos (CSV)** por jogo: jogador, situação, forma de pagamento, créditos, quando e por quem
   fez o check-in (abre no Excel/Sheets).
 - Se uma disputa de última vaga acontecer ao mesmo tempo, quem perde recebe um aviso e pode entrar na espera.
