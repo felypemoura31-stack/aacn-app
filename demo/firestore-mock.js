@@ -17,6 +17,7 @@ const store = {
   contatos: {},
   cobrancas: {},
   avisos: {},
+  partners: {},
 }
 
 const svg = (s) => 'data:image/svg+xml;utf8,' + encodeURIComponent(s)
@@ -206,6 +207,37 @@ store.participations['g-1_u-jogador'] = {
   criadoEm: now - day,
 }
 
+store.partners['pt-1'] = {
+  nome: 'Mercado do Atirador',
+  categoria: 'Equipamentos e airsoft',
+  desconto: '10% em BBs, baterias e acessórios',
+  descricao: 'Válido para compras presenciais, mediante apresentação da carteirinha com mensalidade em dia.',
+  endereco: 'Av. Orcalino Santos, 100 - Caldas Novas/GO',
+  telefone: '(64) 99999-1111',
+  link: 'https://instagram.com/mercadodoatirador',
+  logoUrl: null,
+  ativo: true,
+  criadoEm: now - 10 * day,
+}
+store.partners['pt-2'] = {
+  nome: 'Lanchonete Ponto Tático',
+  categoria: 'Alimentação',
+  desconto: '5% no consumo no local',
+  descricao: null,
+  endereco: 'Rua das Palmeiras, 55',
+  telefone: null,
+  link: null,
+  logoUrl: null,
+  ativo: true,
+  criadoEm: now - 8 * day,
+}
+store.partners['pt-3'] = { nome: 'Oficina Velha (inativa)', categoria: 'Serviços', desconto: '15% na mão de obra', ativo: false, criadoEm: now - 20 * day }
+const mes = (n, dia) => { const d = new Date(); d.setMonth(d.getMonth() - n); d.setDate(dia); return d.getTime() }
+const pagos = [[0, 'u-jogador', 'Carlos Silva', 10, 3], [1, 'u-jogador', 'Carlos Silva', 10, 5], [2, 'u-jogador', 'Carlos Silva', 10, 5], [0, 'u-pedro', 'Pedro Alves', 5, 2], [1, 'u-pedro', 'Pedro Alves', 5, 4], [3, 'u-marcos', 'Marcos Lima', 5, 8]]
+pagos.forEach(([n, uid, nome, valor, dia], i) => {
+  store.payments['pg-h' + i] = { uid, jogadorNome: nome, valor, txid: 'AACNHIST' + i, status: 'confirmado', criadoEm: mes(n, dia), confirmadoEm: mes(n, dia), dataPagamento: mes(n, dia), creditosGerados: valor * 2 }
+})
+
 for (const p of seedPlayers) store.contatos[p.uid] = { celular: p.celular || '', atualizadoEm: now }
 store.contatos['u-ana'] = { celular: '', atualizadoEm: now }
 store.avisos['a-1'] = {
@@ -335,3 +367,7 @@ export function writeBatch() {
 export const initializeFirestore = () => ({})
 export const persistentLocalCache = () => ({})
 export const persistentMultipleTabManager = () => ({})
+
+export async function getDocs(ref) {
+  return runQuery(ref.kind === 'col' ? { col: ref.col, cons: [] } : ref)
+}

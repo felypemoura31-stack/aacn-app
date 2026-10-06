@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { rotuloDoCargo } from '../lib/roles'
+import { useEhRepresentante } from '../lib/useRepresentante'
 import type { UserRole } from '../types'
 
 interface Grupo {
@@ -18,12 +19,14 @@ const GRUPOS: Grupo[] = [
       { to: '/admin', rotulo: 'Jogadores', end: true },
       { to: '/admin/times', rotulo: 'Times' },
       { to: '/admin/cargos', rotulo: 'Cargos' },
+      { to: '/admin/parceiros', rotulo: 'Parceiros' },
     ],
   },
   {
     titulo: 'Tesouraria',
     roles: ['admin', 'tesoureiro'],
     itens: [
+      { to: '/admin/painel', rotulo: 'Painel e relatórios' },
       { to: '/admin/pagamentos', rotulo: 'Pagamentos' },
       { to: '/admin/creditos', rotulo: 'Créditos' },
       { to: '/admin/cobrancas', rotulo: 'Cobranças' },
@@ -48,6 +51,7 @@ export function Navbar() {
   const { currentUser, player, logout } = useAuth()
   const { pathname } = useLocation()
   const [aberto, setAberto] = useState(false)
+  const ehRepresentante = useEhRepresentante(currentUser?.uid)
 
   useEffect(() => setAberto(false), [pathname])
 
@@ -102,9 +106,17 @@ export function Navbar() {
           <NavLink to="/times" className={linkClass}>
             Times
           </NavLink>
-          <NavLink to="/solicitacoes" className={linkClass}>
-            Solicitações do time
+          <NavLink to="/parceiros" className={linkClass}>
+            Parceiros
           </NavLink>
+          <NavLink to="/historico" className={linkClass}>
+            Histórico
+          </NavLink>
+          {ehRepresentante && (
+            <NavLink to="/solicitacoes" className={linkClass}>
+              Solicitações do time
+            </NavLink>
+          )}
           <button
             onClick={() => logout()}
             className="ml-auto rounded-sm px-3 py-2 text-sm font-medium text-mute hover:bg-surface2"

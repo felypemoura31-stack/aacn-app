@@ -89,8 +89,8 @@ export interface Payment {
   txid: string
   status: PaymentStatus
   criadoEm: number
-  confirmadoEm: number | null
-  dataPagamento: number | null
+  confirmadoEm: unknown
+  dataPagamento: unknown
   creditosGerados?: number
 }
 
@@ -161,5 +161,19 @@ export interface Aviso {
   fixado: boolean
   autorUid: string
   autorNome: string
+  criadoEm: unknown
+}
+
+export interface Partner {
+  id: string
+  nome: string
+  categoria: string
+  desconto: string
+  descricao?: string | null
+  endereco?: string | null
+  telefone?: string | null
+  link?: string | null
+  logoUrl?: string | null
+  ativo: boolean
   criadoEm: unknown
 }

@@ -1,0 +1,109 @@
+import { useEffect, useMemo, useState } from 'react'
+import { collection, onSnapshot, query, where } from 'firebase/firestore'
+import { db } from '../firebase'
+import { useAuth } from '../contexts/AuthContext'
+import { formatarCreditos, reais } from '../lib/credits'
+import { DIA_MS, formatarData, paraMillis } from '../lib/status'
+import type { Game, LedgerEntry, Participation, Payment } from '../types'
+
+function Kpi({ titulo, valor, detalhe }: { titulo: string; valor: string | number; detalhe?: string }) {
+  return (
+    <div className="panel p-4">
+      <p className="text-[11px] uppercase tracking-widest text-mute/80">{titulo}</p>
+      <p className="mt-1 text-2xl font-bold text-ink">{valor}</p>
+      {detalhe && <p className="mt-1 text-xs text-mute">{detalhe}</p>}
+    </div>
+  )
+}
+
+export function History() {
+  const { player } = useAuth()
+  const [parts, setParts] = useState<Participation[]>([])
+  const [games, setGames] = useState<Game[]>([])
+  const [payments, setPayments] = useState<Payment[]>([])
+  const [ledger, setLedger] = useState<LedgerEntry[]>([])
+
+  useEffect(() => {
+    if (!player) return
+    const meu = where('uid', '==', player.uid)
+    const unsubs = [
+      onSnapshot(query(collection(db, 'participations'), meu), (s) => setParts(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation))),
+      onSnapshot(collection(db, 'games'), (s) => setGames(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Game))),
+      onSnapshot(query(collection(db, 'payments'), meu), (s) => setPayments(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Payment))),
+      onSnapshot(query(collection(db, 'ledger'), meu), (s) => setLedger(s.docs.map((d) => ({ id: d.id, ...d.data() }) as LedgerEntry))),
+    ]
+    return () => unsubs.forEach((u) => u())
+  }, [player])
+
+  const dados = useMemo(() => {
+    const gamePorId = new Map(games.map((g) => [g.id, g]))
+    const hoje = new Date().toISOString().slice(0, 10)
+    const jogados = parts
+      .filter((p) => p.status === 'presente')
+      .map((p) => ({ p, g: gamePorId.get(p.gameId) }))
+      .sort((a, b) => (b.g?.data ?? '').localeCompare(a.g?.data ?? ''))
+    // inscrito, o jogo já passou e nunca fez check-in = falta
+    const faltas = parts.filter((p) => p.status === 'ativa' && (gamePorId.get(p.gameId)?.data ?? '9999') < hoje).length
+    const presentes = jogados.length
+    const frequencia = presentes + faltas > 0 ? Math.round((presentes / (presentes + faltas)) * 100) : null
+
+    const pagas = payments.filter((p) => p.status === 'confirmado')
+    const totalPago = pagas.reduce((s, p) => s + p.valor, 0)
+    const recebidos = ledger.filter((l) => l.tipo === 'pagamento' && l.creditos > 0).reduce((s, l) => s + l.creditos, 0)
+    const usados = Math.max(0, -ledger.filter((l) => l.tipo === 'jogo' || l.tipo === 'estorno').reduce((s, l) => s + l.creditos, 0))
+    return { jogados, presentes, faltas, frequencia, pagas: pagas.length, totalPago, recebidos, usados }
+  }, [parts, games, payments, ledger])
+
+  if (!player) return null
+
+  const desde = paraMillis(player.criadoEm)
+  const dias = desde ? (Date.now() - desde) / DIA_MS : 0
+  const conquistas = [
+    { id: 'primeiro', titulo: 'Primeiro jogo', desc: 'Jogou o primeiro jogo', ok: dados.presentes >= 1 },
+    { id: 'campo', titulo: 'Em campo', desc: '5 jogos jogados', ok: dados.presentes >= 5 },
+    { id: 'veterano', titulo: 'Veterano', desc: '10 jogos jogados', ok: dados.presentes >= 10 },
+    { id: 'lenda', titulo: 'Lenda', desc: '25 jogos jogados', ok: dados.presentes >= 25 },
+    { id: 'assiduo', titulo: 'Assíduo', desc: 'Frequência de 80% ou mais (a partir de 5 jogos)', ok: dados.presentes + dados.faltas >= 5 && (dados.frequencia ?? 0) >= 80 },
+    { id: 'emdia', titulo: 'Em dia', desc: '3 ou mais mensalidades pagas', ok: dados.pagas >= 3 },
+    { id: 'ano', titulo: '1 ano de AACN', desc: 'Associado há um ano ou mais', ok: dias >= 365 },
+    { id: 'time', titulo: 'Parte de um time', desc: 'Membro aprovado de um time', ok: player.timeAprovado },
+  ]
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <h1 className="mb-1 text-xl font-bold text-ink">Meu histórico</h1>
+      <p className="mb-6 text-sm text-mute">Associado desde {formatarData(desde)}.</p>
+
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Kpi titulo="Jogos jogados" valor={dados.presentes} />
+        <Kpi titulo="Frequência" valor={dados.frequencia === null ? '—' : `${dados.frequencia}%`} detalhe={dados.faltas ? `${dados.faltas} falta(s)` : 'sem faltas'} />
+        <Kpi titulo="Mensalidades" valor={dados.pagas} detalhe={reais(dados.totalPago)} />
+        <Kpi titulo="Créditos usados" valor={formatarCreditos(dados.usados)} detalhe={`${formatarCreditos(dados.recebidos)} recebidos`} />
+      </div>
+
+      <h2 className="mb-2 text-sm font-semibold text-ink">Conquistas</h2>
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {conquistas.map((c) => (
+          <div key={c.id} className={`panel p-3 text-center ${c.ok ? '' : 'opacity-40'}`} title={c.desc}>
+            <p className="text-2xl">{c.ok ? '★' : '☆'}</p>
+            <p className="mt-1 text-sm font-semibold text-ink">{c.titulo}</p>
+            <p className="mt-1 text-[11px] text-mute">{c.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="mb-2 text-sm font-semibold text-ink">Jogos que você jogou</h2>
+      <div className="space-y-2">
+        {dados.jogados.length === 0 && <p className="text-sm text-mute/70">Você ainda não tem presença registrada.</p>}
+        {dados.jogados.map(({ p, g }) => (
+          <div key={p.id} className="flex justify-between rounded-sm border border-line bg-surface2 px-4 py-2 text-sm">
+            <span className="text-ink">
+              {p.gameNome} <span className="text-mute">{g ? `· ${new Date(g.data + 'T12:00').toLocaleDateString('pt-BR')}` : ''}</span>
+            </span>
+            <span className="text-mute">{p.pagoCom === 'creditos' ? `${formatarCreditos(p.creditosDebitados)} créditos` : 'dinheiro'}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

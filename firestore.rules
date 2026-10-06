@@ -432,6 +432,25 @@ service cloud.firestore {
       allow delete: if isFinanceiro() || isOrganizador();
     }
 
+    // Parceiros com desconto: todos os logados veem; só o admin cadastra.
+    match /partners/{partnerId} {
+      function parceiroValido(d) {
+        return d.nome is string && d.nome.size() <= 80 &&
+          d.desconto is string && d.desconto.size() <= 120 &&
+          textoCurto(d.get('categoria', null), 40) &&
+          textoCurto(d.get('descricao', null), 500) &&
+          textoCurto(d.get('endereco', null), 160) &&
+          textoCurto(d.get('telefone', null), 20) &&
+          (d.get('link', null) == null || (d.link is string && d.link.size() <= 200 && d.link.matches('^https?://.*'))) &&
+          logoValida(d.get('logoUrl', null)) &&
+          d.get('ativo', true) is bool;
+      }
+
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin() && parceiroValido(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
     // Fila de e-mails consumida pela extensão "Trigger Email" (Firebase
     // Extensions). O backend da extensão usa Admin SDK e ignora estas regras;
     // aqui só liberamos a criação pelo cliente.

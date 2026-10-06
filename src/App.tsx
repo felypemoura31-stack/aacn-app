@@ -21,6 +21,10 @@ import { Teams } from './pages/Teams'
 import { Terms } from './pages/Terms'
 import { AdminCobrancas } from './pages/admin/AdminCobrancas'
 import { AdminAvisos } from './pages/admin/AdminAvisos'
+import { AdminPanel } from './pages/admin/AdminPanel'
+import { AdminPartners } from './pages/admin/AdminPartners'
+import { Partners } from './pages/Partners'
+import { History } from './pages/History'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { OfflineBanner } from './components/OfflineBanner'
 import { TeamProfile } from './pages/TeamProfile'
@@ -80,6 +84,22 @@ function App() {
           element={
             <ProtectedRoute>
               <TeamProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/parceiros"
+          element={
+            <ProtectedRoute>
+              <Partners />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/historico"
+          element={
+            <ProtectedRoute>
+              <History />
             </ProtectedRoute>
           }
         />
@@ -176,6 +196,23 @@ function App() {
             <JogosRoute>
               <AdminAvisos />
             </JogosRoute>
+          }
+        />
+
+        <Route
+          path="/admin/painel"
+          element={
+            <FinanceiroRoute>
+              <AdminPanel />
+            </FinanceiroRoute>
+          }
+        />
+        <Route
+          path="/admin/parceiros"
+          element={
+            <AdminRoute>
+              <AdminPartners />
+            </AdminRoute>
           }
         />
 

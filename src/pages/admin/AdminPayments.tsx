@@ -3,7 +3,7 @@ import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/fi
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { confirmarPagamento } from '../../lib/payments'
-import { formatarData } from '../../lib/status'
+import { formatarData, paraMillis } from '../../lib/status'
 import type { Payment, PixConfig } from '../../types'
 
 const hoje = () => new Date().toISOString().slice(0, 10)
@@ -157,7 +157,7 @@ export function AdminPayments() {
             <span>
               {p.jogadorNome} · {reais(p.valor)}
             </span>
-            <span className="text-ok">pago em {formatarData(p.dataPagamento)}</span>
+            <span className="text-ok">pago em {formatarData(paraMillis(p.dataPagamento))}</span>
           </div>
         ))}
       </div>

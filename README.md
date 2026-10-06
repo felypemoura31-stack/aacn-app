@@ -264,6 +264,34 @@ celular (abra a carteirinha, ative o modo avião e abra de novo).
   fez o check-in (abre no Excel/Sheets).
 - Se uma disputa de última vaga acontecer ao mesmo tempo, quem perde recebe um aviso e pode entrar na espera.
 
+## Painel e relatórios
+
+**Gestão → Painel e relatórios** (admin e tesoureiro): total de associados, em dia, inadimplentes (e % dos
+ativos), receita do mês, receita dos últimos 6 meses, presença nos últimos jogos e membros por time.
+**Exportar planilhas (CSV)** (abrem no Excel/Planilhas): pagamentos, presença por jogo e, só para o admin,
+associados (nome, e-mail, celular, nascimento, time, situação, vencimento; pede confirmação por conter
+dados pessoais, não inclui endereço nem dados de saúde). As planilhas neutralizam fórmulas para evitar
+injeção quando abertas no Excel.
+
+## Parceiros com desconto
+
+- **Gestão → Parceiros** (admin): cadastra estabelecimentos com logo, categoria, benefício (ex: "10% em
+  BBs"), condições, endereço, telefone/WhatsApp, link (Instagram/site, só http/https) e se a parceria
+  está ativa.
+- **Aba Parceiros** (todos os logados): lista com busca e filtro por categoria e aviso se a mensalidade do
+  associado está em dia (benefício vale para quem está em dia; o parceiro confere lendo o QR).
+
+## Meu histórico
+
+**Histórico** (todos): jogos jogados, frequência (presenças ÷ presenças + faltas em jogos já passados),
+mensalidades pagas e total, créditos recebidos/usados e **conquistas** (primeiro jogo, 5/10/25 jogos,
+assíduo, em dia, 1 ano de AACN, parte de um time). Ranking entre associados não foi feito (precisaria de
+contadores públicos de presença).
+
+## Barra de navegação
+
+A aba **Solicitações do time** só aparece para quem é representante de algum time.
+
 ## Cobrança pelo WhatsApp
 
 - Em **Gestão → Cobranças** (admin e tesoureiro) aparecem os associados com a mensalidade vencida
@@ -336,7 +364,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (126 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (137 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.
