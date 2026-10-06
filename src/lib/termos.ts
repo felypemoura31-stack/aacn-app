@@ -3,7 +3,7 @@
  * ATENÇÃO: é um texto-modelo geral. A diretoria deve revisar com um advogado antes de colocar
  * em uso. Ao alterar o conteúdo, mude VERSAO_TERMOS: todos os associados precisarão aceitar de novo.
  */
-export const VERSAO_TERMOS = '2026-10-v1'
+export const VERSAO_TERMOS = '2026-10-v2'
 
 export interface Secao {
   titulo: string
@@ -57,7 +57,7 @@ export const POLITICA_PRIVACIDADE: Secao[] = [
   {
     titulo: '2. Dados que coletamos',
     texto:
-      'Nome, e-mail, data de nascimento, endereço, celular, foto 3x4, contato de emergência, condições médicas ou necessidades especiais (dado sensível), time, situação e histórico de pagamentos da mensalidade, créditos de jogo, inscrições e presença em jogos, e, para menores, os dados do responsável legal.',
+      'Nome, CPF, e-mail, data de nascimento, endereço, celular, foto 3x4, contato de emergência, condições médicas ou necessidades especiais (dado sensível), time, situação e histórico de pagamentos da mensalidade, créditos de jogo, inscrições e presença em jogos, e, para menores, os dados do responsável legal.',
   },
   {
     titulo: '3. Para que usamos',

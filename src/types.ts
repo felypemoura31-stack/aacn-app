@@ -19,6 +19,7 @@ export interface Player {
   bairro?: string
   cep?: string
   dataNascimento: string // ISO date (yyyy-mm-dd)
+  cpf?: string // só os 11 dígitos
   contatoEmergenciaNome: string
   contatoEmergenciaTelefone: string
   celular: string

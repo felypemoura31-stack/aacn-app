@@ -3,6 +3,7 @@ import { collection, getDocs, onSnapshot } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { reais } from '../../lib/credits'
+import { formatarCpf } from '../../lib/cadastro'
 import { baixarCsv } from '../../lib/csv'
 import { DIA_MS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import type { Game, JogadorResumo, Participation, Payment, PlayerStatus, Player, Team } from '../../types'
@@ -152,9 +153,10 @@ export function AdminPanel() {
       const jogadores = snap.docs.map((d) => d.data() as Player).sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto))
       baixarCsv(
         `associados-${new Date().toISOString().slice(0, 10)}.csv`,
-        ['Nome', 'E-mail', 'Celular', 'Nascimento', 'Time', 'Situação', 'Vencimento', 'Cadastro em', 'Termo aceito (versão)'],
+        ['Nome', 'CPF', 'E-mail', 'Celular', 'Nascimento', 'Time', 'Situação', 'Vencimento', 'Cadastro em', 'Termo aceito (versão)'],
         jogadores.map((p) => [
           p.nomeCompleto,
+          p.cpf ? formatarCpf(p.cpf) : '',
           p.email,
           p.celular,
           p.dataNascimento,

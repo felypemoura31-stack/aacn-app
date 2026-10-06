@@ -227,9 +227,17 @@ O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
 ## Cadastro obrigatório
 
 Para usar a carteirinha, os jogos e a área do time, o jogador precisa preencher: nome completo,
-foto 3x4, endereço (rua e número), **bairro**, **CEP**, data de nascimento, **celular** (com DDD), nome e telefone do contato de
+**CPF**, foto 3x4, endereço (rua e número), **bairro**, **CEP**, data de nascimento, **celular** (com DDD), nome e telefone do contato de
 emergência. Enquanto faltar algo, o app leva para **Meus dados** e lista o que falta. Condições
 médicas continuam opcionais. A regra é aplicada na tela (não nas regras do banco).
+
+**CPF:** é pedido já na tela **Criar conta** e também em **Meus dados** (e o admin edita na ficha do jogador). O app
+confere os dois dígitos verificadores (não aceita CPF inventado nem números repetidos) e guarda só os 11 dígitos;
+as regras do banco só aceitam esse formato. Ele fica no cadastro, que só o próprio jogador e o admin leem: **não** vai
+para o cartão público, para a cópia da tesouraria nem para a carteirinha impressa; sai na planilha de associados
+(admin). **Não** há trava de CPF repetido (duas contas com o mesmo CPF são aceitas). Jogadores antigos, sem CPF,
+são levados a Meus dados para informar. A versão do termo foi para `2026-10-v2` (o CPF entrou na lista de dados
+coletados), então todos aceitam o termo de novo.
 
 ## Recuperar senha
 
@@ -465,7 +473,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (274 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (286 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

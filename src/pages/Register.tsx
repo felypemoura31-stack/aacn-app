@@ -2,11 +2,13 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { PasswordInput } from '../components/PasswordInput'
+import { cpfValido, formatarCpf } from '../lib/cadastro'
 
 export function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
   const [nomeCompleto, setNomeCompleto] = useState('')
+  const [cpf, setCpf] = useState('')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [confirmarSenha, setConfirmarSenha] = useState('')
@@ -18,6 +20,10 @@ export function Register() {
     e.preventDefault()
     setError(null)
 
+    if (!cpfValido(cpf)) {
+      setError('Informe um CPF válido.')
+      return
+    }
     if (senha !== confirmarSenha) {
       setError('As senhas não coincidem.')
       return
@@ -34,7 +40,7 @@ export function Register() {
 
     setLoading(true)
     try {
-      await register({ nomeCompleto, email, senha, aceitaTermos: aceita })
+      await register({ nomeCompleto, cpf, email, senha, aceitaTermos: aceita })
       navigate('/perfil')
     } catch (err) {
       const code = (err as { code?: string }).code
@@ -71,6 +77,19 @@ export function Register() {
           required
           value={nomeCompleto}
           onChange={(e) => setNomeCompleto(e.target.value)}
+          className="input mb-4"
+        />
+
+        <label className="mb-1 block text-sm font-medium text-ink">
+          CPF
+        </label>
+        <input
+          required
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="000.000.000-00"
+          value={cpf}
+          onChange={(e) => setCpf(formatarCpf(e.target.value))}
           className="input mb-4"
         />
 

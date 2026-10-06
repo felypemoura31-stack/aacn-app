@@ -18,12 +18,14 @@ import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/fires
 import { auth, db } from '../firebase'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
 import { excluirMinhaConta } from '../lib/conta'
+import { cpfValido, soDigitos } from '../lib/cadastro'
 import { contatoDesatualizado, contatoDoCadastro, type Contato } from '../lib/useContatos'
 import { VERSAO_TERMOS } from '../lib/termos'
 import type { Player } from '../types'
 
 interface RegisterInput {
   nomeCompleto: string
+  cpf: string
   email: string
   senha: string
   aceitaTermos: boolean
@@ -98,25 +100,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
   }, [player])
 
-  async function register({ nomeCompleto, email, senha, aceitaTermos }: RegisterInput) {
+  async function register({ nomeCompleto, cpf, email, senha, aceitaTermos }: RegisterInput) {
     if (!aceitaTermos) throw new Error('É preciso aceitar o termo de responsabilidade.')
+    if (!cpfValido(cpf)) throw new Error('Informe um CPF válido.')
     setOcupado(true)
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, senha)
       await updateProfile(cred.user, { displayName: nomeCompleto })
-      await criarCadastro(cred.user.uid, email, nomeCompleto)
+      await criarCadastro(cred.user.uid, email, nomeCompleto, soDigitos(cpf))
     } finally {
       setOcupado(false)
     }
   }
 
   /** Cria o cadastro inicial (jogador, inadimplente) e o cartão público; a carteira só se ainda não existir. */
-  async function criarCadastro(uid: string, email: string, nomeCompleto: string) {
+  async function criarCadastro(uid: string, email: string, nomeCompleto: string, cpf = '') {
     const now = Date.now()
     const newPlayer: Player = {
       uid,
       nomeCompleto,
       email,
+      cpf,
       endereco: '',
       bairro: '',
       cep: '',

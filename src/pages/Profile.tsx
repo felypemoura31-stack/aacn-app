@@ -17,7 +17,7 @@ import { SelosConquistas } from '../components/SelosConquistas'
 import { ExcluirMinhaConta } from '../components/ExcluirMinhaConta'
 import { solicitarEntradaNoTime } from '../lib/teams'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
-import { cepValido, dataNascimentoValida, ehMenor, faltasDoCadastro, formatarCep, formatarTelefone, telefoneValido } from '../lib/cadastro'
+import { cepValido, dataNascimentoValida, ehMenor, faltasDoCadastro, formatarCep, formatarTelefone, telefoneValido, cpfValido, formatarCpf, soDigitos } from '../lib/cadastro'
 import { VERSAO_TERMOS } from '../lib/termos'
 import { linkDaRede } from '../lib/redes'
 import { comMensagem } from '../lib/whatsapp'
@@ -36,6 +36,7 @@ export function Profile() {
   const [bairro, setBairro] = useState('')
   const [cep, setCep] = useState('')
   const [dataNascimento, setDataNascimento] = useState('')
+  const [cpf, setCpf] = useState('')
   const [celular, setCelular] = useState('')
   const [contatoEmergenciaNome, setContatoEmergenciaNome] = useState('')
   const [contatoEmergenciaTelefone, setContatoEmergenciaTelefone] = useState('')
@@ -60,6 +61,7 @@ export function Profile() {
     setBairro(player.bairro ?? '')
     setCep(formatarCep(player.cep ?? ''))
     setDataNascimento(player.dataNascimento ?? '')
+    setCpf(formatarCpf(player.cpf ?? ''))
     setCelular(formatarTelefone(player.celular ?? ''))
     setContatoEmergenciaNome(player.contatoEmergenciaNome ?? '')
     setContatoEmergenciaTelefone(formatarTelefone(player.contatoEmergenciaTelefone ?? ''))
@@ -85,6 +87,7 @@ export function Profile() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setErroForm(null)
+    if (!cpfValido(cpf)) return setErroForm('Informe um CPF válido.')
     if (!cepValido(cep)) return setErroForm('Informe o CEP com 8 números, por exemplo 75680-000.')
     if (!dataNascimentoValida(dataNascimento)) return setErroForm('Informe uma data de nascimento válida.')
     if (!telefoneValido(celular)) return setErroForm('Informe o celular com DDD, por exemplo (64) 99999-9999.')
@@ -102,6 +105,7 @@ export function Profile() {
         bairro: bairro.trim(),
         cep,
         dataNascimento,
+        cpf: soDigitos(cpf),
         celular,
         contatoEmergenciaNome,
         contatoEmergenciaTelefone,
@@ -120,7 +124,7 @@ export function Profile() {
       }
 
       setSavedMessage('Dados salvos com sucesso.')
-      if (faltasDoCadastro({ ...player!, nomeCompleto, endereco, bairro, cep, dataNascimento, celular, contatoEmergenciaNome, contatoEmergenciaTelefone, responsavelLegalNome: respNome, responsavelLegalTelefone: respTel, responsavelLegalAutoriza: respAutoriza }).length === 0) {
+      if (faltasDoCadastro({ ...player!, nomeCompleto, endereco, bairro, cep, dataNascimento, cpf, celular, contatoEmergenciaNome, contatoEmergenciaTelefone, responsavelLegalNome: respNome, responsavelLegalTelefone: respTel, responsavelLegalAutoriza: respAutoriza }).length === 0) {
         navigate('/')
       }
     } finally {
@@ -235,6 +239,18 @@ export function Profile() {
             placeholder="(64) 99999-9999"
             value={celular}
             onChange={(e) => setCelular(formatarTelefone(e.target.value))}
+            className="input"
+          />
+        </Field>
+
+        <Field label="CPF">
+          <input
+            required
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="000.000.000-00"
+            value={cpf}
+            onChange={(e) => setCpf(formatarCpf(e.target.value))}
             className="input"
           />
         </Field>

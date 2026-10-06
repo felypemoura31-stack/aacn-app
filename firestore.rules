@@ -128,6 +128,11 @@ service cloud.firestore {
       return /databases/$(database)/documents/conquistas/$(uid + '_' + c);
     }
 
+    // CPF guardado só com os 11 dígitos (a conferência dos dígitos verificadores é feita no app).
+    function cpfFormatoValido(d) {
+      return d.get('cpf', '') == '' || (d.cpf is string && d.cpf.matches('^[0-9]{11}$'));
+    }
+
     function isRepresentativeOfTeam(timeId) {
       return isSignedIn() && timeId != null &&
         get(/databases/$(database)/documents/teams/$(timeId)).data.representanteUid == request.auth.uid;
@@ -141,6 +146,7 @@ service cloud.firestore {
 
       // Cadastro novo: sempre jogador, inadimplente, sem vencimento e sem time aprovado.
       allow create: if isOwner(uid) &&
+        cpfFormatoValido(request.resource.data) &&
         request.resource.data.role == 'player' &&
         request.resource.data.status == 'inadimplente' &&
         request.resource.data.vencimento == null &&
@@ -152,7 +158,7 @@ service cloud.firestore {
       // nem se aprovar em um time; isso é só do admin/representante.
       // Cargos: o app NUNCA cria nem remove um admin (isso é só no console do
       // Firebase). O admin delega os demais cargos, mas não mexe no de outro admin.
-      allow update: if (isAdmin() && (
+      allow update: if cpfFormatoValido(request.resource.data) && ((isAdmin() && (
         request.resource.data.role == resource.data.role ||
         (request.resource.data.role != 'admin' && resource.data.role != 'admin')
       )) || (
@@ -178,7 +184,7 @@ service cloud.firestore {
          (request.resource.data.status == 'pago' && resource.data.status != 'inativo')) &&
         request.resource.data.vencimento >
           (resource.data.vencimento == null ? 0 : resource.data.vencimento)
-      );
+      ));
 
       // Excluir: o próprio jogador (conta dele) ou o admin. Um admin (cargo definido só no console)
       // nunca é excluído pelo app.

@@ -8,7 +8,7 @@ import { rotuloDoCargo } from '../../lib/roles'
 import { SelosConquistas } from '../../components/SelosConquistas'
 import { ResetJogador } from '../../components/ResetJogador'
 import { ExcluirJogador } from '../../components/ExcluirJogador'
-import { formatarCep, formatarTelefone } from '../../lib/cadastro'
+import { formatarCep, formatarCpf, formatarTelefone, soDigitos } from '../../lib/cadastro'
 import type { Player, PlayerStatus } from '../../types'
 
 export function AdminPlayerDetail() {
@@ -136,6 +136,15 @@ export function AdminPlayerDetail() {
             <input value={player.cep ?? ''} onChange={(e) => setField('cep', formatarCep(e.target.value))} className="input" />
           </Field>
         </div>
+
+        <Field label="CPF">
+          <input
+            value={formatarCpf(player.cpf ?? '')}
+            onChange={(e) => setField('cpf', soDigitos(e.target.value).slice(0, 11))}
+            placeholder="000.000.000-00"
+            className="input"
+          />
+        </Field>
 
         <Field label="Celular">
           <input
