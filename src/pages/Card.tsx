@@ -2,6 +2,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { CarteirinhaImpressao } from '../components/CarteirinhaImpressao'
 import { PagamentoPix } from '../components/PagamentoPix'
 import { SaldoCreditos } from '../components/SaldoCreditos'
+import { AvisosPanel } from '../components/AvisosPanel'
+import { AvisoMensalidade } from '../components/AvisoMensalidade'
 import { useTeam } from '../lib/useTeam'
 import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../lib/status'
 
@@ -17,6 +19,9 @@ export function Card() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="no-print mb-6 text-xl font-bold text-ink">Minha carteirinha</h1>
+
+      <AvisoMensalidade player={player} />
+      <AvisosPanel />
 
       <CarteirinhaImpressao
         player={player}

@@ -317,6 +317,40 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Contato de cobrança: espelho do celular do jogador. Só o próprio jogador grava;
+    // só ele e a tesouraria leem (para o botão "Cobrar no WhatsApp").
+    match /contatos/{uid} {
+      allow read: if isOwner(uid) || isFinanceiro();
+      allow create, update: if isOwner(uid) &&
+        request.resource.data.keys().hasOnly(['celular', 'atualizadoEm']) &&
+        request.resource.data.celular is string &&
+        request.resource.data.celular.size() <= 20;
+      allow delete: if false;
+    }
+
+    // Registro de quando cada associado foi cobrado (tesouraria).
+    match /cobrancas/{uid} {
+      allow read: if isFinanceiro();
+      allow create, update: if isFinanceiro() &&
+        request.resource.data.keys().hasOnly(['ultimaEm', 'porUid', 'porNome']) &&
+        request.resource.data.porUid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // Mural de avisos: admin, tesoureiro e organizador publicam; todos os logados leem.
+    match /avisos/{avisoId} {
+      allow read: if isSignedIn();
+      allow create: if (isFinanceiro() || isOrganizador()) &&
+        request.resource.data.keys().hasOnly(['titulo', 'texto', 'fixado', 'autorUid', 'autorNome', 'criadoEm']) &&
+        request.resource.data.autorUid == request.auth.uid &&
+        request.resource.data.titulo is string && request.resource.data.titulo.size() <= 100 &&
+        request.resource.data.texto is string && request.resource.data.texto.size() <= 1000 &&
+        request.resource.data.fixado is bool;
+      allow update: if (isFinanceiro() || isOrganizador()) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fixado']);
+      allow delete: if isFinanceiro() || isOrganizador();
+    }
+
     // Fila de e-mails consumida pela extensão "Trigger Email" (Firebase
     // Extensions). O backend da extensão usa Admin SDK e ignora estas regras;
     // aqui só liberamos a criação pelo cliente.

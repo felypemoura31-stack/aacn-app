@@ -77,6 +77,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
   }, [player])
 
+  useEffect(() => {
+    if (!player?.celular) return
+    getDoc(doc(db, 'contatos', player.uid))
+      .then((snap) => {
+        if (!snap.exists() || snap.data().celular !== player.celular) {
+          return setDoc(doc(db, 'contatos', player.uid), { celular: player.celular, atualizadoEm: serverTimestamp() })
+        }
+      })
+      .catch(() => {})
+  }, [player])
+
   async function register({ nomeCompleto, email, senha, aceitaTermos }: RegisterInput) {
     if (!aceitaTermos) throw new Error('É preciso aceitar o termo de responsabilidade.')
     const cred = await createUserWithEmailAndPassword(auth, email, senha)

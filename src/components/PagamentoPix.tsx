@@ -51,7 +51,7 @@ export function PagamentoPix({ player }: { player: Player }) {
   }
 
   return (
-    <div className="no-print panel chamfer mx-auto mt-6 w-full max-w-sm p-5">
+    <div id="pagamento" className="no-print panel chamfer mx-auto mt-6 w-full max-w-sm p-5">
       <h2 className="mb-3 text-sm font-bold text-ink">Mensalidade</h2>
 
       <div className="mb-3 flex items-center justify-between text-sm">

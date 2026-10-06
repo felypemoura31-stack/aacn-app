@@ -145,3 +145,13 @@ export interface LedgerEntry {
   porNome: string
   criadoEm: number
 }
+
+export interface Aviso {
+  id: string
+  titulo: string
+  texto: string
+  fixado: boolean
+  autorUid: string
+  autorNome: string
+  criadoEm: unknown
+}

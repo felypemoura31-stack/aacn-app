@@ -7,6 +7,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -16,6 +17,8 @@ import { solicitarEntradaNoTime } from '../lib/teams'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
 import { dataNascimentoValida, ehMenor, faltasDoCadastro, formatarTelefone, telefoneValido } from '../lib/cadastro'
 import { VERSAO_TERMOS } from '../lib/termos'
+import { linkDaRede } from '../lib/redes'
+import { comMensagem } from '../lib/whatsapp'
 import type { Team } from '../types'
 
 export function Profile() {
@@ -65,6 +68,14 @@ export function Profile() {
 
   const faltas = faltasDoCadastro(player)
 
+  // Se o time tem WhatsApp no perfil, o jogador pode avisar o pedido de entrada por lá.
+  const timeAtual = teams.find((t) => t.id === player.timeId)
+  const zapTime = timeAtual?.redes?.whatsapp ? linkDaRede('whatsapp', timeAtual.redes.whatsapp) : null
+  const urlAvisoTime =
+    zapTime && timeAtual
+      ? comMensagem(zapTime, `Olá! Sou ${player.nomeCompleto} e pedi para entrar no time ${timeAtual.nome} pelo app da AACN. Pode aprovar meu pedido?`)
+      : null
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setErroForm(null)
@@ -92,6 +103,7 @@ export function Profile() {
         atualizadoEm: serverTimestamp(),
       })
       await sincronizarCartaoPublico({ ...player!, nomeCompleto })
+      await setDoc(doc(db, 'contatos', currentUser!.uid), { celular, atualizadoEm: serverTimestamp() })
 
       if (timeSelecionado && timeSelecionado !== player!.timeId) {
         const time = teams.find((t) => t.id === timeSelecionado)
@@ -291,6 +303,14 @@ export function Profile() {
                 <span className="font-medium text-warn">
                   aguardando aprovação do representante
                 </span>
+              )}
+              {!player.timeAprovado && urlAvisoTime && (
+                <>
+                  {' '}
+                  <a href={urlAvisoTime} target="_blank" rel="noopener noreferrer" className="underline">
+                    Avisar o time pelo WhatsApp
+                  </a>
+                </>
               )}
             </p>
           )}

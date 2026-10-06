@@ -19,6 +19,8 @@ import { AdminRoles } from './pages/admin/AdminRoles'
 import { AdminCheckin } from './pages/admin/AdminCheckin'
 import { Teams } from './pages/Teams'
 import { Terms } from './pages/Terms'
+import { AdminCobrancas } from './pages/admin/AdminCobrancas'
+import { AdminAvisos } from './pages/admin/AdminAvisos'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { OfflineBanner } from './components/OfflineBanner'
 import { TeamProfile } from './pages/TeamProfile'
@@ -156,6 +158,23 @@ function App() {
           element={
             <JogosRoute>
               <AdminCheckin />
+            </JogosRoute>
+          }
+        />
+
+        <Route
+          path="/admin/cobrancas"
+          element={
+            <FinanceiroRoute>
+              <AdminCobrancas />
+            </FinanceiroRoute>
+          }
+        />
+        <Route
+          path="/admin/avisos"
+          element={
+            <JogosRoute>
+              <AdminAvisos />
             </JogosRoute>
           }
         />

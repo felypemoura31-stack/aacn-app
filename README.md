@@ -249,6 +249,25 @@ volta. O check-in da organização e a leitura do QR por parceiros continuam pre
 Não foi possível testar o modo offline de ponta a ponta no ambiente de desenvolvimento; teste no
 celular (abra a carteirinha, ative o modo avião e abra de novo).
 
+## Cobrança pelo WhatsApp
+
+- Em **Gestão → Cobranças** (admin e tesoureiro) aparecem os associados com a mensalidade vencida
+  ou que vence em até 7 dias (filtros Todos/Vencidos/Vencendo). O botão **Cobrar no WhatsApp** abre
+  a conversa com a mensagem pronta (nome, valor, data e o caminho para pagar) e registra a
+  "última cobrança" (data e quem cobrou).
+- Para isso a tesouraria enxerga o **celular** dos associados em uma coleção separada (`contatos`),
+  que é um espelho do celular do cadastro, gravado só pelo próprio jogador. Endereço, saúde e
+  contato de emergência continuam fora do alcance da tesouraria.
+- No perfil do jogador, se o time tem WhatsApp cadastrado, aparece **Avisar o time pelo WhatsApp**
+  enquanto o pedido de entrada está pendente (não depende do e-mail automático, que exige o Blaze).
+
+## Mural de avisos e lembrete de mensalidade
+
+- **Gestão → Avisos** (admin, tesoureiro e organizador): publica avisos (título, texto, fixar no
+  topo) e apaga. Todos os logados veem os avisos no topo de **Minha carteirinha** (fixados primeiro).
+- A carteirinha mostra um lembrete quando a mensalidade venceu ou vence em até 7 dias, com o botão
+  "Pagar agora".
+
 ## Times: perfil, logo e membros
 
 - **Aba "Times"** (barra de cima, para todos os logados): mostra os times com logo, cidade e número
@@ -302,7 +321,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (79 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (102 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

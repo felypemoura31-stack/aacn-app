@@ -26,6 +26,7 @@ const GRUPOS: Grupo[] = [
     itens: [
       { to: '/admin/pagamentos', rotulo: 'Pagamentos' },
       { to: '/admin/creditos', rotulo: 'Créditos' },
+      { to: '/admin/cobrancas', rotulo: 'Cobranças' },
     ],
   },
   {
@@ -35,6 +36,11 @@ const GRUPOS: Grupo[] = [
       { to: '/admin/checkin', rotulo: 'Check-in por QR' },
       { to: '/admin/jogos', rotulo: 'Gerenciar jogos' },
     ],
+  },
+  {
+    titulo: 'Comunicação',
+    roles: ['admin', 'tesoureiro', 'organizador'],
+    itens: [{ to: '/admin/avisos', rotulo: 'Avisos' }],
   },
 ]
 

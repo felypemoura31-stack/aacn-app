@@ -14,6 +14,9 @@ const store = {
   games: {},
   participations: {},
   ledger: {},
+  contatos: {},
+  cobrancas: {},
+  avisos: {},
 }
 
 const svg = (s) => 'data:image/svg+xml;utf8,' + encodeURIComponent(s)
@@ -191,6 +194,25 @@ store.participations['g-1_u-jogador'] = {
   creditosDebitados: 0,
   status: 'ativa',
   criadoEm: now - day,
+}
+
+for (const p of seedPlayers) store.contatos[p.uid] = { celular: p.celular || '', atualizadoEm: now }
+store.contatos['u-ana'] = { celular: '', atualizadoEm: now }
+store.avisos['a-1'] = {
+  titulo: 'Jogo de domingo confirmado',
+  texto: 'Concentração às 7h30 no campo. Cronagem das 7h30 às 8h30. Tragam óculos de proteção fechados.',
+  fixado: true,
+  autorUid: 'u-organizador',
+  autorNome: 'Olavo Organizador',
+  criadoEm: now - day,
+}
+store.avisos['a-2'] = {
+  titulo: 'Mensalidade por Pix',
+  texto: 'Agora dá para pagar a mensalidade direto pelo app, em Minha carteirinha > Mensalidade.',
+  fixado: false,
+  autorUid: 'u-admin',
+  autorNome: 'Administrador AACN',
+  criadoEm: now - 3 * day,
 }
 
 const listeners = new Set()
