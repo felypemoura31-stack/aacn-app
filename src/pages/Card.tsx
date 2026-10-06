@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { CarteirinhaImpressao } from '../components/CarteirinhaImpressao'
 import { PagamentoPix } from '../components/PagamentoPix'
@@ -48,6 +49,9 @@ export function Card() {
         A carteirinha não traz a situação da mensalidade, porque ela muda. Quem lê o QR vê a situação atual.
       </p>
 
+      <Link to="/validar" className="no-print btn-ghost mx-auto mt-6 block w-full max-w-sm text-center">
+        Validador de carteirinha (para parceiros)
+      </Link>
       <SelosConquistas uid={player.uid} />
       <SaldoCreditos uid={player.uid} />
       <PagamentoPix player={player} />

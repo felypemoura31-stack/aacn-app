@@ -113,7 +113,7 @@ export function Validar() {
           </form>
         )}
 
-        <Link to="/login" className="mt-5 block text-xs text-mute underline hover:text-ink">
+        <Link to="/" className="mt-5 block text-xs text-mute underline hover:text-ink">
           Voltar ao início
         </Link>
       </div>

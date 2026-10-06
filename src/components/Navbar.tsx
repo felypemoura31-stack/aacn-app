@@ -114,6 +114,9 @@ export function Navbar() {
             <NavLink to="/historico" className={linkClass}>
               Histórico
             </NavLink>
+            <NavLink to="/validar" className={linkClass}>
+              Validar carteirinha
+            </NavLink>
             {ehRepresentante && (
               <NavLink to="/solicitacoes" className={linkClass}>
                 Solicitações do time
