@@ -196,7 +196,7 @@ O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
   a situação da mensalidade **não** é impressa (muda com o tempo); quem lê o QR vê a situação atual.
 - **Verso:** "Base legal: airsoft (armas de pressão)", para esclarecimento em caso de abordagem, com a
   norma e o artigo de cada ponto, e abaixo a conduta do associado. O texto está em
-   e foi conferido em 10/2026 contra:
+  `src/lib/regulamento.ts` e foi conferido em 10/2026 contra:
   - Portaria nº 02-COLOG/2010 (Comando Logístico do Exército), art. 2º, II e parágrafo único
     (airsoft é arma de pressão), art. 13, §§2º e 3º (comprovante de origem; não conduzir
     ostensivamente) e art. 18 (ponta do cano laranja/vermelha);
