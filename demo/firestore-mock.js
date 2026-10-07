@@ -148,6 +148,7 @@ store.config.pix = {
   chave: 'demo@aacn.org.br',
   nome: 'AACN Caldas Novas',
   cidade: 'Caldas Novas',
+  whatsapp: '(64) 99999-0001',
   valor: 5,
 }
 store.payments['pg-1'] = {

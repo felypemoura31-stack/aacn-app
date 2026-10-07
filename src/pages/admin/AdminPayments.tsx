@@ -1,10 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { confirmarPagamento } from '../../lib/payments'
-import { cancelarCobrancaComComprovante } from '../../lib/comprovante'
-import { VerComprovante } from '../../components/VerComprovante'
+import { formatarTelefone, telefoneValido } from '../../lib/cadastro'
 import { formatarData, paraMillis } from '../../lib/status'
 import { gerarPixCopiaECola, normalizarChavePix, tipoDaChavePix } from '../../lib/pix'
 import type { Payment, PixConfig } from '../../types'
@@ -21,8 +20,6 @@ export function AdminPayments() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [verTodos, setVerTodos] = useState(false)
-  const [busca, setBusca] = useState('')
-  const [aberto, setAberto] = useState<Payment | null>(null)
   const podeEditarPix = admin?.role === 'admin'
 
   useEffect(() => {
@@ -40,6 +37,10 @@ export function AdminPayments() {
 
   async function salvarCfg(e: FormEvent) {
     e.preventDefault()
+    if ((cfg.whatsapp ?? '') !== '' && !telefoneValido(cfg.whatsapp)) {
+      setCfgMsg(null)
+      return window.alert('Informe o WhatsApp com DDD, por exemplo (64) 99999-9999, ou deixe em branco.')
+    }
     // grava a chave já no formato que os bancos esperam (e-mail em minúsculas, CPF só com números…)
     const chave = normalizarChavePix(cfg.chave)
     await setDoc(doc(db, 'config', 'pix'), { ...cfg, chave, valor: Number(cfg.valor) })
@@ -52,7 +53,7 @@ export function AdminPayments() {
     setBusyId(p.id)
     setErro(null)
     try {
-      await cancelarCobrancaComComprovante(p.id, !!p.comprovanteEm)
+      await deleteDoc(doc(db, 'payments', p.id))
     } catch (e) {
       setErro((e as Error).message)
     } finally {
@@ -77,12 +78,7 @@ export function AdminPayments() {
     }
   }
 
-  const termo = busca.trim().toLowerCase()
-  const pendentes = payments
-    .filter((p) => p.status === 'pendente')
-    .filter((p) => !termo || [p.jogadorNome, p.txid, p.idTransacao ?? ''].some((c) => c.toLowerCase().includes(termo)))
-    .sort((a, b) => Number(!!b.comprovanteEm) - Number(!!a.comprovanteEm))
-  const mesmoId = (p: Payment) => (p.idTransacao ? payments.filter((o) => o.id !== p.id && o.idTransacao === p.idTransacao) : [])
+  const pendentes = payments.filter((p) => p.status === 'pendente')
   const confirmados = payments.filter((p) => p.status === 'confirmado')
 
   return (
@@ -94,14 +90,8 @@ export function AdminPayments() {
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
       <h2 className="mb-1 text-sm font-semibold text-ink">Aguardando confirmação</h2>
       <p className="mb-2 text-xs text-mute">
-        Confirme quando o Pix cair na conta (os que têm comprovante vêm primeiro), ou cancele a cobrança se o jogador desistiu de pagar.
+        Confirme quando o Pix cair na conta, ou cancele a cobrança se o jogador desistiu de pagar. O jogador manda o comprovante pelo seu WhatsApp.
       </p>
-      <input
-        value={busca}
-        onChange={(e) => setBusca(e.target.value)}
-        placeholder="Buscar por nome, código de identificação ou ID da transação"
-        className="input mb-3"
-      />
       {pendentes.length === 0 && (
         <p className="mb-6 text-sm text-mute/70">Nenhuma cobrança pendente.</p>
       )}
@@ -116,17 +106,6 @@ export function AdminPayments() {
               <p className="break-all text-xs text-mute">
                 {reais(p.valor)} · <span className="font-mono">{p.txid}</span>
               </p>
-              {p.comprovanteEm ? (
-                <p className="mt-1 text-xs">
-                  <button type="button" onClick={() => setAberto(p)} className="font-semibold text-ok underline">
-                    Ver comprovante
-                  </button>
-                  {p.idTransacao && <span className="ml-2 font-mono text-[11px] text-mute">{p.idTransacao}</span>}
-                  {mesmoId(p).length > 0 && <span className="ml-2 text-warn">ID repetido!</span>}
-                </p>
-              ) : (
-                <p className="mt-1 text-[11px] text-mute/70">sem comprovante</p>
-              )}
             </div>
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <input
@@ -215,6 +194,20 @@ export function AdminPayments() {
             className="input mt-1"
           />
         </label>
+        <label className="block text-sm text-mute">
+          WhatsApp do tesoureiro (com DDD)
+          <input
+            type="tel"
+            inputMode="numeric"
+            placeholder="(64) 99999-9999"
+            value={cfg.whatsapp ?? ''}
+            onChange={(e) => setCfg({ ...cfg, whatsapp: formatarTelefone(e.target.value) })}
+            className="input mt-1"
+          />
+          <span className="mt-1 block text-[11px] text-mute/80">
+            Para onde o jogador manda o comprovante do Pix. Aparece o botão "Enviar comprovante no WhatsApp" na tela dele.
+          </span>
+        </label>
         {cfg.chave.trim() && (
           <p className="text-xs text-mute">
             Chave enviada ao banco: <b className="text-ink">{normalizarChavePix(cfg.chave)}</b> ({tipoDaChavePix(cfg.chave)}).
@@ -257,19 +250,6 @@ export function AdminPayments() {
           </div>
         </details>
       </div>
-      {aberto && (
-        <VerComprovante
-          pagamento={aberto}
-          duplicados={mesmoId(aberto)}
-          aoFechar={() => setAberto(null)}
-          data={datas[aberto.id] ?? hoje()}
-          aoMudarData={(v) => setDatas({ ...datas, [aberto.id]: v })}
-          confirmar={() => {
-            confirmar(aberto)
-            setAberto(null)
-          }}
-        />
-      )}
     </div>
   )
 }

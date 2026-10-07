@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { collection, doc, onSnapshot, query, where } from 'firebase/firestore'
+import { collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore'
 import QRCode from 'react-qr-code'
 import { db } from '../firebase'
 import { creditosDoPagamento, formatarCreditos } from '../lib/credits'
 import { gerarCobranca } from '../lib/payments'
 import { gerarPixCopiaECola } from '../lib/pix'
-import { cancelarCobrancaComComprovante } from '../lib/comprovante'
-import { EnvioComprovante } from './EnvioComprovante'
+import { linkWhatsapp } from '../lib/whatsapp'
 import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../lib/status'
 import type { Payment, PixConfig, Player } from '../types'
 
@@ -46,10 +45,19 @@ export function PagamentoPix({ player, embutido = false }: { player: Player; emb
   async function cancelar() {
     if (!pendente) return
     if (!window.confirm('Cancelar este Pix? Se você já pagou, não cancele: a diretoria precisa confirmar o pagamento.')) return
-    await cancelarCobrancaComComprovante(pendente.id, !!pendente.comprovanteEm)
+    await deleteDoc(doc(db, 'payments', pendente.id))
   }
 
   const payload = pendente && configurado ? gerarPixCopiaECola({ ...cfg, valor: pendente.valor }, pendente.txid) : null
+
+  // comprovante: o jogador manda o print pelo WhatsApp do tesoureiro (o link já leva o texto com o código do Pix)
+  const linkComprovante =
+    pendente && cfg?.whatsapp
+      ? linkWhatsapp(
+          cfg.whatsapp,
+          `Olá! Sou ${player.nomeCompleto} e paguei a mensalidade da AACN (R$ ${pendente.valor.toFixed(2).replace('.', ',')}). Código de identificação do Pix: ${pendente.txid}. Segue o comprovante:`,
+        )
+      : null
 
   async function copiar() {
     if (!payload) return
@@ -91,7 +99,7 @@ export function PagamentoPix({ player, embutido = false }: { player: Player; emb
         <button onClick={handleGerar} disabled={gerando} className="btn-primary w-full">
           {gerando
             ? 'Gerando...'
-            : `Gerar Pix de R$ ${cfg.valor.toFixed(2).replace('.', ',')}`}
+            : 'Pagar mensalidade'}
         </button>
       )}
 
@@ -115,13 +123,20 @@ export function PagamentoPix({ player, embutido = false }: { player: Player; emb
             status é atualizado e o próximo vencimento passa a valer 30 dias depois do pagamento.
           </p>
 
-          <EnvioComprovante key={pendente.id} pagamento={pendente} uid={player.uid} />
-
-          {!pendente.comprovanteEm && (
-            <button onClick={cancelar} className="btn-ghost w-full text-danger">
-              Cancelar este Pix
-            </button>
+          {linkComprovante && (
+            <div className="border-t border-line pt-3">
+              <a href={linkComprovante} target="_blank" rel="noopener noreferrer" className="btn-ghost block w-full text-center">
+                Enviar comprovante no WhatsApp
+              </a>
+              <p className="mt-1 text-center text-[11px] text-mute">
+                Abre a conversa com o tesoureiro. Anexe o print do comprovante e envie.
+              </p>
+            </div>
           )}
+
+          <button onClick={cancelar} className="btn-ghost w-full text-danger">
+            Cancelar este Pix
+          </button>
         </div>
       )}
     </div>
