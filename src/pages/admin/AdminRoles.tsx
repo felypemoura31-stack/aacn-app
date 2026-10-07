@@ -11,6 +11,7 @@ import {
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { CARGOS_DELEGAVEIS, cargosDe, rotuloDoCargo } from '../../lib/roles'
+import { CONQUISTAS, concederConquista } from '../../lib/conquistas'
 import type { Player, UserRole } from '../../types'
 
 export function AdminRoles() {
@@ -47,9 +48,25 @@ export function AdminRoles() {
       })
     } catch {
       setErro('Não foi possível alterar o cargo. Tente novamente.')
-    } finally {
       setBusyUid(null)
+      return
     }
+
+    // A conquista exclusiva do parceiro (+10 créditos) é concedida na hora, sem esperar o jogador abrir o app.
+    if (ligado && cargo === 'parceiro') {
+      const def = CONQUISTAS.find((c) => c.id === 'parceiro')
+      if (def) {
+        try {
+          await concederConquista({ uid: p.uid, nome: p.nomeCompleto }, def, true, { uid: admin.uid, nome: admin.nomeCompleto })
+        } catch (e) {
+          // já tinha a conquista: tudo certo; qualquer outro erro, avisa
+          if (!(e instanceof Error && e.message.includes('já foi concedida'))) {
+            setErro('O cargo foi dado, mas não consegui conceder a conquista agora. Use "Conferir conquistas pendentes" em Admin → Jogadores.')
+          }
+        }
+      }
+    }
+    setBusyUid(null)
   }
 
   return (
