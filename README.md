@@ -333,6 +333,14 @@ admin repõe sozinho ao abrir as telas Cobranças ou Carteirinhas. Se a cópia a
 aviso para o jogador abrir o app uma vez. As regras exigem que a cópia seja igual ao cadastro (ninguém inventa a
 data de nascimento ou o "membro desde").
 
+## Aviso de pedido de entrada no time (para o representante)
+
+Quando um jogador pede para entrar no time, o **representante** é avisado assim:
+
+- **Dentro do app:** uma faixa dourada em qualquer tela ("Fulano quer entrar no Umbra" / "2 pedidos para entrar no seu time") com o botão **Ver pedidos**, o número ao lado de **Solicitações do time** no menu e uma bolinha no botão Menu do celular. Atualiza em tempo real, sem recarregar.
+- **Notificação do aparelho:** a faixa tem **"Avisar neste aparelho"**, que pede a permissão do navegador. Com ela, cada pedido novo que chega enquanto o app está aberto (ou em segundo plano) gera uma notificação. O que já estava pendente ao abrir o app não gera notificação.
+- **Limite importante:** com o app **fechado** o celular não recebe nada. Notificação com o app fechado (push) exige um servidor que envie a mensagem (Cloud Functions do Firebase, que só existe no plano pago Blaze). O envio de e-mail ao representante (`mail`, extensão Trigger Email) está no código, mas também depende do Blaze e da extensão instalada, então hoje **não** sai. Alternativa grátis que já existe: se o time tem WhatsApp no perfil, o jogador vê **"Avisar o time pelo WhatsApp"** depois de pedir.
+
 ## Remover membros do time
 
 O **representante** tira do time quem já não faz parte, em **Solicitações do time → Membros do time** (botão **Remover**, com confirmação) ou, no perfil do time, em **Remover do time** (o admin também vê esse botão). O jogador fica **sem time** (cadastro e cartão público mudam juntos, no mesmo lote) e os pedidos aprovados dele nesse time passam a **"removido"** no histórico. Para voltar, ele pede de novo e o representante aprova. O representante não remove a si mesmo (se for o caso, o admin troca o representante). As regras do banco só deixam o representante **limpar** o time do jogador do próprio time: ele não troca o jogador de time nem mexe em outro campo do cadastro. A reconciliação automática de aprovações antigas passou a considerar só o pedido mais recente de cada jogador, para não refazer uma aprovação de quem foi removido.

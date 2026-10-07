@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { usePedidos } from '../contexts/PedidosContext'
 import { rotuloDoCargo } from '../lib/roles'
 import { useEhRepresentante } from '../lib/useRepresentante'
 import type { UserRole } from '../types'
@@ -70,6 +71,8 @@ export function Navbar() {
   const { pathname } = useLocation()
   const [aberto, setAberto] = useState(false)
   const ehRepresentante = useEhRepresentante(currentUser?.uid)
+  const { pendentes } = usePedidos()
+  const qtdPedidos = pendentes.length
 
   useEffect(() => setAberto(false), [pathname])
 
@@ -112,6 +115,7 @@ export function Navbar() {
             </svg>
             <span className="md:hidden">Menu</span>
             <span className="hidden md:inline">Gestão</span>
+            {qtdPedidos > 0 && <span className="h-2 w-2 rounded-full bg-gold md:hidden" aria-label="Há pedidos de entrada no seu time" />}
           </button>
           <img src="/logo.png" alt="AACN" className="h-8 w-8 shrink-0 rounded-full ring-1 ring-accent-hi/60" />
           <span className="text-sm font-bold uppercase tracking-widest text-ink md:hidden">AACN</span>
@@ -120,7 +124,7 @@ export function Navbar() {
           <div className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden">
             {links.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
-                {l.rotulo}
+                {l.rotulo}{l.to === '/solicitacoes' && qtdPedidos > 0 ? ` (${qtdPedidos})` : ''}
               </NavLink>
             ))}
           </div>
@@ -167,7 +171,7 @@ export function Navbar() {
             <div className="space-y-0.5 md:hidden">
               {links.map((l) => (
                 <NavLink key={l.to} to={l.to} end={l.end} tabIndex={aberto ? 0 : -1} className={itemClass}>
-                  {l.rotulo}
+                  {l.rotulo}{l.to === '/solicitacoes' && qtdPedidos > 0 ? ` (${qtdPedidos})` : ''}
                 </NavLink>
               ))}
             </div>
