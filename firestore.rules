@@ -405,8 +405,21 @@ service cloud.firestore {
         request.resource.data.creditos > 0 &&
         request.resource.data.get('criadoEm', request.time) == request.time &&
         conquistaElegivel(request.auth.uid, request.resource.data.conquista);
-      allow update: if false;
-      allow delete: if isAdmin(); // só no reset de dados de teste
+      // O admin concede uma conquista a um jogador (sem conferir a meta): vale o bônus da conquista ou nenhum crédito.
+      allow create: if isAdmin() &&
+        request.resource.data.keys().hasOnly(['uid', 'conquista', 'creditos', 'criadoEm', 'concedidaPor', 'concedidaPorNome']) &&
+        request.resource.data.uid is string &&
+        request.resource.data.conquista is string &&
+        cid == request.resource.data.uid + '_' + request.resource.data.conquista &&
+        bonusConquista(request.resource.data.conquista) > 0 &&
+        (request.resource.data.creditos == bonusConquista(request.resource.data.conquista) || request.resource.data.creditos == 0) &&
+        request.resource.data.concedidaPor == request.auth.uid &&
+        request.resource.data.get('criadoEm', request.time) == request.time;
+      // O admin revoga (revogada = true: o selo some e o jogador não resgata de novo sozinho) ou devolve a conquista.
+      allow update: if isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revogada', 'revogadaPor', 'revogadaEm']) &&
+        request.resource.data.revogada is bool;
+      allow delete: if isAdmin(); // reset de dados de teste
     }
 
     // Jogos: admin, tesoureiro e organizador criam e editam (inclusive valores e vagas).

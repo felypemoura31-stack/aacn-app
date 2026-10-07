@@ -5,7 +5,7 @@ import { db } from '../../firebase'
 import { DIA_MS, CICLO_DIAS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import { sincronizarCartaoPublico } from '../../lib/publicCard'
 import { rotuloDoCargo } from '../../lib/roles'
-import { SelosConquistas } from '../../components/SelosConquistas'
+import { GerirConquistas } from '../../components/GerirConquistas'
 import { ResetJogador } from '../../components/ResetJogador'
 import { CpfEmUsoError, trocarCpf } from '../../lib/cpf'
 import { ExcluirJogador } from '../../components/ExcluirJogador'
@@ -117,7 +117,7 @@ export function AdminPlayerDetail() {
         Ver e imprimir a carteirinha
       </Link>
 
-      <SelosConquistas uid={player.uid} className="mb-6" />
+      <GerirConquistas uid={player.uid} nome={player.nomeCompleto || 'este jogador'} />
 
       <form
         onSubmit={handleSubmit}

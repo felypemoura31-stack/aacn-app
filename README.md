@@ -370,6 +370,20 @@ conta pelo app.
 inscrições; quem já jogou e pagou com créditos recebe o **estorno** no extrato e a presença sai dos contadores
 (jogos e jogos noturnos). Os bônus de conquista já pagos não são retirados.
 
+## Conceder e revogar conquistas (admin)
+
+Na **ficha do jogador** (Admin → Jogadores → o jogador) o painel **Conquistas** lista as 12 e deixa o admin **conceder** uma (com ou sem o bônus em créditos, que entra no extrato) ou **revogar** uma indevida (com a opção de **retirar os créditos** que ela pagou). Uma conquista revogada **não é resgatada de novo sozinha** (o documento fica marcado como revogado) e some dos selos e do histórico do jogador; o admin pode **devolver**. Em **Admin → Jogadores**, o cartão **Conquistas pendentes → Conferir** procura quem já atingiu uma conquista (pelos contadores e pelo cadastro) e não recebeu, e concede todas de uma vez com o bônus (o **Assíduo** fica de fora, pois depende de faltas). As regras do banco só deixam o admin conceder/revogar, e o valor do bônus é sempre o da conquista (ou zero).
+
+**Por que alguém pode ficar sem a conquista automática:** o resgate é feito pelo app do próprio jogador, quando ele abre o app depois de atingir a meta. Se o aparelho dele está com uma versão antiga do app, ou nunca abriu depois da aprovação no time, o resgate não acontece. O app agora tenta de novo se a primeira tentativa falhar, e a conferência do admin cobre os casos que ficaram para trás.
+
+## Ordenar a lista de jogadores
+
+Em **Admin → Jogadores**, cada coluna (Nome, E-mail, Time, Status, Vencimento) tem uma setinha: clicar ordena de A→Z (▲) e clicar de novo inverte (▼). Quem não tem time (ou vencimento) fica sempre no fim. No celular há o seletor **Ordenar por** e o botão ▲ A→Z / ▼ Z→A.
+
+## Endereço antigo: instalações que não atualizavam
+
+Quem instalou o app pelo endereço antigo (`aacn-app.web.app`) ficava preso na última versão, porque o arquivo de atualização (`/sw.js`) era redirecionado e o navegador não aceita isso. O endereço antigo agora serve um `sw.js` que limpa o cache, se desinstala e recarrega a aba, que cai no endereço novo. Todo o resto do endereço antigo continua redirecionando para o novo.
+
 ## Meu histórico e conquistas
 
 **Histórico** (todos): jogos jogados, frequência (presenças ÷ presenças + faltas em jogos já passados),
@@ -492,7 +506,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (331 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (347 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

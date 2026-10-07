@@ -10,8 +10,12 @@ import type { ConquistaResgatada, Estatisticas, Game, Participation } from '../t
 export interface ConquistaDoJogador extends DefConquista {
   /** Atingiu a meta (mesmo que o bônus ainda esteja sendo creditado). */
   atingida: boolean
-  /** Bônus já creditado na carteira. */
+  /** Conquista do jogador (selo visível). */
   resgatada: boolean
+  /** Revogada pela diretoria: não aparece como conquista e não é resgatada de novo sozinha. */
+  revogada: boolean
+  /** Créditos que esta conquista pagou (0 se a diretoria concedeu sem bônus). */
+  pago: number
 }
 
 interface ConquistasValue {
@@ -38,6 +42,7 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
   const [avisos, setAvisos] = useState<{ id: string; texto: string }[]>([])
   const ocupado = useRef(false)
   const falhou = useRef(new Set<string>())
+  const tentativas = useRef(new Map<string, number>())
   const [rodada, setRodada] = useState(0)
 
   useEffect(() => {
@@ -46,6 +51,7 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
     setParts([])
     setAvisos([])
     falhou.current.clear()
+    tentativas.current.clear()
     if (!uid) return
     const unsubs = [
       onSnapshot(doc(db, 'stats', uid), (s) => setStats(s.exists() ? (s.data() as Estatisticas) : null), () => setStats(null)),
@@ -75,14 +81,18 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
   )
 
   const conquistas = useMemo<ConquistaDoJogador[]>(
-    () => CONQUISTAS.map((c) => ({ ...c, atingida: c.ok(contexto), resgatada: !!resgatadas?.[c.id] })),
+    () =>
+      CONQUISTAS.map((c) => {
+        const d = resgatadas?.[c.id]
+        return { ...c, atingida: c.ok(contexto), resgatada: !!d && !d.revogada, revogada: !!d?.revogada, pago: d && !d.revogada ? Number(d.creditos ?? 0) : 0 }
+      }),
     [contexto, resgatadas],
   )
 
   // resgate automático, uma conquista por vez (cada uma soma na carteira)
   useEffect(() => {
     if (!player || stats === undefined || resgatadas === null || ocupado.current) return
-    const pendentes = conquistas.filter((c) => c.atingida && !c.resgatada && !falhou.current.has(c.id))
+    const pendentes = conquistas.filter((c) => c.atingida && !c.resgatada && !c.revogada && !falhou.current.has(c.id))
     if (pendentes.length === 0) return
     ocupado.current = true
     ;(async () => {
@@ -91,8 +101,17 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
           await reivindicarConquista(player, c)
           setAvisos((a) => [...a, { id: c.id, texto: `${c.titulo}: +${formatarCreditos(c.bonus)} créditos` }])
         } catch (e) {
+          // tenta de novo em alguns segundos (conexão ruim, saldo desatualizado); depois de 3 falhas desiste até reabrir o app
+          const n = (tentativas.current.get(c.id) ?? 0) + 1
+          tentativas.current.set(c.id, n)
           falhou.current.add(c.id)
           console.warn('Não foi possível resgatar a conquista', c.id, e)
+          if (n < 3) {
+            setTimeout(() => {
+              falhou.current.delete(c.id)
+              setRodada((r) => r + 1)
+            }, 8000 * n)
+          }
         }
       }
     })().finally(() => {
@@ -101,7 +120,7 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
     })
   }, [player, stats, resgatadas, conquistas, rodada])
 
-  const bonusRecebido = conquistas.filter((c) => c.resgatada).reduce((s, c) => s + c.bonus, 0)
+  const bonusRecebido = conquistas.reduce((s, c) => s + c.pago, 0)
 
   return (
     <Ctx.Provider value={{ carregando: stats === undefined || resgatadas === null, contexto, conquistas, bonusRecebido }}>

@@ -20,7 +20,15 @@ export function SelosConquistas({
     const q = query(collection(db, 'conquistas'), where('uid', '==', uid))
     return onSnapshot(
       q,
-      (s) => setIds(new Set(s.docs.map((d) => (d.data() as ConquistaResgatada).conquista))),
+      (s) =>
+        setIds(
+          new Set(
+            s.docs
+              .map((d) => d.data() as ConquistaResgatada)
+              .filter((c) => !c.revogada)
+              .map((c) => c.conquista),
+          ),
+        ),
       () => setIds(new Set()),
     )
   }, [uid])

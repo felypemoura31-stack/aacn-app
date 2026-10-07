@@ -1,7 +1,7 @@
-import { doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore'
+import { doc, getDoc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { DIA_MS } from './status'
-import { lerCarteira } from './credits'
+import { lancar, lerCarteira } from './credits'
 import type { Estatisticas, Player } from '../types'
 
 export interface ContextoConquistas {
@@ -146,5 +146,84 @@ export async function reivindicarConquista(player: Pick<Player, 'uid' | 'nomeCom
     porNome: player.nomeCompleto,
     criadoEm: serverTimestamp(),
   })
+  await batch.commit()
+}
+
+/**
+ * Admin concede uma conquista a um jogador (sem conferir a meta). `creditar` soma o bônus na carteira e
+ * lança no extrato, no mesmo lote. Se a conquista estava revogada, ela volta (e só paga se `creditar`).
+ */
+export async function concederConquista(
+  alvo: { uid: string; nome: string },
+  c: DefConquista,
+  creditar: boolean,
+  admin: { uid: string; nome: string },
+) {
+  const ref = doc(db, 'conquistas', `${alvo.uid}_${c.id}`)
+  const atual = await getDoc(ref)
+  if (atual.exists() && !(atual.data() as { revogada?: boolean }).revogada) throw new Error('Esta conquista já foi concedida.')
+
+  const batch = writeBatch(db)
+  if (atual.exists()) {
+    batch.update(ref, { revogada: false, revogadaPor: null, revogadaEm: null })
+  } else {
+    batch.set(ref, {
+      uid: alvo.uid,
+      conquista: c.id,
+      creditos: creditar ? c.bonus : 0,
+      criadoEm: serverTimestamp(),
+      concedidaPor: admin.uid,
+      concedidaPorNome: admin.nome,
+    })
+  }
+  if (creditar) {
+    const carteira = await lerCarteira(alvo.uid)
+    lancar(batch, {
+      uid: alvo.uid,
+      saldoAntes: carteira.saldo,
+      delta: c.bonus,
+      tipo: 'bonus',
+      descricao: `Conquista concedida pela diretoria: ${c.titulo}`,
+      refId: c.id,
+      autor: { uid: admin.uid, nome: admin.nome },
+      existe: carteira.existe,
+    })
+  }
+  await batch.commit()
+}
+
+/**
+ * Admin revoga uma conquista: o selo some e o jogador não a resgata de novo sozinho (o documento fica,
+ * marcado como revogado). `retirarCreditos` desconta do saldo o bônus que ela tinha pago.
+ */
+export async function revogarConquista(
+  alvo: { uid: string; nome: string },
+  c: DefConquista,
+  retirarCreditos: boolean,
+  admin: { uid: string; nome: string },
+) {
+  const ref = doc(db, 'conquistas', `${alvo.uid}_${c.id}`)
+  const atual = await getDoc(ref)
+  if (!atual.exists() || (atual.data() as { revogada?: boolean }).revogada) throw new Error('Esta conquista não está concedida.')
+  const pago = Number((atual.data() as { creditos?: number }).creditos ?? 0)
+
+  const batch = writeBatch(db)
+  batch.update(ref, { revogada: true, revogadaPor: admin.uid, revogadaEm: serverTimestamp() })
+  if (retirarCreditos && pago > 0) {
+    const carteira = await lerCarteira(alvo.uid)
+    if (carteira.saldo < pago) {
+      throw new Error(`O saldo (${carteira.saldo}) é menor que o bônus (${pago}). Revogue sem retirar os créditos ou ajuste o saldo em Créditos.`)
+    }
+    lancar(batch, {
+      uid: alvo.uid,
+      saldoAntes: carteira.saldo,
+      delta: -pago,
+      tipo: 'ajuste',
+      descricao: `Conquista removida pela diretoria: ${c.titulo}`,
+      refId: c.id,
+      autor: { uid: admin.uid, nome: admin.nome },
+      existe: carteira.existe,
+    })
+  }
   await batch.commit()
 }

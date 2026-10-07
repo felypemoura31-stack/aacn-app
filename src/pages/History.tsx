@@ -92,17 +92,25 @@ export function History() {
               .map((c) => {
                 const atual = c.campo ? contexto[c.campo] : null
                 return (
-                  <div key={c.id} className={`panel p-3 text-center ${c.atingida ? '' : 'opacity-50'}`} title={c.desc}>
-                    <p className="text-2xl">{c.atingida ? c.icone : '☆'}</p>
+                  <div key={c.id} className={`panel p-3 text-center ${c.resgatada || (c.atingida && !c.revogada) ? '' : 'opacity-50'}`} title={c.desc}>
+                    <p className="text-2xl">{c.resgatada || (c.atingida && !c.revogada) ? c.icone : '☆'}</p>
                     <p className="mt-1 text-sm font-semibold text-ink">{c.titulo}</p>
                     <p className="mt-1 text-[11px] text-mute">{c.desc}</p>
-                    {!c.atingida && c.meta != null && atual != null && (
+                    {!c.atingida && !c.resgatada && c.meta != null && atual != null && (
                       <p className="mt-1 text-[11px] text-mute/80">
                         {Math.min(atual, c.meta)}/{c.meta}
                       </p>
                     )}
-                    <p className={`mt-2 text-xs font-semibold ${c.resgatada ? 'text-ok' : c.atingida ? 'text-gold' : 'text-mute'}`}>
-                      {c.resgatada ? `✓ +${formatarCreditos(c.bonus)} recebidos` : c.atingida ? 'Creditando...' : `+${formatarCreditos(c.bonus)} créditos`}
+                    <p className={`mt-2 text-xs font-semibold ${c.resgatada ? 'text-ok' : c.revogada ? 'text-mute' : c.atingida ? 'text-gold' : 'text-mute'}`}>
+                      {c.resgatada
+                        ? c.pago > 0
+                          ? `✓ +${formatarCreditos(c.pago)} recebidos`
+                          : '✓ Conquistada'
+                        : c.revogada
+                          ? 'Removida pela diretoria'
+                          : c.atingida
+                            ? 'Creditando...'
+                            : `+${formatarCreditos(c.bonus)} créditos`}
                     </p>
                   </div>
                 )
