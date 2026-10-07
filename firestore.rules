@@ -149,6 +149,14 @@ service cloud.firestore {
       );
     }
 
+    // Conquistas que o jogador mostra na carteirinha: até 3, e só as que ele tem de fato.
+    function destaquesOk(uid, d) {
+      return d is list && d.size() <= 3 &&
+        (d.size() < 1 || (d[0] is string && exists(/databases/$(database)/documents/conquistas/$(uid + '_' + d[0])))) &&
+        (d.size() < 2 || (d[1] is string && exists(/databases/$(database)/documents/conquistas/$(uid + '_' + d[1])))) &&
+        (d.size() < 3 || (d[2] is string && exists(/databases/$(database)/documents/conquistas/$(uid + '_' + d[2]))));
+    }
+
     function isRepresentativeOfTeam(timeId) {
       return isSignedIn() && timeId != null &&
         get(/databases/$(database)/documents/teams/$(timeId)).data.representanteUid == request.auth.uid;
@@ -178,7 +186,9 @@ service cloud.firestore {
       // Cargos: o app NUNCA cria nem remove um admin (isso é só no console do
       // Firebase). O admin delega os demais cargos, mas não mexe no de outro admin.
       allow update: if cpfFormatoValido(request.resource.data) &&
-        cpfTrocaOk(uid, resource.data, request.resource.data) && ((isAdmin() && (
+        cpfTrocaOk(uid, resource.data, request.resource.data) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['destaques']) ||
+          destaquesOk(uid, request.resource.data.get('destaques', []))) && ((isAdmin() && (
         request.resource.data.role == resource.data.role ||
         (request.resource.data.role != 'admin' && resource.data.role != 'admin')
       )) || (
@@ -251,6 +261,7 @@ service cloud.firestore {
 
       allow create, update: if isSignedIn() &&
         fotoValida(request.resource.data.get('fotoUrl', null)) &&
+        request.resource.data.get('destaques', []) is list && request.resource.data.get('destaques', []).size() <= 3 &&
         request.resource.data.get('timeId', null) ==
           (getAfter(/databases/$(database)/documents/players/$(uid)).data.get('timeAprovado', false) == true
             ? getAfter(/databases/$(database)/documents/players/$(uid)).data.get('timeId', null) : null) &&

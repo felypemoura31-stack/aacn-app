@@ -9,6 +9,7 @@ export interface JogadorResumo {
   timeNome: string | null
   timeId?: string | null
   fotoUrl?: string | null
+  destaques?: string[]
 }
 
 export interface Player {
@@ -20,6 +21,8 @@ export interface Player {
   cep?: string
   dataNascimento: string // ISO date (yyyy-mm-dd)
   cpf?: string // só os 11 dígitos
+  /** Até 3 conquistas (ids) que o jogador escolheu mostrar na carteirinha, na ordem. */
+  destaques?: string[]
   contatoEmergenciaNome: string
   contatoEmergenciaTelefone: string
   celular: string

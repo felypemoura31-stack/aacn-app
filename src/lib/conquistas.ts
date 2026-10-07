@@ -1,4 +1,4 @@
-import { doc, getDoc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore'
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { DIA_MS } from './status'
 import { lancar, lerCarteira } from './credits'
@@ -185,6 +185,21 @@ export async function concederConquista(
     })
   }
   await batch.commit()
+  await tirarDosDestaques(alvo.uid, c.id)
+}
+
+/** Se a conquista estava entre as 3 da carteirinha, sai de lá (cadastro e cartão público). */
+export async function tirarDosDestaques(uid: string, conquistaId: string) {
+  try {
+    const jogador = await getDoc(doc(db, 'players', uid))
+    const atuais = ((jogador.data() as { destaques?: string[] } | undefined)?.destaques ?? []) as string[]
+    if (!atuais.includes(conquistaId)) return
+    const novos = atuais.filter((x) => x !== conquistaId)
+    await updateDoc(doc(db, 'players', uid), { destaques: novos, atualizadoEm: serverTimestamp() })
+    await updateDoc(doc(db, 'publicCards', uid), { destaques: novos, atualizadoEm: serverTimestamp() })
+  } catch {
+    // sem problema: a carteirinha só mostra insígnias de conquistas válidas na próxima edição
+  }
 }
 
 /**

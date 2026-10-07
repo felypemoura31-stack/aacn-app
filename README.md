@@ -384,6 +384,11 @@ inscrições; quem já jogou e pagou com créditos recebe o **estorno** no extra
 - **Ficha do jogador (admin):** dados em duas colunas, situação/time/cargo/termo num resumo ao lado; as conquistas e a "zona de risco" (resetar e excluir) ficam recolhidas.
 - **Pagamentos (admin):** pendentes e histórico à esquerda; a chave Pix e o painel de teste ficam recolhidos à direita (abrem sozinhos se a chave ainda não foi cadastrada). **Jogos (admin):** "+ Novo jogo" abre sob demanda.
 
+## Insígnias das conquistas e conquistas na carteirinha
+
+- **Insígnias estilo patente** (SVG próprios, em `src/components/IconeConquista.tsx`; não usam imagem externa): nas séries a insígnia **evolui a cada passo**. Jogos jogados (vermelho e dourado): *Primeiro jogo* = 1 divisa → *Em campo* = 2 → *Veterano* = 3 → *Lenda* = 3 divisas + barra + estrela. Jogos noturnos (azul-noite e prata, com lua): *Primeiro noturno* → *Na penumbra* → *Na escuridão* → *Senhor das sombras*, no mesmo esquema. As demais têm desenho próprio: Assíduo (alvo), Em dia (visto), 1 ano de AACN (estrela e louros) e Parte de um time (bandeira). Aparecem no histórico, no painel de conquistas e na ficha do admin.
+- **Na carteirinha:** no espaço em branco **abaixo da foto** o jogador coloca **até 3 conquistas à escolha dele**. Em **Minha carteirinha**, no painel **Conquistas**, ele toca nas insígnias para escolher (a ordem da escolha é a ordem na carteirinha; tocar de novo tira; o quarto avisa que não cabe). As insígnias saem na impressão (admin e tesoureiro imprimindo a carteirinha de outro jogador também as veem). As regras do banco só deixam escolher conquistas que o jogador de fato tem (máximo 3). Se o admin **remove** uma conquista ou faz o reset de conquistas, ela sai da carteirinha também.
+
 ## Conceder e remover conquistas (admin)
 
 Na **ficha do jogador** (Admin → Jogadores → o jogador), o painel **Conquistas** (recolhido, mostra "n/12") traz duas linhas de etiquetas: **Conquistadas** e **Ainda pode conquistar** (cada uma com o bônus em créditos). Clicar numa etiqueta abre a ação logo abaixo: **Conceder conquista** (com a opção de pagar o bônus, que entra no extrato) ou **Remover conquista** (com a opção de retirar do saldo os créditos que ela pagou). **Remover** apaga a conquista de vez: ela volta a ficar igual às outras, "a conquistar", sem nenhuma marca de removida. Se o jogador ainda cumpre a meta, o app dele a concede de novo sozinho na próxima vez que abrir. Em **Admin → Jogadores**, o link **Conferir conquistas pendentes** procura quem já atingiu uma conquista e não recebeu e concede todas de uma vez (o **Assíduo** fica de fora, pois depende de faltas). Só o admin concede/remove, e o bônus é sempre o da conquista (ou zero).
@@ -524,7 +529,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (359 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (370 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

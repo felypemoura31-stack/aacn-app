@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { formatarCreditos, reais } from '../lib/credits'
 import { formatarData, paraMillis } from '../lib/status'
 import { GRUPOS } from '../lib/conquistas'
+import { IconeConquista } from '../components/IconeConquista'
 import { useConquistas } from '../contexts/ConquistasContext'
 import type { Game, LedgerEntry, Participation, Payment } from '../types'
 
@@ -95,8 +96,9 @@ export function History() {
                     return (
                       <li key={c.id} className={`flex items-center justify-between gap-3 py-2 ${feita ? '' : 'opacity-60'}`} title={c.desc}>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-ink">
-                            <span className={c.grupo === 'noturnas' ? 'text-accent-hi' : 'text-gold'}>{feita ? c.icone : '☆'}</span> {c.titulo}
+                          <p className="flex items-center gap-2 truncate text-sm font-medium text-ink">
+                            <IconeConquista id={c.id} tamanho={22} apagado={!feita} className="shrink-0" />
+                            <span className="truncate">{c.titulo}</span>
                           </p>
                           <p className="truncate text-[11px] text-mute">
                             {c.desc}

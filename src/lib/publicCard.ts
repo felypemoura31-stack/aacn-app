@@ -5,7 +5,7 @@ import type { Player } from '../types'
 type PublicCardSource = Pick<
   Player,
   'uid' | 'nomeCompleto' | 'fotoUrl' | 'timeId' | 'timeNome' | 'timeAprovado' | 'status' | 'vencimento'
->
+> & { destaques?: string[] }
 
 /**
  * Mantém um espelho público e mínimo dos dados do jogador (sem endereço,
@@ -21,6 +21,7 @@ export async function sincronizarCartaoPublico(player: PublicCardSource) {
     timeId: player.timeAprovado ? player.timeId : null,
     status: player.status,
     vencimento: player.vencimento ?? null,
+    destaques: player.destaques ?? [],
     atualizadoEm: serverTimestamp(),
   })
 }
@@ -55,4 +56,10 @@ export async function atualizarTimeNoCartaoPublico(
     timeId,
     atualizadoEm: serverTimestamp(),
   })
+}
+
+/** O jogador escolhe (até 3) as conquistas que aparecem na carteirinha. Vai para o cadastro e para o cartão público. */
+export async function salvarDestaques(uid: string, destaques: string[]) {
+  await updateDoc(doc(db, 'players', uid), { destaques, atualizadoEm: serverTimestamp() })
+  await updateDoc(doc(db, 'publicCards', uid), { destaques, atualizadoEm: serverTimestamp() })
 }

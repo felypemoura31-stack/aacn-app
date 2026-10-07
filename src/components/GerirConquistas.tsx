@@ -4,6 +4,7 @@ import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { CONQUISTAS, concederConquista, removerConquista, type DefConquista } from '../lib/conquistas'
 import { formatarCreditos } from '../lib/credits'
+import { IconeConquista } from './IconeConquista'
 import { formatarData, paraMillis } from '../lib/status'
 import type { ConquistaResgatada } from '../types'
 
@@ -71,7 +72,10 @@ export function GerirConquistas({ uid, nome }: { uid: string; nome: string }) {
           : 'border-line text-mute hover:border-mute hover:text-ink'
       } ${escolhida === c.id ? 'ring-2 ring-accent-hi' : ''}`}
     >
-      {conquistada ? `${c.icone} ${c.titulo}` : `${c.titulo} · +${formatarCreditos(c.bonus)}`}
+      <span className="flex items-center gap-1.5">
+        <IconeConquista id={c.id} tamanho={16} apagado={!conquistada} />
+        {conquistada ? c.titulo : `${c.titulo} · +${formatarCreditos(c.bonus)}`}
+      </span>
     </button>
   )
 
@@ -105,7 +109,7 @@ export function GerirConquistas({ uid, nome }: { uid: string; nome: string }) {
         {sel && docs && (
           <div className="rounded-sm border border-line bg-surface2 p-3 text-sm">
             <p className="font-semibold text-ink">
-              {sel.icone} {sel.titulo} <span className="font-normal text-mute">· {sel.desc}</span>
+              {sel.titulo} <span className="font-normal text-mute">· {sel.desc}</span>
             </p>
             {selDoc ? (
               <>

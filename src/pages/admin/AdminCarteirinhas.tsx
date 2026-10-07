@@ -114,6 +114,7 @@ export function AdminCarteirinhas() {
             verifyUrl={`${window.location.origin}/verificar/${escolhido.uid}`}
             timeNome={time?.nome ?? escolhido.timeNome}
             timeLogoUrl={time?.logoUrl ?? null}
+            destaques={escolhido.destaques}
           />
           <button onClick={() => window.print()} className="no-print mx-auto mt-6 block btn-primary">
             Imprimir carteirinha de {escolhido.nomeCompleto.split(' ')[0]}

@@ -5,6 +5,7 @@ import { ResumoConta } from '../components/ResumoConta'
 import { SelosConquistas } from '../components/SelosConquistas'
 import { AvisosPanel } from '../components/AvisosPanel'
 import { AvisoMensalidade } from '../components/AvisoMensalidade'
+import { salvarDestaques } from '../lib/publicCard'
 import { useTeam } from '../lib/useTeam'
 
 /**
@@ -30,6 +31,7 @@ export function Card() {
             verifyUrl={verifyUrl}
             timeNome={time?.nome ?? player.timeNome}
             timeLogoUrl={time?.logoUrl ?? null}
+            destaques={player.destaques}
           />
 
           <div className="no-print mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -45,7 +47,15 @@ export function Card() {
 
         <div className="no-print min-w-0 space-y-4">
           <ResumoConta player={player} />
-          <SelosConquistas uid={player.uid} className="" />
+          <SelosConquistas
+            uid={player.uid}
+            className=""
+            escolhidas={player.destaques ?? []}
+            onAlternar={(id) => {
+              const atuais = player.destaques ?? []
+              return salvarDestaques(player.uid, atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id])
+            }}
+          />
           <AvisosPanel />
         </div>
       </div>

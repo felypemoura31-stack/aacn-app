@@ -1,6 +1,8 @@
 import QRCode from 'react-qr-code'
 import { ITENS_LEGAIS, NOTA_LEGAL, REGRAS_CONDUTA, TITULO_CONDUTA, TITULO_LEGAL } from '../lib/regulamento'
 import { formatarData, paraMillis } from '../lib/status'
+import { CONQUISTAS } from '../lib/conquistas'
+import { IconeConquista } from './IconeConquista'
 import type { Player } from '../types'
 
 /** Nomes longos usam fonte menor para continuar cabendo (a frente é pequena). */
@@ -16,6 +18,8 @@ interface Props {
   verifyUrl: string
   timeNome: string | null
   timeLogoUrl: string | null
+  /** Ids das conquistas que o jogador escolheu mostrar (até 3). */
+  destaques?: string[]
 }
 
 function dataBr(iso: string) {
@@ -27,7 +31,8 @@ function dataBr(iso: string) {
  * Folha para imprimir: frente e verso lado a lado, cada um no tamanho de cartão de crédito
  * (85,6 x 54 mm). Recortar na linha externa, dobrar na linha do meio e plastificar.
  */
-export function CarteirinhaImpressao({ player, verifyUrl, timeNome, timeLogoUrl }: Props) {
+export function CarteirinhaImpressao({ player, verifyUrl, timeNome, timeLogoUrl, destaques = [] }: Props) {
+  const insignias = destaques.filter((id) => CONQUISTAS.some((c) => c.id === id)).slice(0, 3)
   return (
     <div id="print-sheet">
       <p className="cc-instrucoes so-impressao">
@@ -46,8 +51,17 @@ export function CarteirinhaImpressao({ player, verifyUrl, timeNome, timeLogoUrl 
           </div>
 
           <div className="cc-corpo">
-            <div className="cc-foto">
-              {player.fotoUrl ? <img src={player.fotoUrl} alt={player.nomeCompleto} /> : <span>sem foto</span>}
+            <div className="cc-col-foto">
+              <div className="cc-foto">
+                {player.fotoUrl ? <img src={player.fotoUrl} alt={player.nomeCompleto} /> : <span>sem foto</span>}
+              </div>
+              {insignias.length > 0 && (
+                <div className="cc-patentes">
+                  {insignias.map((id) => (
+                    <IconeConquista key={id} id={id} tamanho={22} />
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="cc-dados">

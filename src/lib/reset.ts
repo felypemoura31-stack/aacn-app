@@ -104,6 +104,9 @@ export async function resetarJogador(uid: string, o: OpcoesReset): Promise<strin
   if (o.conquistas) {
     const selos = await docsDoJogador('conquistas', uid)
     await apagar(selos.map((d) => d.ref))
+    // sem conquistas, a carteirinha também fica sem insígnias
+    await updateDoc(doc(db, 'players', uid), { destaques: [], atualizadoEm: serverTimestamp() }).catch(() => {})
+    await updateDoc(doc(db, 'publicCards', uid), { destaques: [], atualizadoEm: serverTimestamp() }).catch(() => {})
     feito.push(`Conquistas: ${selos.length} selo(s) apagado(s).`)
   }
 
