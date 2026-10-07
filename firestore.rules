@@ -309,12 +309,44 @@ service cloud.firestore {
       allow create: if isSignedIn() &&
         request.resource.data.uid == request.auth.uid &&
         request.resource.data.status == 'pendente';
-      allow update: if isFinanceiro();
+      // O jogador pode anexar o comprovante à própria cobrança pendente: só marca que enviou e guarda o ID da
+      // transação que o banco mostra (opcional); a imagem fica em comprovantes/{id}, enviada no mesmo lote.
+      allow update: if isFinanceiro() || (
+        isSignedIn() && resource.data.uid == request.auth.uid &&
+        resource.data.status == 'pendente' && request.resource.data.status == 'pendente' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comprovanteEm', 'idTransacao']) &&
+        request.resource.data.get('comprovanteEm', request.time) == request.time &&
+        (request.resource.data.get('idTransacao', '') is string &&
+          request.resource.data.get('idTransacao', '').matches('^[A-Za-z0-9]{0,40}$')) &&
+        existsAfter(/databases/$(database)/documents/comprovantes/$(paymentId))
+      );
       // Cobrança PENDENTE (Pix ainda não pago): o próprio jogador, o tesoureiro ou o admin cancelam.
       // Pagamento já confirmado só o admin apaga (reset de dados de teste na ficha do jogador).
       allow delete: if isAdmin() || (
         resource.data.status == 'pendente' &&
         (isFinanceiro() || (isSignedIn() && resource.data.uid == request.auth.uid))
+      );
+    }
+
+    // Comprovantes de pagamento Pix (imagem reduzida, em texto base64; não há Storage no plano gratuito). Um por
+    // cobrança (mesmo id). O jogador envia/troca enquanto a cobrança está pendente; só ele e a tesouraria leem.
+    match /comprovantes/{paymentId} {
+      function comprovanteValido(d) {
+        return d.keys().hasOnly(['uid', 'imagem', 'criadoEm']) &&
+          d.uid == request.auth.uid &&
+          d.imagem is string && d.imagem.size() < 300000 &&
+          d.imagem.matches('^data:image/jpeg;base64,.*') &&
+          d.get('criadoEm', request.time) == request.time &&
+          get(/databases/$(database)/documents/payments/$(paymentId)).data.uid == request.auth.uid &&
+          get(/databases/$(database)/documents/payments/$(paymentId)).data.status == 'pendente';
+      }
+
+      allow read: if isFinanceiro() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create, update: if isSignedIn() && comprovanteValido(request.resource.data);
+      allow delete: if isFinanceiro() || (
+        isSignedIn() && resource.data.uid == request.auth.uid &&
+        (!existsAfter(/databases/$(database)/documents/payments/$(paymentId)) ||
+          get(/databases/$(database)/documents/payments/$(paymentId)).data.status == 'pendente')
       );
     }
 

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore'
+import { collection, doc, onSnapshot, query, where } from 'firebase/firestore'
 import QRCode from 'react-qr-code'
 import { db } from '../firebase'
 import { creditosDoPagamento, formatarCreditos } from '../lib/credits'
 import { gerarCobranca } from '../lib/payments'
 import { gerarPixCopiaECola } from '../lib/pix'
+import { cancelarCobrancaComComprovante } from '../lib/comprovante'
+import { EnvioComprovante } from './EnvioComprovante'
 import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../lib/status'
 import type { Payment, PixConfig, Player } from '../types'
 
@@ -44,7 +46,7 @@ export function PagamentoPix({ player, embutido = false }: { player: Player; emb
   async function cancelar() {
     if (!pendente) return
     if (!window.confirm('Cancelar este Pix? Se você já pagou, não cancele: a diretoria precisa confirmar o pagamento.')) return
-    await deleteDoc(doc(db, 'payments', pendente.id))
+    await cancelarCobrancaComComprovante(pendente.id, !!pendente.comprovanteEm)
   }
 
   const payload = pendente && configurado ? gerarPixCopiaECola({ ...cfg, valor: pendente.valor }, pendente.txid) : null
@@ -108,13 +110,18 @@ export function PagamentoPix({ player, embutido = false }: { player: Player; emb
           <button onClick={copiar} className="btn-primary w-full">
             {copiado ? 'Copiado!' : 'Copiar Pix copia e cola'}
           </button>
-          <button onClick={cancelar} className="btn-ghost w-full text-danger">
-            Cancelar este Pix
-          </button>
           <p className="text-xs text-mute">
             Pague no app do seu banco. Assim que a diretoria confirmar o recebimento, seu
             status é atualizado e o próximo vencimento passa a valer 30 dias depois do pagamento.
           </p>
+
+          <EnvioComprovante key={pendente.id} pagamento={pendente} uid={player.uid} />
+
+          {!pendente.comprovanteEm && (
+            <button onClick={cancelar} className="btn-ghost w-full text-danger">
+              Cancelar este Pix
+            </button>
+          )}
         </div>
       )}
     </div>

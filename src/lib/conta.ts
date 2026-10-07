@@ -36,7 +36,9 @@ export async function excluirJogador(uid: string, opcoes: { manterFinanceiro: bo
   const refs = [
     ...(await docsDoJogador('conquistas', uid)),
     ...(await docsDoJogador('teamJoinRequests', uid, 'jogadorUid')),
-    ...(opcoes.manterFinanceiro ? [] : [...(await docsDoJogador('ledger', uid)), ...(await docsDoJogador('payments', uid))]),
+    ...(opcoes.manterFinanceiro
+      ? []
+      : [...(await docsDoJogador('ledger', uid)), ...(await docsDoJogador('payments', uid)), ...(await docsDoJogador('comprovantes', uid))]),
   ].map((d) => d.ref)
   await apagar(refs)
   if (!opcoes.manterFinanceiro) feito.push('Extrato e pagamentos apagados.')

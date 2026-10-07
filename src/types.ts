@@ -95,6 +95,10 @@ export interface Payment {
   confirmadoEm: unknown
   dataPagamento: unknown
   creditosGerados?: number
+  /** Quando o jogador enviou o comprovante (a imagem fica em comprovantes/{id}). */
+  comprovanteEm?: unknown
+  /** ID da transação (E2E) que o banco mostra no comprovante; opcional. */
+  idTransacao?: string
 }
 
 export interface Wallet {

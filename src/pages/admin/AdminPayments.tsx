@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
+import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { confirmarPagamento } from '../../lib/payments'
+import { cancelarCobrancaComComprovante } from '../../lib/comprovante'
+import { VerComprovante } from '../../components/VerComprovante'
 import { formatarData, paraMillis } from '../../lib/status'
 import { gerarPixCopiaECola, normalizarChavePix, tipoDaChavePix } from '../../lib/pix'
 import type { Payment, PixConfig } from '../../types'
@@ -19,6 +21,8 @@ export function AdminPayments() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [verTodos, setVerTodos] = useState(false)
+  const [busca, setBusca] = useState('')
+  const [aberto, setAberto] = useState<Payment | null>(null)
   const podeEditarPix = admin?.role === 'admin'
 
   useEffect(() => {
@@ -48,7 +52,7 @@ export function AdminPayments() {
     setBusyId(p.id)
     setErro(null)
     try {
-      await deleteDoc(doc(db, 'payments', p.id))
+      await cancelarCobrancaComComprovante(p.id, !!p.comprovanteEm)
     } catch (e) {
       setErro((e as Error).message)
     } finally {
@@ -73,7 +77,12 @@ export function AdminPayments() {
     }
   }
 
-  const pendentes = payments.filter((p) => p.status === 'pendente')
+  const termo = busca.trim().toLowerCase()
+  const pendentes = payments
+    .filter((p) => p.status === 'pendente')
+    .filter((p) => !termo || [p.jogadorNome, p.txid, p.idTransacao ?? ''].some((c) => c.toLowerCase().includes(termo)))
+    .sort((a, b) => Number(!!b.comprovanteEm) - Number(!!a.comprovanteEm))
+  const mesmoId = (p: Payment) => (p.idTransacao ? payments.filter((o) => o.id !== p.id && o.idTransacao === p.idTransacao) : [])
   const confirmados = payments.filter((p) => p.status === 'confirmado')
 
   return (
@@ -85,8 +94,14 @@ export function AdminPayments() {
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
       <h2 className="mb-1 text-sm font-semibold text-ink">Aguardando confirmação</h2>
       <p className="mb-2 text-xs text-mute">
-        Confirme quando o Pix cair na conta, ou cancele a cobrança se o jogador desistiu de pagar.
+        Confirme quando o Pix cair na conta (os que têm comprovante vêm primeiro), ou cancele a cobrança se o jogador desistiu de pagar.
       </p>
+      <input
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar por nome, código de identificação ou ID da transação"
+        className="input mb-3"
+      />
       {pendentes.length === 0 && (
         <p className="mb-6 text-sm text-mute/70">Nenhuma cobrança pendente.</p>
       )}
@@ -96,11 +111,22 @@ export function AdminPayments() {
             key={p.id}
             className="panel flex flex-wrap items-center justify-between gap-3 px-4 py-3"
           >
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-medium text-ink">{p.jogadorNome}</p>
-              <p className="text-xs text-mute">
-                {reais(p.valor)} · {p.txid}
+              <p className="break-all text-xs text-mute">
+                {reais(p.valor)} · <span className="font-mono">{p.txid}</span>
               </p>
+              {p.comprovanteEm ? (
+                <p className="mt-1 text-xs">
+                  <button type="button" onClick={() => setAberto(p)} className="font-semibold text-ok underline">
+                    Ver comprovante
+                  </button>
+                  {p.idTransacao && <span className="ml-2 font-mono text-[11px] text-mute">{p.idTransacao}</span>}
+                  {mesmoId(p).length > 0 && <span className="ml-2 text-warn">ID repetido!</span>}
+                </p>
+              ) : (
+                <p className="mt-1 text-[11px] text-mute/70">sem comprovante</p>
+              )}
             </div>
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <input
@@ -231,6 +257,19 @@ export function AdminPayments() {
           </div>
         </details>
       </div>
+      {aberto && (
+        <VerComprovante
+          pagamento={aberto}
+          duplicados={mesmoId(aberto)}
+          aoFechar={() => setAberto(null)}
+          data={datas[aberto.id] ?? hoje()}
+          aoMudarData={(v) => setDatas({ ...datas, [aberto.id]: v })}
+          confirmar={() => {
+            confirmar(aberto)
+            setAberto(null)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -115,7 +115,8 @@ export async function resetarJogador(uid: string, o: OpcoesReset): Promise<strin
 
   if (o.mensalidades) {
     const pagamentos = await docsDoJogador('payments', uid)
-    await apagar(pagamentos.map((d) => d.ref))
+    const comprovantes = await docsDoJogador('comprovantes', uid)
+    await apagar([...pagamentos, ...comprovantes].map((d) => d.ref))
     const jogador = await getDoc(doc(db, 'players', uid))
     if (jogador.exists() && (jogador.data() as Player).status !== 'inativo') {
       await updateDoc(doc(db, 'players', uid), {

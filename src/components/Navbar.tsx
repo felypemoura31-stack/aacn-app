@@ -70,8 +70,9 @@ export function Navbar() {
   const { pathname } = useLocation()
   const [aberto, setAberto] = useState(false)
   const ehRepresentante = useEhRepresentante(currentUser?.uid)
-  const { pendentes } = usePedidos()
+  const { pendentes, comprovantes } = usePedidos()
   const qtdPedidos = pendentes.length
+  const qtdComprovantes = comprovantes.length
 
   useEffect(() => setAberto(false), [pathname])
 
@@ -114,7 +115,7 @@ export function Navbar() {
             </svg>
             <span className="md:hidden">Menu</span>
             <span className="hidden md:inline">Gestão</span>
-            {qtdPedidos > 0 && <span className="h-2 w-2 rounded-full bg-gold md:hidden" aria-label="Há pedidos de entrada no seu time" />}
+            {(qtdPedidos > 0 || qtdComprovantes > 0) && <span className={`h-2 w-2 rounded-full bg-gold ${qtdComprovantes > 0 ? '' : 'md:hidden'}`} aria-label="Há avisos pendentes" />}
           </button>
           <img src="/logo.png" alt="AACN" className="h-8 w-8 shrink-0 rounded-full ring-1 ring-accent-hi/60" />
           <span className="text-sm font-bold uppercase tracking-widest text-ink md:hidden">AACN</span>
@@ -185,6 +186,7 @@ export function Navbar() {
                   {g.itens.map((i) => (
                     <NavLink key={i.to} to={i.to} end={i.end} tabIndex={aberto ? 0 : -1} className={itemClass}>
                       {i.rotulo}
+                      {i.to === '/admin/pagamentos' && qtdComprovantes > 0 ? ` (${qtdComprovantes})` : ''}
                     </NavLink>
                   ))}
                 </div>
