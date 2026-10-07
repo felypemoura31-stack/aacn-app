@@ -151,7 +151,7 @@ export async function reivindicarConquista(player: Pick<Player, 'uid' | 'nomeCom
 
 /**
  * Admin concede uma conquista a um jogador (sem conferir a meta). `creditar` soma o bônus na carteira e
- * lança no extrato, no mesmo lote. Se a conquista estava revogada, ela volta (e só paga se `creditar`).
+ * lança no extrato, no mesmo lote.
  */
 export async function concederConquista(
   alvo: { uid: string; nome: string },
@@ -160,22 +160,17 @@ export async function concederConquista(
   admin: { uid: string; nome: string },
 ) {
   const ref = doc(db, 'conquistas', `${alvo.uid}_${c.id}`)
-  const atual = await getDoc(ref)
-  if (atual.exists() && !(atual.data() as { revogada?: boolean }).revogada) throw new Error('Esta conquista já foi concedida.')
+  if ((await getDoc(ref)).exists()) throw new Error('Esta conquista já foi concedida.')
 
   const batch = writeBatch(db)
-  if (atual.exists()) {
-    batch.update(ref, { revogada: false, revogadaPor: null, revogadaEm: null })
-  } else {
-    batch.set(ref, {
-      uid: alvo.uid,
-      conquista: c.id,
-      creditos: creditar ? c.bonus : 0,
-      criadoEm: serverTimestamp(),
-      concedidaPor: admin.uid,
-      concedidaPorNome: admin.nome,
-    })
-  }
+  batch.set(ref, {
+    uid: alvo.uid,
+    conquista: c.id,
+    creditos: creditar ? c.bonus : 0,
+    criadoEm: serverTimestamp(),
+    concedidaPor: admin.uid,
+    concedidaPorNome: admin.nome,
+  })
   if (creditar) {
     const carteira = await lerCarteira(alvo.uid)
     lancar(batch, {
@@ -193,10 +188,11 @@ export async function concederConquista(
 }
 
 /**
- * Admin revoga uma conquista: o selo some e o jogador não a resgata de novo sozinho (o documento fica,
- * marcado como revogado). `retirarCreditos` desconta do saldo o bônus que ela tinha pago.
+ * Admin remove uma conquista: ela volta a ser uma conquista "a conquistar", como se nunca tivesse sido ganha.
+ * `retirarCreditos` desconta do saldo o bônus que ela tinha pago. Se o jogador ainda cumpre a meta, o app
+ * dele a concede de novo sozinho na próxima vez que abrir.
  */
-export async function revogarConquista(
+export async function removerConquista(
   alvo: { uid: string; nome: string },
   c: DefConquista,
   retirarCreditos: boolean,
@@ -204,15 +200,15 @@ export async function revogarConquista(
 ) {
   const ref = doc(db, 'conquistas', `${alvo.uid}_${c.id}`)
   const atual = await getDoc(ref)
-  if (!atual.exists() || (atual.data() as { revogada?: boolean }).revogada) throw new Error('Esta conquista não está concedida.')
+  if (!atual.exists()) throw new Error('Esta conquista não está concedida.')
   const pago = Number((atual.data() as { creditos?: number }).creditos ?? 0)
 
   const batch = writeBatch(db)
-  batch.update(ref, { revogada: true, revogadaPor: admin.uid, revogadaEm: serverTimestamp() })
+  batch.delete(ref)
   if (retirarCreditos && pago > 0) {
     const carteira = await lerCarteira(alvo.uid)
     if (carteira.saldo < pago) {
-      throw new Error(`O saldo (${carteira.saldo}) é menor que o bônus (${pago}). Revogue sem retirar os créditos ou ajuste o saldo em Créditos.`)
+      throw new Error(`O saldo (${carteira.saldo}) é menor que o bônus (${pago}). Remova sem retirar os créditos ou ajuste o saldo em Créditos.`)
     }
     lancar(batch, {
       uid: alvo.uid,

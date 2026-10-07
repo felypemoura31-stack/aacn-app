@@ -384,9 +384,9 @@ inscrições; quem já jogou e pagou com créditos recebe o **estorno** no extra
 - **Ficha do jogador (admin):** dados em duas colunas, situação/time/cargo/termo num resumo ao lado; as conquistas e a "zona de risco" (resetar e excluir) ficam recolhidas.
 - **Pagamentos (admin):** pendentes e histórico à esquerda; a chave Pix e o painel de teste ficam recolhidos à direita (abrem sozinhos se a chave ainda não foi cadastrada). **Jogos (admin):** "+ Novo jogo" abre sob demanda.
 
-## Conceder e revogar conquistas (admin)
+## Conceder e remover conquistas (admin)
 
-Na **ficha do jogador** (Admin → Jogadores → o jogador) o painel **Conquistas** lista as 12 e deixa o admin **conceder** uma (com ou sem o bônus em créditos, que entra no extrato) ou **revogar** uma indevida (com a opção de **retirar os créditos** que ela pagou). Uma conquista revogada **não é resgatada de novo sozinha** (o documento fica marcado como revogado) e some dos selos e do histórico do jogador; o admin pode **devolver**. Em **Admin → Jogadores**, o cartão **Conquistas pendentes → Conferir** procura quem já atingiu uma conquista (pelos contadores e pelo cadastro) e não recebeu, e concede todas de uma vez com o bônus (o **Assíduo** fica de fora, pois depende de faltas). As regras do banco só deixam o admin conceder/revogar, e o valor do bônus é sempre o da conquista (ou zero).
+Na **ficha do jogador** (Admin → Jogadores → o jogador), o painel **Conquistas** (recolhido, mostra "n/12") traz duas linhas de etiquetas: **Conquistadas** e **Ainda pode conquistar** (cada uma com o bônus em créditos). Clicar numa etiqueta abre a ação logo abaixo: **Conceder conquista** (com a opção de pagar o bônus, que entra no extrato) ou **Remover conquista** (com a opção de retirar do saldo os créditos que ela pagou). **Remover** apaga a conquista de vez: ela volta a ficar igual às outras, "a conquistar", sem nenhuma marca de removida. Se o jogador ainda cumpre a meta, o app dele a concede de novo sozinho na próxima vez que abrir. Em **Admin → Jogadores**, o link **Conferir conquistas pendentes** procura quem já atingiu uma conquista e não recebeu e concede todas de uma vez (o **Assíduo** fica de fora, pois depende de faltas). Só o admin concede/remove, e o bônus é sempre o da conquista (ou zero).
 
 **Por que alguém pode ficar sem a conquista automática:** o resgate é feito pelo app do próprio jogador, quando ele abre o app depois de atingir a meta. Se o aparelho dele está com uma versão antiga do app, ou nunca abriu depois da aprovação no time, o resgate não acontece. O app agora tenta de novo se a primeira tentativa falhar, e a conferência do admin cobre os casos que ficaram para trás.
 
@@ -452,6 +452,10 @@ A aba **Solicitações do time** só aparece para quem é representante de algum
   contato de emergência continuam fora do alcance da tesouraria.
 - No perfil do jogador, se o time tem WhatsApp cadastrado, aparece **Avisar o time pelo WhatsApp**
   enquanto o pedido de entrada está pendente (não depende do e-mail automático, que exige o Blaze).
+
+## Avisos com botão "Lido"
+
+Os avisos que o jogador ainda **não leu** aparecem **logo abaixo do menu, acima de qualquer tela** (não só na carteirinha), com o botão **Lido** (e "Marcar todos como lidos" quando passam de 3). O que ele já leu vai para **Avisos anteriores**, recolhido na tela da carteirinha. A leitura fica guardada por jogador (`leituras/{uid}`), então vale em todos os aparelhos. Um aviso que já existia antes de a conta ser criada conta como lido, exceto os fixados.
 
 ## Mural de avisos e lembrete de mensalidade
 
@@ -520,7 +524,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (376 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (388 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

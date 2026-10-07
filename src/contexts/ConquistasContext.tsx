@@ -12,8 +12,6 @@ export interface ConquistaDoJogador extends DefConquista {
   atingida: boolean
   /** Conquista do jogador (selo visível). */
   resgatada: boolean
-  /** Revogada pela diretoria: não aparece como conquista e não é resgatada de novo sozinha. */
-  revogada: boolean
   /** Créditos que esta conquista pagou (0 se a diretoria concedeu sem bônus). */
   pago: number
 }
@@ -84,7 +82,7 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
     () =>
       CONQUISTAS.map((c) => {
         const d = resgatadas?.[c.id]
-        return { ...c, atingida: c.ok(contexto), resgatada: !!d && !d.revogada, revogada: !!d?.revogada, pago: d && !d.revogada ? Number(d.creditos ?? 0) : 0 }
+        return { ...c, atingida: c.ok(contexto), resgatada: !!d, pago: d ? Number(d.creditos ?? 0) : 0 }
       }),
     [contexto, resgatadas],
   )
@@ -92,7 +90,7 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
   // resgate automático, uma conquista por vez (cada uma soma na carteira)
   useEffect(() => {
     if (!player || stats === undefined || resgatadas === null || ocupado.current) return
-    const pendentes = conquistas.filter((c) => c.atingida && !c.resgatada && !c.revogada && !falhou.current.has(c.id))
+    const pendentes = conquistas.filter((c) => c.atingida && !c.resgatada && !falhou.current.has(c.id))
     if (pendentes.length === 0) return
     ocupado.current = true
     ;(async () => {

@@ -121,8 +121,6 @@ export interface ConquistaResgatada {
   conquista: string
   creditos: number
   criadoEm: unknown
-  /** Revogada pelo admin: o selo some e o jogador não resgata de novo sozinho. */
-  revogada?: boolean
   concedidaPor?: string
   concedidaPorNome?: string
 }

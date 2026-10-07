@@ -32,6 +32,8 @@ import { TeamProfile } from './pages/TeamProfile'
 import { Validar } from './pages/Validar'
 import { ConquistasProvider } from './contexts/ConquistasContext'
 import { PedidosProvider } from './contexts/PedidosContext'
+import { AvisosProvider } from './contexts/AvisosContext'
+import { AvisosNaoLidos } from './components/AvisosNaoLidos'
 import { AvisoPedidos } from './components/AvisoPedidos'
 import { CadastroExcluido } from './pages/CadastroExcluido'
 
@@ -50,6 +52,7 @@ function App() {
     <AuthProvider>
       <ConquistasProvider>
       <PedidosProvider>
+      <AvisosProvider>
       {import.meta.env.MODE === 'demo' && (
         <div className="no-print bg-gold/15 px-3 py-1 text-center text-xs text-gold">
           Modo demonstração (dados fictícios). Logins: admin@teste.com,
@@ -58,6 +61,7 @@ function App() {
       )}
       <OfflineBanner />
       <Navbar />
+      <AvisosNaoLidos />
       <AvisoPedidos />
       <GuardaCadastro>
       <Routes>
@@ -258,6 +262,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </GuardaCadastro>
+      </AvisosProvider>
       </PedidosProvider>
       </ConquistasProvider>
     </AuthProvider>

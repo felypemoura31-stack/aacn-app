@@ -48,7 +48,7 @@ export async function excluirJogador(uid: string, opcoes: { manterFinanceiro: bo
   const cadastro = await getDoc(doc(db, 'players', uid))
   const cpf = cadastro.exists() ? ((cadastro.data() as Player).cpf ?? '') : ''
   if (cpf) lote.delete(doc(db, 'cpfs', cpf)) // o CPF fica livre para um novo cadastro
-  for (const col of ['stats', 'wallets', 'contatos', 'cobrancas', 'publicCards', 'players']) lote.delete(doc(db, col, uid))
+  for (const col of ['stats', 'wallets', 'contatos', 'cobrancas', 'leituras', 'publicCards', 'players']) lote.delete(doc(db, col, uid))
   await lote.commit()
   feito.push('Cadastro e cartão público excluídos.')
   return feito
@@ -86,7 +86,7 @@ export async function excluirMinhaConta(user: User, player: Player, senha: strin
 
   const lote = writeBatch(db)
   if (player.cpf) lote.delete(doc(db, 'cpfs', player.cpf)) // o CPF fica livre para um novo cadastro
-  for (const col of ['contatos', 'publicCards', 'players']) lote.delete(doc(db, col, user.uid))
+  for (const col of ['contatos', 'leituras', 'publicCards', 'players']) lote.delete(doc(db, col, user.uid))
   await lote.commit()
 
   await deleteUser(user)

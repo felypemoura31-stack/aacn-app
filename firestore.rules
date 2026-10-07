@@ -447,11 +447,8 @@ service cloud.firestore {
         (request.resource.data.creditos == bonusConquista(request.resource.data.conquista) || request.resource.data.creditos == 0) &&
         request.resource.data.concedidaPor == request.auth.uid &&
         request.resource.data.get('criadoEm', request.time) == request.time;
-      // O admin revoga (revogada = true: o selo some e o jogador não resgata de novo sozinho) ou devolve a conquista.
-      allow update: if isAdmin() &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revogada', 'revogadaPor', 'revogadaEm']) &&
-        request.resource.data.revogada is bool;
-      allow delete: if isAdmin(); // reset de dados de teste
+      allow update: if false;
+      allow delete: if isAdmin(); // o admin remove uma conquista (ela volta a "a conquistar") e o reset de dados de teste
     }
 
     // Jogos: admin, tesoureiro e organizador criam e editam (inclusive valores e vagas).
@@ -649,6 +646,16 @@ service cloud.firestore {
         request.resource.data.keys().hasOnly(['ultimaEm', 'porUid', 'porNome']) &&
         request.resource.data.porUid == request.auth.uid;
       allow delete: if isAdmin();
+    }
+
+    // Quais avisos cada jogador já marcou como lidos (vale em todos os aparelhos). Só o dono lê e grava.
+    match /leituras/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid) &&
+        request.resource.data.keys().hasOnly(['avisos', 'atualizadoEm']) &&
+        request.resource.data.avisos is list &&
+        request.resource.data.avisos.size() <= 300;
+      allow delete: if isOwner(uid) || isAdmin();
     }
 
     // Mural de avisos: admin, tesoureiro e organizador publicam; todos os logados leem.

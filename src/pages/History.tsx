@@ -91,7 +91,7 @@ export function History() {
                   .filter((c) => c.grupo === g.id)
                   .map((c) => {
                     const atual = c.campo ? contexto[c.campo] : null
-                    const feita = c.resgatada || (c.atingida && !c.revogada)
+                    const feita = c.resgatada || c.atingida
                     return (
                       <li key={c.id} className={`flex items-center justify-between gap-3 py-2 ${feita ? '' : 'opacity-60'}`} title={c.desc}>
                         <div className="min-w-0">
@@ -103,16 +103,14 @@ export function History() {
                             {!c.atingida && !c.resgatada && c.meta != null && atual != null ? ` · ${Math.min(atual, c.meta)}/${c.meta}` : ''}
                           </p>
                         </div>
-                        <p className={`shrink-0 text-xs font-semibold ${c.resgatada ? 'text-ok' : c.atingida && !c.revogada ? 'text-gold' : 'text-mute'}`}>
+                        <p className={`shrink-0 text-xs font-semibold ${c.resgatada ? 'text-ok' : c.atingida ? 'text-gold' : 'text-mute'}`}>
                           {c.resgatada
                             ? c.pago > 0
                               ? `+${formatarCreditos(c.pago)}`
                               : '✓'
-                            : c.revogada
-                              ? 'Removida'
-                              : c.atingida
-                                ? 'Creditando...'
-                                : `+${formatarCreditos(c.bonus)}`}
+                            : c.atingida
+                              ? 'Creditando...'
+                              : `+${formatarCreditos(c.bonus)}`}
                         </p>
                       </li>
                     )
