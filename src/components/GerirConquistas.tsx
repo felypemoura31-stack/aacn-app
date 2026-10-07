@@ -49,13 +49,14 @@ export function GerirConquistas({ uid, nome }: { uid: string; nome: string }) {
   const ativas = CONQUISTAS.filter((c) => docs?.[c.id] && !docs[c.id].revogada).length
 
   return (
-    <div className="panel mb-6 p-5">
-      <h2 className="text-sm font-bold text-ink">
+    <details className="panel">
+      <summary className="cursor-pointer select-none px-5 py-3 text-sm font-bold text-ink">
         Conquistas {docs && <span className="font-normal text-mute">({ativas}/{CONQUISTAS.length})</span>}
-      </h2>
-      <p className="mt-1 text-xs text-mute">
-        Conceda uma conquista que o jogador merece e não recebeu, ou revogue uma indevida. Revogada, ela não é resgatada
-        de novo sozinha. O bônus em créditos é opcional e vai para o extrato.
+      </summary>
+      <div className="px-5 pb-5">
+      <p className="text-xs text-mute">
+        Conceda uma conquista que o jogador merece e não recebeu, ou revogue uma indevida (revogada, ela não é resgatada de novo
+        sozinha). O bônus em créditos é opcional e vai para o extrato.
       </p>
       {erro && <p className="mt-2 text-sm text-danger">{erro}</p>}
       {docs === null && <p className="mt-2 text-xs text-mute">Carregando...</p>}
@@ -117,6 +118,7 @@ export function GerirConquistas({ uid, nome }: { uid: string; nome: string }) {
             </div>
           </div>
         ))}
-    </div>
+      </div>
+    </details>
   )
 }

@@ -26,7 +26,6 @@ const LINKS: LinkItem[] = [
   { to: '/times', rotulo: 'Times' },
   { to: '/parceiros', rotulo: 'Parceiros' },
   { to: '/historico', rotulo: 'Histórico' },
-  { to: '/validar', rotulo: 'Validar carteirinha' },
 ]
 
 const GRUPOS: Grupo[] = [

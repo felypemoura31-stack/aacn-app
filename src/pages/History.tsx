@@ -62,64 +62,69 @@ export function History() {
   const desde = paraMillis(player.criadoEm)
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-1 text-xl font-bold text-ink">Meu histórico</h1>
-      <p className="mb-6 text-sm text-mute">Associado desde {formatarData(desde)}.</p>
+    <div className="mx-auto max-w-5xl px-4 py-6">
+      <h1 className="text-xl font-bold text-ink">Meu histórico</h1>
+      <p className="mb-4 text-sm text-mute">Associado desde {formatarData(desde)}.</p>
 
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Kpi titulo="Jogos jogados" valor={dados.presentes} />
         <Kpi titulo="Frequência" valor={dados.frequencia === null ? '—' : `${dados.frequencia}%`} detalhe={dados.faltas ? `${dados.faltas} falta(s)` : 'sem faltas'} />
         <Kpi titulo="Mensalidades" valor={dados.pagas} detalhe={reais(dados.totalPago)} />
         <Kpi titulo="Créditos usados" valor={formatarCreditos(dados.usados)} detalhe={`${formatarCreditos(dados.recebidos)} recebidos`} />
       </div>
 
-      <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h2 className="text-sm font-semibold text-ink">Conquistas</h2>
-        <p className="text-xs text-mute">
-          {conquistas.filter((c) => c.resgatada).length}/{conquistas.length} · bônus recebidos:{' '}
-          <span className="font-semibold text-gold">{formatarCreditos(bonusRecebido)} créditos</span>
-        </p>
-      </div>
-      <p className="mb-3 text-xs text-mute/80">
-        Cada conquista paga um bônus único em créditos de jogo, que cai sozinho na sua carteira quando você a desbloqueia.
-      </p>
-      {GRUPOS.map((g) => (
-        <div key={g.id} className="mb-6">
-          <h3 className="mb-2 text-[11px] uppercase tracking-widest text-mute/80">{g.titulo}</h3>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {conquistas
-              .filter((c) => c.grupo === g.id)
-              .map((c) => {
-                const atual = c.campo ? contexto[c.campo] : null
-                return (
-                  <div key={c.id} className={`panel p-3 text-center ${c.resgatada || (c.atingida && !c.revogada) ? '' : 'opacity-50'}`} title={c.desc}>
-                    <p className="text-2xl">{c.resgatada || (c.atingida && !c.revogada) ? c.icone : '☆'}</p>
-                    <p className="mt-1 text-sm font-semibold text-ink">{c.titulo}</p>
-                    <p className="mt-1 text-[11px] text-mute">{c.desc}</p>
-                    {!c.atingida && !c.resgatada && c.meta != null && atual != null && (
-                      <p className="mt-1 text-[11px] text-mute/80">
-                        {Math.min(atual, c.meta)}/{c.meta}
-                      </p>
-                    )}
-                    <p className={`mt-2 text-xs font-semibold ${c.resgatada ? 'text-ok' : c.revogada ? 'text-mute' : c.atingida ? 'text-gold' : 'text-mute'}`}>
-                      {c.resgatada
-                        ? c.pago > 0
-                          ? `✓ +${formatarCreditos(c.pago)} recebidos`
-                          : '✓ Conquistada'
-                        : c.revogada
-                          ? 'Removida pela diretoria'
-                          : c.atingida
-                            ? 'Creditando...'
-                            : `+${formatarCreditos(c.bonus)} créditos`}
-                    </p>
-                  </div>
-                )
-              })}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <section className="panel p-5">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-bold text-ink">
+              Conquistas <span className="font-normal text-mute">({conquistas.filter((c) => c.resgatada).length}/{conquistas.length})</span>
+            </h2>
+            <p className="text-xs text-mute">
+              Bônus recebidos: <span className="font-semibold text-gold">{formatarCreditos(bonusRecebido)} créditos</span>
+            </p>
           </div>
-        </div>
-      ))}
+          {GRUPOS.map((g) => (
+            <div key={g.id} className="mt-4 first:mt-0">
+              <h3 className="mb-1 text-[11px] uppercase tracking-widest text-mute/80">{g.titulo}</h3>
+              <ul className="divide-y divide-line">
+                {conquistas
+                  .filter((c) => c.grupo === g.id)
+                  .map((c) => {
+                    const atual = c.campo ? contexto[c.campo] : null
+                    const feita = c.resgatada || (c.atingida && !c.revogada)
+                    return (
+                      <li key={c.id} className={`flex items-center justify-between gap-3 py-2 ${feita ? '' : 'opacity-60'}`} title={c.desc}>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-ink">
+                            <span className={c.grupo === 'noturnas' ? 'text-accent-hi' : 'text-gold'}>{feita ? c.icone : '☆'}</span> {c.titulo}
+                          </p>
+                          <p className="truncate text-[11px] text-mute">
+                            {c.desc}
+                            {!c.atingida && !c.resgatada && c.meta != null && atual != null ? ` · ${Math.min(atual, c.meta)}/${c.meta}` : ''}
+                          </p>
+                        </div>
+                        <p className={`shrink-0 text-xs font-semibold ${c.resgatada ? 'text-ok' : c.atingida && !c.revogada ? 'text-gold' : 'text-mute'}`}>
+                          {c.resgatada
+                            ? c.pago > 0
+                              ? `+${formatarCreditos(c.pago)}`
+                              : '✓'
+                            : c.revogada
+                              ? 'Removida'
+                              : c.atingida
+                                ? 'Creditando...'
+                                : `+${formatarCreditos(c.bonus)}`}
+                        </p>
+                      </li>
+                    )
+                  })}
+              </ul>
+            </div>
+          ))}
+          <p className="mt-4 text-[11px] text-mute/70">Cada conquista paga um bônus único em créditos, que cai sozinho na carteira.</p>
+        </section>
 
-      <h2 className="mb-2 text-sm font-semibold text-ink">Jogos que você jogou</h2>
+        <section>
+      <h2 className="mb-2 text-sm font-bold text-ink">Jogos que você jogou</h2>
       <div className="space-y-2">
         {dados.jogados.length === 0 && <p className="text-sm text-mute/70">Você ainda não tem presença registrada.</p>}
         {dados.jogados.map(({ p, g }) => (
@@ -130,6 +135,8 @@ export function History() {
             <span className="text-mute">{p.pagoCom === 'creditos' ? `${formatarCreditos(p.creditosDebitados)} créditos` : 'dinheiro'}</span>
           </div>
         ))}
+      </div>
+        </section>
       </div>
     </div>
   )

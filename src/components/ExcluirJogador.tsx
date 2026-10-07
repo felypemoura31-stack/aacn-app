@@ -24,7 +24,7 @@ export function ExcluirJogador({ uid, nome, aoExcluir }: { uid: string; nome: st
   }
 
   return (
-    <div className="panel mt-6 border-danger/40 p-5">
+    <div className="rounded-sm border border-danger/40 p-4">
       <h2 className="text-sm font-bold text-ink">Excluir jogador</h2>
       {!aberto ? (
         <>

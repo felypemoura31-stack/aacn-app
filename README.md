@@ -370,6 +370,16 @@ conta pelo app.
 inscrições; quem já jogou e pagou com créditos recebe o **estorno** no extrato e a presença sai dos contadores
 (jogos e jogos noturnos). Os bônus de conquista já pagos não são retirados.
 
+## Visual mais limpo (computador)
+
+- Os painéis perderam a linha azul no topo (agora só o painel principal a mantém) e o texto explicativo foi encurtado ou movido para dicas.
+- **Minha carteirinha:** duas colunas no computador (carteirinha à esquerda; à direita um resumo com créditos e mensalidade lado a lado e o botão de pagar, as conquistas e os avisos, só os 2 mais recentes, com "Ver todos"). Cabe numa tela, sem rolar. O link "Validar carteirinha" saiu do menu (continua em um botão nessa tela e na tela de entrada).
+- **Jogos:** título e saldo na mesma linha, jogos em duas colunas, "Minhas inscrições" removido (repetia o status de cada jogo) e o extrato de créditos abre e fecha.
+- **Histórico:** conquistas em lista compacta ao lado dos jogos jogados.
+- **Meus dados:** formulário em duas colunas; o bloco de conquistas saiu (fica na carteirinha e no histórico).
+- **Ficha do jogador (admin):** dados em duas colunas, situação/time/cargo/termo num resumo ao lado; as conquistas e a "zona de risco" (resetar e excluir) ficam recolhidas.
+- **Pagamentos (admin):** pendentes e histórico à esquerda; a chave Pix e o painel de teste ficam recolhidos à direita (abrem sozinhos se a chave ainda não foi cadastrada). **Jogos (admin):** "+ Novo jogo" abre sob demanda.
+
 ## Conceder e revogar conquistas (admin)
 
 Na **ficha do jogador** (Admin → Jogadores → o jogador) o painel **Conquistas** lista as 12 e deixa o admin **conceder** uma (com ou sem o bônus em créditos, que entra no extrato) ou **revogar** uma indevida (com a opção de **retirar os créditos** que ela pagou). Uma conquista revogada **não é resgatada de novo sozinha** (o documento fica marcado como revogado) e some dos selos e do histórico do jogador; o admin pode **devolver**. Em **Admin → Jogadores**, o cartão **Conquistas pendentes → Conferir** procura quem já atingiu uma conquista (pelos contadores e pelo cadastro) e não recebeu, e concede todas de uma vez com o bônus (o **Assíduo** fica de fora, pois depende de faltas). As regras do banco só deixam o admin conceder/revogar, e o valor do bônus é sempre o da conquista (ou zero).

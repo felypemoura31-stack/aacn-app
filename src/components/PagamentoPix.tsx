@@ -8,7 +8,7 @@ import { gerarPixCopiaECola } from '../lib/pix'
 import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../lib/status'
 import type { Payment, PixConfig, Player } from '../types'
 
-export function PagamentoPix({ player }: { player: Player }) {
+export function PagamentoPix({ player, embutido = false }: { player: Player; embutido?: boolean }) {
   const [cfg, setCfg] = useState<PixConfig | null | undefined>(undefined)
   const [pendente, setPendente] = useState<Payment | null>(null)
   const [copiado, setCopiado] = useState(false)
@@ -57,10 +57,10 @@ export function PagamentoPix({ player }: { player: Player }) {
   }
 
   return (
-    <div id="pagamento" className="no-print panel chamfer mx-auto mt-6 w-full max-w-sm p-5">
-      <h2 className="mb-3 text-sm font-bold text-ink">Mensalidade</h2>
+    <div id="pagamento" className={embutido ? 'no-print mt-4' : 'no-print panel chamfer mx-auto mt-6 w-full max-w-sm p-5'}>
+      {!embutido && <h2 className="mb-3 text-sm font-bold text-ink">Mensalidade</h2>}
 
-      <div className="mb-3 flex items-center justify-between text-sm">
+      <div className={`mb-3 flex items-center justify-between text-sm ${embutido ? 'hidden' : ''}`}>
         <span
           className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[status]}`}
         >

@@ -273,16 +273,18 @@ export function AdminGames() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-ink">Jogos</h1>
+    <div className="mx-auto max-w-4xl px-4 py-6">
+      <h1 className="mb-4 text-xl font-bold text-ink">Jogos</h1>
 
-      <form onSubmit={criar} className="panel mb-8 space-y-3 p-4">
-        <h2 className="text-sm font-bold text-ink">Novo jogo</h2>
-        <Campos f={novo} set={setNovo} />
-        <button type="submit" className="btn-primary">
-          Criar jogo
-        </button>
-      </form>
+      <details className="panel mb-6">
+        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-bold text-ink">+ Novo jogo</summary>
+        <form onSubmit={criar} className="space-y-3 px-4 pb-4">
+          <Campos f={novo} set={setNovo} />
+          <button type="submit" className="btn-primary">
+            Criar jogo
+          </button>
+        </form>
+      </details>
 
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
 

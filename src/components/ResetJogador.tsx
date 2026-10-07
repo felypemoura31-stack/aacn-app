@@ -32,7 +32,7 @@ export function ResetJogador({ uid, nome, aoTerminar }: { uid: string; nome: str
   }
 
   return (
-    <div className="panel mt-6 border-danger/40 p-5">
+    <div className="rounded-sm border border-danger/40 p-4">
       <h2 className="text-sm font-bold text-ink">Resetar dados (testes)</h2>
       <p className="mt-1 text-xs text-mute">
         Apaga de verdade os dados marcados deste jogador. O cadastro, a foto e o time não são tocados. Use para limpar testes.

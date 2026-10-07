@@ -55,6 +55,9 @@ h2 {
 
 .panel {
   @apply rounded-sm border border-line bg-surface;
+}
+/* painel principal da tela: mantém a linha azul */
+.panel-destaque {
   border-top: 2px solid var(--color-accent);
 }
 

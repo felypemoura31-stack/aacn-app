@@ -63,15 +63,16 @@ export function Games() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-1 text-xl font-bold text-ink">Jogos</h1>
-      <p className="mb-2 text-sm text-mute">
-        Seu saldo: <b className="text-gold">{formatarCreditos(saldo)} créditos</b>
-      </p>
-      <p className="mb-6 text-xs text-mute/80">
-        A inscrição é grátis. O pagamento é feito no dia do jogo: a organização lê o QR da sua carteirinha, marca sua
-        presença e debita os créditos. Leve a carteirinha no celular ou impressa.
-      </p>
+    <div className="mx-auto max-w-5xl px-4 py-6">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-bold text-ink">Jogos</h1>
+          <p className="text-xs text-mute">Inscrição grátis. O pagamento é no dia: a organização lê o QR da sua carteirinha e debita os créditos.</p>
+        </div>
+        <p className="rounded-sm border border-line bg-surface px-3 py-1.5 text-sm text-mute">
+          Saldo: <b className="text-gold">{formatarCreditos(saldo)} créditos</b>
+        </p>
+      </div>
 
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
 
@@ -83,7 +84,7 @@ export function Games() {
         </p>
       )}
 
-      <div className="mb-8 space-y-3">
+      <div className="mb-6 grid items-start gap-3 lg:grid-cols-2">
         {abertos.length === 0 && <p className="text-sm text-mute/70">Nenhum jogo com inscrições abertas.</p>}
         {abertos.map((g) => {
           const p = porJogo.get(g.id)
@@ -161,29 +162,12 @@ export function Games() {
         })}
       </div>
 
-      <h2 className="mb-2 text-sm font-semibold text-ink">Minhas inscrições</h2>
-      <div className="space-y-2">
-        {minhas.length === 0 && <p className="text-sm text-mute/70">Você ainda não se inscreveu em nenhum jogo.</p>}
-        {minhas.map((p) => (
-          <div key={p.id} className="flex justify-between rounded-sm border border-line bg-surface2 px-4 py-2 text-sm text-mute">
-            <span>{p.gameNome}</span>
-            <span>
-              {p.status === 'removida'
-                ? 'cancelada'
-                : p.status === 'espera'
-                  ? 'na lista de espera'
-                  : p.status === 'ativa'
-                    ? 'aguardando check-in'
-                    : p.pagoCom === 'creditos'
-                      ? `presente · −${formatarCreditos(p.creditosDebitados)} créditos`
-                      : 'presente · pago em dinheiro'}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <h2 className="mb-2 mt-8 text-sm font-semibold text-ink">Extrato de créditos</h2>
-      <ExtratoCreditos uid={player.uid} />
+      <details className="panel">
+        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-bold text-ink">Extrato de créditos</summary>
+        <div className="px-4 pb-4">
+          <ExtratoCreditos uid={player.uid} />
+        </div>
+      </details>
     </div>
   )
 }

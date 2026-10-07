@@ -76,21 +76,20 @@ export function ConferirConquistas() {
   }
 
   return (
-    <div className="panel mb-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-ink">Conquistas pendentes</p>
-          <p className="text-xs text-mute">Acha quem já atingiu uma conquista e não recebeu (por exemplo, "Parte de um time") e concede com o bônus.</p>
-        </div>
-        <button onClick={conferir} disabled={carregando || concedendo} className="btn-ghost">
-          {carregando ? 'Conferindo...' : 'Conferir'}
-        </button>
-      </div>
+    <div className="mb-4">
+      <button
+        onClick={conferir}
+        disabled={carregando || concedendo}
+        title="Acha quem já atingiu uma conquista e não recebeu (por exemplo, Parte de um time) e concede com o bônus"
+        className="text-xs text-mute underline hover:text-ink"
+      >
+        {carregando ? 'Conferindo...' : 'Conferir conquistas pendentes'}
+      </button>
 
-      {msg && <p className="mt-3 text-sm text-ok">{msg}</p>}
+      {msg && <p className="mt-2 text-sm text-ok">{msg}</p>}
 
       {pendencias && pendencias.length > 0 && (
-        <div className="mt-3">
+        <div className="panel mt-2 p-4">
           <ul className="max-h-48 space-y-1 overflow-y-auto text-sm">
             {pendencias.map((p) => (
               <li key={p.uid + p.conquista.id} className="flex justify-between gap-3 text-mute">

@@ -15,7 +15,6 @@ import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { PhotoUploader } from '../components/PhotoUploader'
 import { CpfEmUsoError, trocarCpf } from '../lib/cpf'
-import { SelosConquistas } from '../components/SelosConquistas'
 import { ExcluirMinhaConta } from '../components/ExcluirMinhaConta'
 import { solicitarEntradaNoTime } from '../lib/teams'
 import { sincronizarCartaoPublico } from '../lib/publicCard'
@@ -159,10 +158,8 @@ export function Profile() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-ink">Meus dados</h1>
-
-      <SelosConquistas uid={player.uid} className="mb-6" />
+    <div className="mx-auto max-w-3xl px-4 py-6">
+      <h1 className="mb-4 text-xl font-bold text-ink">Meus dados</h1>
 
       {faltas.length > 0 && (
         <div className="mb-6 rounded-sm border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
@@ -198,16 +195,16 @@ export function Profile() {
         </div>
       )}
 
-      <div className="panel mb-6 p-5">
+      <div className="panel mb-4 p-4">
         <h2 className="mb-3 text-sm font-semibold text-ink">Foto 3x4 (obrigatória)</h2>
         <PhotoUploader currentUrl={player.fotoUrl} onChange={handleFoto} />
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 panel p-5"
+        className="grid gap-4 panel p-5 sm:grid-cols-2"
       >
-        <Field label="Nome completo">
+        <Field label="Nome completo" className="sm:col-span-2">
           <input
             required
             value={nomeCompleto}
@@ -216,7 +213,7 @@ export function Profile() {
           />
         </Field>
 
-        <Field label="Endereço (rua e número)">
+        <Field label="Endereço (rua e número)" className="sm:col-span-2">
           <input
             required
             value={endereco}
@@ -225,7 +222,7 @@ export function Profile() {
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:col-span-2">
           <Field label="Bairro">
             <input required maxLength={80} value={bairro} onChange={(e) => setBairro(e.target.value)} className="input" />
           </Field>
@@ -249,87 +246,6 @@ export function Profile() {
             placeholder="(64) 99999-9999"
             value={celular}
             onChange={(e) => setCelular(formatarTelefone(e.target.value))}
-            className="input"
-          />
-        </Field>
-
-        <Field label="CPF">
-          <input
-            required
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="000.000.000-00"
-            value={cpf}
-            onChange={(e) => setCpf(formatarCpf(e.target.value))}
-            className="input"
-          />
-        </Field>
-
-        <Field label="Data de nascimento">
-          <input
-            type="date"
-            required
-            value={dataNascimento}
-            onChange={(e) => setDataNascimento(e.target.value)}
-            className="input"
-          />
-        </Field>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Contato de emergência (nome)">
-            <input
-              required
-              value={contatoEmergenciaNome}
-              onChange={(e) => setContatoEmergenciaNome(e.target.value)}
-              className="input"
-            />
-          </Field>
-          <Field label="Contato de emergência (telefone)">
-            <input
-              required
-              type="tel"
-              inputMode="numeric"
-              placeholder="(64) 99999-9999"
-              value={contatoEmergenciaTelefone}
-              onChange={(e) => setContatoEmergenciaTelefone(formatarTelefone(e.target.value))}
-              className="input"
-            />
-          </Field>
-        </div>
-
-        {ehMenor({ dataNascimento }) && (
-          <div className="space-y-3 rounded-sm border border-warn/40 bg-warn/5 p-4">
-            <p className="text-sm font-semibold text-warn">Menor de 18 anos: dados do responsável legal</p>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Nome do responsável legal">
-                <input value={respNome} onChange={(e) => setRespNome(e.target.value)} maxLength={80} className="input" />
-              </Field>
-              <Field label="Telefone do responsável">
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="(64) 99999-9999"
-                  value={respTel}
-                  onChange={(e) => setRespTel(formatarTelefone(e.target.value))}
-                  className="input"
-                />
-              </Field>
-            </div>
-            <label className="flex items-start gap-2 text-sm text-ink">
-              <input type="checkbox" checked={respAutoriza} onChange={(e) => setRespAutoriza(e.target.checked)} className="mt-1" />
-              <span>
-                Sou o responsável legal, autorizo a participação do menor nas atividades da AACN e concordo com o termo de responsabilidade.
-              </span>
-            </label>
-          </div>
-        )}
-
-        <Field label="Condições médicas ou especiais (opcional)">
-          <textarea
-            value={condicoesMedicas}
-            onChange={(e) => setCondicoesMedicas(e.target.value)}
-            placeholder="Ex: alergias, restrições, condições relevantes. Deixe em branco se não houver."
-            rows={3}
             className="input"
           />
         </Field>
@@ -369,16 +285,97 @@ export function Profile() {
           )}
         </Field>
 
-        {erroForm && <p className="text-sm text-danger">{erroForm}</p>}
+        <Field label="CPF">
+          <input
+            required
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="000.000.000-00"
+            value={cpf}
+            onChange={(e) => setCpf(formatarCpf(e.target.value))}
+            className="input"
+          />
+        </Field>
+
+        <Field label="Data de nascimento">
+          <input
+            type="date"
+            required
+            value={dataNascimento}
+            onChange={(e) => setDataNascimento(e.target.value)}
+            className="input"
+          />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-4 sm:col-span-2">
+          <Field label="Contato de emergência (nome)">
+            <input
+              required
+              value={contatoEmergenciaNome}
+              onChange={(e) => setContatoEmergenciaNome(e.target.value)}
+              className="input"
+            />
+          </Field>
+          <Field label="Contato de emergência (telefone)">
+            <input
+              required
+              type="tel"
+              inputMode="numeric"
+              placeholder="(64) 99999-9999"
+              value={contatoEmergenciaTelefone}
+              onChange={(e) => setContatoEmergenciaTelefone(formatarTelefone(e.target.value))}
+              className="input"
+            />
+          </Field>
+        </div>
+
+        {ehMenor({ dataNascimento }) && (
+          <div className="space-y-3 rounded-sm border border-warn/40 bg-warn/5 p-4 sm:col-span-2">
+            <p className="text-sm font-semibold text-warn">Menor de 18 anos: dados do responsável legal</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Nome do responsável legal">
+                <input value={respNome} onChange={(e) => setRespNome(e.target.value)} maxLength={80} className="input" />
+              </Field>
+              <Field label="Telefone do responsável">
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="(64) 99999-9999"
+                  value={respTel}
+                  onChange={(e) => setRespTel(formatarTelefone(e.target.value))}
+                  className="input"
+                />
+              </Field>
+            </div>
+            <label className="flex items-start gap-2 text-sm text-ink">
+              <input type="checkbox" checked={respAutoriza} onChange={(e) => setRespAutoriza(e.target.checked)} className="mt-1" />
+              <span>
+                Sou o responsável legal, autorizo a participação do menor nas atividades da AACN e concordo com o termo de responsabilidade.
+              </span>
+            </label>
+          </div>
+        )}
+
+        <Field label="Condições médicas ou especiais (opcional)" className="sm:col-span-2">
+          <textarea
+            value={condicoesMedicas}
+            onChange={(e) => setCondicoesMedicas(e.target.value)}
+            placeholder="Ex: alergias, restrições, condições relevantes. Deixe em branco se não houver."
+            rows={3}
+            className="input"
+          />
+        </Field>
+
+        {erroForm && <p className="text-sm text-danger sm:col-span-2">{erroForm}</p>}
 
         {savedMessage && (
-          <p className="text-sm text-ok">{savedMessage}</p>
+          <p className="text-sm text-ok sm:col-span-2">{savedMessage}</p>
         )}
 
         <button
           type="submit"
           disabled={saving}
-          className="rounded-sm btn-primary"
+          className="rounded-sm btn-primary sm:col-span-2 sm:justify-self-start"
         >
           {saving ? 'Salvando...' : 'Salvar alterações'}
         </button>
@@ -389,9 +386,9 @@ export function Profile() {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, className = '' }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <label className="block">
+    <label className={`block ${className}`}>
       <span className="mb-1 block text-sm font-medium text-ink">{label}</span>
       {children}
     </label>

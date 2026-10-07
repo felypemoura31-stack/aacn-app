@@ -18,6 +18,7 @@ export function AdminPayments() {
   const [datas, setDatas] = useState<Record<string, string>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+  const [verTodos, setVerTodos] = useState(false)
   const podeEditarPix = admin?.role === 'admin'
 
   useEffect(() => {
@@ -76,12 +77,78 @@ export function AdminPayments() {
   const confirmados = payments.filter((p) => p.status === 'confirmado')
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-bold text-ink">Pagamentos</h1>
+    <div className="mx-auto max-w-5xl px-4 py-6">
+      <h1 className="mb-4 text-xl font-bold text-ink">Pagamentos</h1>
 
-      <form onSubmit={salvarCfg} className="panel mb-8 p-4">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="min-w-0">
+      {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
+      <h2 className="mb-1 text-sm font-semibold text-ink">Aguardando confirmação</h2>
+      <p className="mb-2 text-xs text-mute">
+        Confirme quando o Pix cair na conta, ou cancele a cobrança se o jogador desistiu de pagar.
+      </p>
+      {pendentes.length === 0 && (
+        <p className="mb-6 text-sm text-mute/70">Nenhuma cobrança pendente.</p>
+      )}
+      <div className="mb-8 space-y-2">
+        {pendentes.map((p) => (
+          <div
+            key={p.id}
+            className="panel flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+          >
+            <div>
+              <p className="text-sm font-medium text-ink">{p.jogadorNome}</p>
+              <p className="text-xs text-mute">
+                {reais(p.valor)} · {p.txid}
+              </p>
+            </div>
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              <input
+                type="date"
+                max={hoje()}
+                value={datas[p.id] ?? hoje()}
+                onChange={(e) => setDatas({ ...datas, [p.id]: e.target.value })}
+                className="input w-auto"
+              />
+              <button disabled={busyId === p.id} onClick={() => confirmar(p)} className="btn-primary">
+                Confirmar
+              </button>
+              <button disabled={busyId === p.id} onClick={() => cancelarCobranca(p)} className="btn-ghost text-danger">
+                Cancelar cobrança
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="mb-2 text-sm font-semibold text-ink">Histórico</h2>
+      <div className="space-y-2">
+        {(verTodos ? confirmados : confirmados.slice(0, 8)).map((p) => (
+          <div
+            key={p.id}
+            className="flex justify-between rounded-sm border border-line bg-surface2 px-4 py-2 text-sm text-mute"
+          >
+            <span>
+              {p.jogadorNome} · {reais(p.valor)}
+            </span>
+            <span className="text-ok">pago em {formatarData(paraMillis(p.dataPagamento))}</span>
+          </div>
+        ))}
+      </div>
+      {confirmados.length > 8 && (
+        <button type="button" onClick={() => setVerTodos((v) => !v)} className="mt-2 text-xs text-mute underline hover:text-ink">
+          {verTodos ? 'Mostrar menos' : `Ver todos (${confirmados.length})`}
+        </button>
+      )}
+        </div>
+
+        <details className="panel" open={!cfg.chave.trim()}>
+          <summary className="cursor-pointer select-none px-4 py-3 text-sm font-bold text-ink">
+            Chave Pix e valor <span className="font-normal text-mute">({reais(Number(cfg.valor) || 0)})</span>
+          </summary>
+          <div className="px-4 pb-4">
+      <form onSubmit={salvarCfg}>
         <fieldset disabled={!podeEditarPix} className="space-y-3">
-        <h2 className="text-sm font-bold text-ink">Chave Pix da associação</h2>
         {!podeEditarPix && (
           <p className="text-xs text-mute">Somente o administrador altera a chave e o valor.</p>
         )}
@@ -138,7 +205,7 @@ export function AdminPayments() {
       </form>
 
       {cfg.chave.trim() && cfg.nome.trim() && cfg.cidade.trim() && Number(cfg.valor) > 0 && (
-        <div className="panel mb-8 p-4">
+        <div className="mt-4 border-t border-line pt-4">
           <h2 className="text-sm font-bold text-ink">Testar o Pix copia e cola</h2>
           <p className="mt-1 text-xs text-mute">
             Cole este código no app do seu banco (Pix → Pix Copia e Cola) e confira se aparece o nome do recebedor e o valor de{' '}
@@ -161,58 +228,8 @@ export function AdminPayments() {
         </div>
       )}
 
-      {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
-      <h2 className="mb-1 text-sm font-semibold text-ink">Aguardando confirmação</h2>
-      <p className="mb-2 text-xs text-mute">
-        Confirme quando o Pix cair na conta, ou cancele a cobrança se o jogador desistiu de pagar.
-      </p>
-      {pendentes.length === 0 && (
-        <p className="mb-6 text-sm text-mute/70">Nenhuma cobrança pendente.</p>
-      )}
-      <div className="mb-8 space-y-2">
-        {pendentes.map((p) => (
-          <div
-            key={p.id}
-            className="panel flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-          >
-            <div>
-              <p className="text-sm font-medium text-ink">{p.jogadorNome}</p>
-              <p className="text-xs text-mute">
-                {reais(p.valor)} · {p.txid}
-              </p>
-            </div>
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-              <input
-                type="date"
-                max={hoje()}
-                value={datas[p.id] ?? hoje()}
-                onChange={(e) => setDatas({ ...datas, [p.id]: e.target.value })}
-                className="input w-auto"
-              />
-              <button disabled={busyId === p.id} onClick={() => confirmar(p)} className="btn-primary">
-                Confirmar
-              </button>
-              <button disabled={busyId === p.id} onClick={() => cancelarCobranca(p)} className="btn-ghost text-danger">
-                Cancelar cobrança
-              </button>
-            </div>
           </div>
-        ))}
-      </div>
-
-      <h2 className="mb-2 text-sm font-semibold text-ink">Histórico</h2>
-      <div className="space-y-2">
-        {confirmados.map((p) => (
-          <div
-            key={p.id}
-            className="flex justify-between rounded-sm border border-line bg-surface2 px-4 py-2 text-sm text-mute"
-          >
-            <span>
-              {p.jogadorNome} · {reais(p.valor)}
-            </span>
-            <span className="text-ok">pago em {formatarData(paraMillis(p.dataPagamento))}</span>
-          </div>
-        ))}
+        </details>
       </div>
     </div>
   )
