@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<defs><linearGradient id="db" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e2a1c"/><stop offset="1" stop-color="#15130b"/></linearGradient>
+<clipPath id="dc"><polygon points="32,7 53.5,19.5 53.5,44.5 32,57 10.5,44.5 10.5,19.5"/></clipPath></defs>
+<polygon points="32,3 57,17.5 57,46.5 32,61 7,46.5 7,17.5" fill="url(#db)" stroke="#d4b25e" stroke-width="2.5" stroke-linejoin="miter"/>
+<polygon points="32,7 53.5,19.5 53.5,44.5 32,57 10.5,44.5 10.5,19.5" fill="none" stroke="#d4b25e" stroke-width="1" stroke-dasharray="2 1.6" opacity=".55"/>
+<g clip-path="url(#dc)"><polygon points="32.00,9.50 33.36,13.13 37.23,13.30 34.20,15.71 35.23,19.45 32.00,17.31 28.77,19.45 29.80,15.71 26.77,13.30 30.64,13.13" fill="#d4b25e"/><path d="M19 30 L32 22 L45 30" fill="none" stroke="#d4b25e" stroke-width="4" stroke-linejoin="miter" stroke-linecap="butt"/><path d="M19 38 L32 30 L45 38" fill="none" stroke="#d4b25e" stroke-width="4" stroke-linejoin="miter" stroke-linecap="butt"/><path d="M19 46 L32 38 L45 46" fill="none" stroke="#d4b25e" stroke-width="4" stroke-linejoin="miter" stroke-linecap="butt"/><path d="M19 46 Q32 54 45 46" fill="none" stroke="#d4b25e" stroke-width="4"/></g></svg>

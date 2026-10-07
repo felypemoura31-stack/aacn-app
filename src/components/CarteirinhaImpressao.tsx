@@ -58,7 +58,7 @@ export function CarteirinhaImpressao({ player, verifyUrl, timeNome, timeLogoUrl,
               {insignias.length > 0 && (
                 <div className="cc-patentes">
                   {insignias.map((id) => (
-                    <IconeConquista key={id} id={id} tamanho={22} />
+                    <IconeConquista key={id} id={id} />
                   ))}
                 </div>
               )}

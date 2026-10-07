@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<defs><linearGradient id="lb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#262c22"/><stop offset="1" stop-color="#14180f"/></linearGradient>
+<clipPath id="lc"><polygon points="32,7 53.5,19.5 53.5,44.5 32,57 10.5,44.5 10.5,19.5"/></clipPath></defs>
+<polygon points="32,3 57,17.5 57,46.5 32,61 7,46.5 7,17.5" fill="url(#lb)" stroke="#7d8a5a" stroke-width="2.5" stroke-linejoin="miter"/>
+<polygon points="32,7 53.5,19.5 53.5,44.5 32,57 10.5,44.5 10.5,19.5" fill="none" stroke="#7d8a5a" stroke-width="1" stroke-dasharray="2 1.6" opacity=".55"/>
+<g clip-path="url(#lc)"><path d="M21 11 V54" stroke="#9aa3a6" stroke-width="2.5"/><polygon points="22,13 47,13 41,22.5 47,32 22,32" fill="#4b5a33" stroke="#7d8a5a" stroke-width="1"/><polygon points="31.00,17.50 32.23,20.80 35.76,20.95 33.00,23.15 33.94,26.55 31.00,24.60 28.06,26.55 29.00,23.15 26.24,20.95 29.77,20.80" fill="#c9b77a"/></g></svg>
