@@ -20,6 +20,7 @@ import {
   reais,
 } from '../../lib/credits'
 import { baixarCsv } from '../../lib/csv'
+import { ehFinanceiro } from '../../lib/roles'
 import { linkEnviarWhatsapp, montarListaWhatsapp } from '../../lib/listaPresenca'
 import { urlHttp } from '../../lib/redes'
 import { formatarData, paraMillis } from '../../lib/status'
@@ -140,7 +141,7 @@ export function AdminGames() {
   }, [])
 
   // Inscrever/cancelar mexe em créditos e dinheiro: só admin e tesoureiro. O organizador só vê a lista.
-  const gerenciaInscricoes = admin?.role === 'admin' || admin?.role === 'tesoureiro'
+  const gerenciaInscricoes = ehFinanceiro(admin)
 
   const autor = () => ({ uid: admin!.uid, nome: admin!.nomeCompleto })
 

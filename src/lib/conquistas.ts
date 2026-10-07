@@ -2,6 +2,7 @@ import { doc, getDoc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'fir
 import { db } from '../firebase'
 import { DIA_MS } from './status'
 import { lancar, lerCarteira } from './credits'
+import { temCargo } from './roles'
 import type { Estatisticas, Player } from '../types'
 
 export interface ContextoConquistas {
@@ -11,6 +12,8 @@ export interface ContextoConquistas {
   faltas: number
   dias: number
   timeAprovado: boolean
+  /** Tem o cargo de parceiro (lojista). */
+  parceiro: boolean
 }
 
 export type GrupoConquista = 'jogos' | 'noturnas' | 'associacao'
@@ -22,6 +25,8 @@ export interface DefConquista {
   bonus: number // créditos
   grupo: GrupoConquista
   icone: string
+  /** Exclusiva: só aparece para quem a conquistou ou pode conquistar (hoje, quem tem o cargo de parceiro). */
+  exclusiva?: boolean
   /** Contador que alimenta a conquista (para mostrar o progresso). */
   campo?: 'jogos' | 'noturnos' | 'mensalidades'
   meta?: number
@@ -78,6 +83,16 @@ export const CONQUISTAS: DefConquista[] = [
     ok: (c) => c.dias >= 365,
   },
   {
+    id: 'parceiro',
+    titulo: 'Lojista parceiro',
+    desc: 'Cargo de parceiro da AACN (exclusiva)',
+    bonus: 10,
+    grupo: 'associacao',
+    icone: '★',
+    exclusiva: true,
+    ok: (c) => c.parceiro,
+  },
+  {
     id: 'time',
     titulo: 'Parte de um time',
     desc: 'Membro aprovado de um time',
@@ -95,7 +110,7 @@ export const GRUPOS: { id: GrupoConquista; titulo: string }[] = [
 ]
 
 export function contextoDoJogador(
-  player: Pick<Player, 'timeAprovado'>,
+  player: Pick<Player, 'timeAprovado' | 'role' | 'cargos'>,
   stats: Estatisticas | null,
   faltas: number,
   criadoEmMs: number | null,
@@ -107,6 +122,7 @@ export function contextoDoJogador(
     faltas,
     dias: criadoEmMs ? (Date.now() - criadoEmMs) / DIA_MS : 0,
     timeAprovado: !!player.timeAprovado,
+    parceiro: temCargo(player, 'parceiro'),
   }
 }
 

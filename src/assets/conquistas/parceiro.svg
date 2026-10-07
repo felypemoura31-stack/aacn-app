@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<defs><linearGradient id="mb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#262c22"/><stop offset="1" stop-color="#14180f"/></linearGradient>
+<clipPath id="mc"><polygon points="32,7 53.5,19.5 53.5,44.5 32,57 10.5,44.5 10.5,19.5"/></clipPath></defs>
+<polygon points="32,3 57,17.5 57,46.5 32,61 7,46.5 7,17.5" fill="url(#mb)" stroke="#c9b77a" stroke-width="2.5" stroke-linejoin="miter"/>
+<polygon points="32,7 53.5,19.5 53.5,44.5 32,57 10.5,44.5 10.5,19.5" fill="none" stroke="#c9b77a" stroke-width="1" stroke-dasharray="2 1.6" opacity=".55"/>
+<g clip-path="url(#mc)">
+<polygon points="32.00,10.00 33.06,12.78 36.04,12.93 33.71,14.78 34.50,17.57 32.00,16.00 29.50,17.57 30.29,14.78 27.96,12.93 30.94,12.78" fill="#c9b77a"/>
+<rect x="19" y="30" width="26" height="19" fill="#4b5a33" stroke="#7d8a5a" stroke-width="1"/>
+<polygon points="17,21 24.5,21 23,30 14,30" fill="#c9b77a"/><polygon points="24.5,21 32,21 32,30 23,30" fill="#9aa3a6"/><polygon points="32,21 39.5,21 41,30 32,30" fill="#c9b77a"/><polygon points="39.5,21 47,21 50,30 41,30" fill="#9aa3a6"/>
+<rect x="29" y="35" width="8" height="14" fill="#14180f" stroke="#7d8a5a" stroke-width="1"/>
+<rect x="21.5" y="34" width="5" height="6" fill="#262c22" stroke="#9aa3a6" stroke-width="1"/><rect x="39.5" y="34" width="5" height="6" fill="#262c22" stroke="#9aa3a6" stroke-width="1"/>
+</g></svg>

@@ -78,7 +78,7 @@ export function History() {
         <section className="panel p-5">
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-sm font-bold text-ink">
-              Conquistas <span className="font-normal text-mute">({conquistas.filter((c) => c.resgatada).length}/{conquistas.length})</span>
+              Conquistas <span className="font-normal text-mute">({conquistas.filter((c) => c.resgatada).length}/{conquistas.filter((c) => c.visivel).length})</span>
             </h2>
             <p className="text-xs text-mute">
               Bônus recebidos: <span className="font-semibold text-gold">{formatarCreditos(bonusRecebido)} créditos</span>
@@ -89,7 +89,7 @@ export function History() {
               <h3 className="mb-1 text-[11px] uppercase tracking-widest text-mute/80">{g.titulo}</h3>
               <ul className="divide-y divide-line">
                 {conquistas
-                  .filter((c) => c.grupo === g.id)
+                  .filter((c) => c.grupo === g.id && c.visivel)
                   .map((c) => {
                     const atual = c.campo ? contexto[c.campo] : null
                     const feita = c.resgatada || c.atingida

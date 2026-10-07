@@ -16,11 +16,19 @@ service cloud.firestore {
         get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Cargos delegados pelo admin: a pessoa pode ter vários, guardados em players/{uid}.cargos
+    // (tesoureiro, organizador, parceiro). Cadastros antigos têm o cargo único no campo role: também valem.
+    function temCargo(c) {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == c ||
+        c in get(/databases/$(database)/documents/players/$(request.auth.uid)).data.get('cargos', [])
+      );
+    }
+
     // Tesoureiro: cuida só de pagamentos, jogos e créditos. NÃO lê os dados
     // pessoais dos jogadores (usa só o cartão público: nome, time e status).
     function isTesoureiro() {
-      return isSignedIn() &&
-        get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'tesoureiro';
+      return temCargo('tesoureiro');
     }
 
     function isFinanceiro() {
@@ -31,8 +39,12 @@ service cloud.firestore {
     // e debita os créditos do jogo). NÃO ajusta saldo, não confirma pagamentos e não
     // lê extrato nem dados pessoais.
     function isOrganizador() {
-      return isSignedIn() &&
-        get(/databases/$(database)/documents/players/$(request.auth.uid)).data.role == 'organizador';
+      return temCargo('organizador');
+    }
+
+    // Parceiro (lojista): edita só a própria loja na aba Parceiros e não tem acesso a mais nada.
+    function isParceiro() {
+      return temCargo('parceiro');
     }
 
     function podeGerirJogos() {
@@ -95,7 +107,7 @@ service cloud.firestore {
       return {
         'primeiro': 5, 'campo': 10, 'veterano': 15, 'lenda': 20, 'assiduo': 20,
         'noturno1': 5, 'penumbra': 5, 'escuridao': 10, 'sombras': 20,
-        'emdia': 30, 'ano': 100, 'time': 5
+        'emdia': 30, 'ano': 100, 'time': 5, 'parceiro': 10
       }.get(c, 0);
     }
 
@@ -120,12 +132,20 @@ service cloud.firestore {
           get(/databases/$(database)/documents/stats/$(uid)).data.get('jogos', 0) >= metaJogos(c)) ||
         (c in ['noturno1', 'penumbra', 'escuridao', 'sombras'] &&
           get(/databases/$(database)/documents/stats/$(uid)).data.get('noturnos', 0) >= metaNoturnos(c)) ||
+        (c == 'parceiro' &&
+          (get(/databases/$(database)/documents/players/$(uid)).data.role == 'parceiro' ||
+           'parceiro' in get(/databases/$(database)/documents/players/$(uid)).data.get('cargos', []))) ||
         (c == 'emdia' &&
           get(/databases/$(database)/documents/stats/$(uid)).data.get('mensalidades', 0) >= 3);
     }
 
     function conquistaPath(uid, c) {
       return /databases/$(database)/documents/conquistas/$(uid + '_' + c);
+    }
+
+    function cargosFormatoValido(d) {
+      return d.get('cargos', []) is list && d.get('cargos', []).size() <= 3 &&
+        d.get('cargos', []).hasOnly(['tesoureiro', 'organizador', 'parceiro']);
     }
 
     // CPF guardado só com os 11 dígitos (a conferência dos dígitos verificadores é feita no app).
@@ -170,6 +190,7 @@ service cloud.firestore {
 
       // Cadastro novo: sempre jogador, inadimplente, sem vencimento e sem time aprovado.
       allow create: if isOwner(uid) &&
+        request.resource.data.get('cargos', []).size() == 0 &&
         cpfFormatoValido(request.resource.data) &&
         (request.resource.data.get('cpf', '') == '' ||
           (existsAfter(cpfPath(request.resource.data.cpf)) &&
@@ -186,6 +207,7 @@ service cloud.firestore {
       // Cargos: o app NUNCA cria nem remove um admin (isso é só no console do
       // Firebase). O admin delega os demais cargos, mas não mexe no de outro admin.
       allow update: if cpfFormatoValido(request.resource.data) &&
+        cargosFormatoValido(request.resource.data) &&
         cpfTrocaOk(uid, resource.data, request.resource.data) &&
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['destaques']) ||
           destaquesOk(uid, request.resource.data.get('destaques', []))) && ((isAdmin() && (
@@ -194,7 +216,7 @@ service cloud.firestore {
       )) || (
         isOwner(uid) &&
         !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['role', 'cargoAlteradoPor', 'cargoAlteradoEm', 'status', 'vencimento', 'ultimoPagamento', 'uid', 'email']) &&
+          .hasAny(['role', 'cargos', 'cargoAlteradoPor', 'cargoAlteradoEm', 'status', 'vencimento', 'ultimoPagamento', 'uid', 'email']) &&
         fotoValida(request.resource.data.get('fotoUrl', null)) &&
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['aceiteTermosEm']) ||
           request.resource.data.aceiteTermosEm == request.time) &&
@@ -662,11 +684,20 @@ service cloud.firestore {
           textoCurto(d.get('telefone', null), 20) &&
           (d.get('link', null) == null || (d.link is string && d.link.size() <= 200 && d.link.matches('^https?://.*'))) &&
           logoValida(d.get('logoUrl', null)) &&
-          d.get('ativo', true) is bool;
+          d.get('ativo', true) is bool &&
+          (d.get('donoUid', null) == null || (d.donoUid is string && d.donoUid.size() <= 128));
       }
 
       allow read: if isSignedIn();
-      allow create, update: if isAdmin() && parceiroValido(request.resource.data);
+      allow create: if isAdmin() && parceiroValido(request.resource.data);
+      // O admin edita tudo (inclusive o lojista responsável). O lojista (cargo parceiro) edita só a loja em que é o
+      // responsável, e só promoções e dados de contato: nunca o nome, o status ativo nem o responsável.
+      allow update: if (isAdmin() && parceiroValido(request.resource.data)) || (
+        isParceiro() && resource.data.get('donoUid', null) == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['categoria', 'desconto', 'descricao', 'endereco', 'telefone', 'link', 'logoUrl']) &&
+        parceiroValido(request.resource.data)
+      );
       allow delete: if isAdmin();
     }
 

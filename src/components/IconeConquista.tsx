@@ -10,6 +10,7 @@ import sombras from '../assets/conquistas/sombras.svg'
 import emdia from '../assets/conquistas/emdia.svg'
 import ano from '../assets/conquistas/ano.svg'
 import time from '../assets/conquistas/time.svg'
+import parceiro from '../assets/conquistas/parceiro.svg'
 
 /**
  * Ícones táticos das conquistas (arquivos SVG em src/assets/conquistas). Nas séries de jogos jogados e de
@@ -29,6 +30,7 @@ const ICONES: Record<string, string> = {
   emdia,
   ano,
   time,
+  parceiro,
 }
 
 /** Ícone de uma conquista (pelo id). `tamanho` é o lado em pixels; sem `tamanho`, o tamanho vem do CSS. */

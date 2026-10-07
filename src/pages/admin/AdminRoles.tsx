@@ -10,7 +10,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
-import { CARGOS_DELEGAVEIS, rotuloDoCargo } from '../../lib/roles'
+import { CARGOS_DELEGAVEIS, cargosDe, rotuloDoCargo } from '../../lib/roles'
 import type { Player, UserRole } from '../../types'
 
 export function AdminRoles() {
@@ -30,13 +30,17 @@ export function AdminRoles() {
     [players, busca],
   )
 
-  async function mudarCargo(p: Player, novo: UserRole) {
-    if (!admin || novo === p.role) return
+  /** Liga ou desliga um cargo. A pessoa pode ter vários; o cargo principal volta a ser "jogador" (os delegados ficam em `cargos`). */
+  async function alternarCargo(p: Player, cargo: UserRole, ligado: boolean) {
+    if (!admin) return
+    const atuais = cargosDe(p).filter((c) => c !== 'admin')
+    const novos = ligado ? [...new Set([...atuais, cargo])] : atuais.filter((c) => c !== cargo)
     setErro(null)
     setBusyUid(p.uid)
     try {
       await updateDoc(doc(db, 'players', p.uid), {
-        role: novo,
+        role: 'player',
+        cargos: novos,
         cargoAlteradoPor: admin.nomeCompleto,
         cargoAlteradoEm: serverTimestamp(),
         atualizadoEm: serverTimestamp(),
@@ -52,8 +56,9 @@ export function AdminRoles() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="mb-2 text-xl font-bold text-ink">Admin: Cargos</h1>
       <p className="mb-6 text-sm text-mute">
-        Aqui você delega cargos aos jogadores. O cargo de administrador só é definido direto no
-        Firebase. Representantes de time são definidos em Admin: Times.
+        Aqui você delega cargos aos jogadores, e cada pessoa pode ter <b className="text-ink">mais de um</b> (por exemplo, organizador e
+        parceiro, mas não tesoureiro). O cargo de administrador só é definido direto no Firebase. Representantes de time são definidos
+        em Admin: Times.
       </p>
 
       <div className="panel mb-6 p-4">
@@ -79,15 +84,14 @@ export function AdminRoles() {
       <div className="space-y-2">
         {filtrados.map((p) => {
           const ehAdmin = p.role === 'admin'
+          const cargos = cargosDe(p)
           return (
             <div key={p.uid} className="panel flex flex-wrap items-center justify-between gap-3 p-4">
-              <div>
+              <div className="min-w-0">
                 <p className="font-semibold text-ink">{p.nomeCompleto}</p>
-                <p className="text-xs text-mute">
+                <p className="truncate text-xs text-mute">
                   {p.email}
-                  {p.cargoAlteradoPor && !ehAdmin && p.role !== 'player' && (
-                    <span className="text-mute/70"> · definido por {p.cargoAlteradoPor}</span>
-                  )}
+                  {p.cargoAlteradoPor && !ehAdmin && cargos.length > 0 && <span className="text-mute/70"> · definido por {p.cargoAlteradoPor}</span>}
                 </p>
               </div>
               {ehAdmin ? (
@@ -95,20 +99,18 @@ export function AdminRoles() {
                   {rotuloDoCargo('admin')} (definido no Firebase)
                 </span>
               ) : (
-                <div className="w-full sm:w-64">
-                <select
-                  value={p.role}
-                  disabled={busyUid === p.uid}
-                  onChange={(e) => mudarCargo(p, e.target.value as UserRole)}
-                  className="input"
-                >
-                  <option value="player">Jogador (sem cargo)</option>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {CARGOS_DELEGAVEIS.map((c) => (
-                    <option key={c.value} value={c.value}>
+                    <label key={c.value} className="flex cursor-pointer items-center gap-1.5 text-sm text-ink">
+                      <input
+                        type="checkbox"
+                        disabled={busyUid === p.uid}
+                        checked={cargos.includes(c.value)}
+                        onChange={(e) => alternarCargo(p, c.value, e.target.checked)}
+                      />
                       {c.label}
-                    </option>
+                    </label>
                   ))}
-                </select>
                 </div>
               )}
             </div>

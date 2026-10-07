@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePedidos } from '../contexts/PedidosContext'
-import { rotuloDoCargo } from '../lib/roles'
+import { rotulosDosCargos, temCargo } from '../lib/roles'
 import { useEhRepresentante } from '../lib/useRepresentante'
 import type { UserRole } from '../types'
 
@@ -84,7 +84,7 @@ export function Navbar() {
 
   if (!currentUser || cadastroExcluido) return null
 
-  const grupos = GRUPOS.filter((g) => player && g.roles.includes(player.role))
+  const grupos = GRUPOS.filter((g) => player && g.roles.some((r) => temCargo(player, r)))
   const links = ehRepresentante ? [...LINKS, { to: '/solicitacoes', rotulo: 'Solicitações do time' }] : LINKS
   // No computador o menu lateral só existe para quem tem cargo de gestão; no celular, para todos.
   const soCelular = grupos.length > 0 ? '' : 'md:hidden'
@@ -154,7 +154,7 @@ export function Navbar() {
                 <span className="md:hidden">{player?.nomeCompleto?.split(' ')[0] || 'Menu'}</span>
                 <span className="hidden md:inline">Gestão</span>
               </p>
-              <p className="text-xs text-gold">{player && rotuloDoCargo(player.role)}</p>
+              <p className="text-xs text-gold">{player && rotulosDosCargos(player)}</p>
             </div>
             <button
               onClick={() => setAberto(false)}

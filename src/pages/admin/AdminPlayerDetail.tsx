@@ -4,7 +4,7 @@ import { doc, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { DIA_MS, CICLO_DIAS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import { sincronizarCartaoPublico } from '../../lib/publicCard'
-import { rotuloDoCargo } from '../../lib/roles'
+import { rotulosDosCargos } from '../../lib/roles'
 import { GerirConquistas } from '../../components/GerirConquistas'
 import { ResetJogador } from '../../components/ResetJogador'
 import { CpfEmUsoError, trocarCpf } from '../../lib/cpf'
@@ -202,7 +202,7 @@ export function AdminPlayerDetail() {
 
           <dl className="space-y-2 border-t border-line pt-4 text-sm">
             <Info rotulo="Time" valor={player.timeNome ? (player.timeAprovado ? player.timeNome : `${player.timeNome} (pendente)`) : 'Sem time'} />
-            <Info rotulo="Cargo" valor={rotuloDoCargo(player.role)} />
+            <Info rotulo="Cargos" valor={rotulosDosCargos(player)} />
             <Info
               rotulo="Termo"
               valor={player.aceiteTermosVersao ? `Aceito em ${formatarData(paraMillis(player.aceiteTermosEm))}` : 'Ainda não aceitou'}

@@ -404,3 +404,7 @@ export async function getDocs(ref) {
 
 // só no modo demonstração: permite a testes mexerem nos dados da mesma instância que o app usa
 if (typeof window !== 'undefined') window.__demo = { store, notify }
+
+// demo: o Marcos é lojista (cargo parceiro) da loja "Mercado do Atirador"
+store.players['u-marcos'].cargos = ['parceiro']
+store.partners['pt-1'].donoUid = 'u-marcos'

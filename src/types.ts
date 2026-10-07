@@ -1,6 +1,6 @@
 export type PlayerStatus = 'pago' | 'inadimplente' | 'inativo'
 
-export type UserRole = 'player' | 'admin' | 'tesoureiro' | 'organizador'
+export type UserRole = 'player' | 'admin' | 'tesoureiro' | 'organizador' | 'parceiro'
 
 /** Dados públicos mínimos de um jogador (cartão público), sem informações pessoais. */
 export interface JogadorResumo {
@@ -34,7 +34,10 @@ export interface Player {
   status: PlayerStatus
   vencimento: number | null // ms; pago enquanto vencimento > agora
   ultimoPagamento: number | null
+  /** Cargo principal: 'player' ou 'admin' (definido no console). Cargos delegados antigos também podem estar aqui. */
   role: UserRole
+  /** Cargos delegados pelo admin (tesoureiro, organizador, parceiro). Uma pessoa pode ter mais de um. */
+  cargos?: UserRole[]
   cargoAlteradoPor?: string
   cargoAlteradoEm?: number
   aceiteTermosVersao?: string | null
@@ -193,6 +196,8 @@ export interface Aviso {
 
 export interface Partner {
   id: string
+  /** Jogador (com o cargo de parceiro) que gerencia esta loja: edita as promoções e os dados. */
+  donoUid?: string | null
   nome: string
   categoria: string
   desconto: string

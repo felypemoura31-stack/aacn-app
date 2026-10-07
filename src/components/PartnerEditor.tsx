@@ -1,18 +1,29 @@
-import { useRef, useState, type FormEvent } from 'react'
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { addDoc, collection, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { reduzirLogo } from '../lib/foto'
 import { CATEGORIAS_PARCEIRO } from '../lib/parceiros'
 import { urlHttp } from '../lib/redes'
 import { formatarTelefone, telefoneValido } from '../lib/cadastro'
-import type { Partner } from '../types'
+import { temCargo } from '../lib/roles'
+import type { Partner, Player } from '../types'
 
 interface Props {
   parceiro: Partner | null // null = novo
   onClose: () => void
+  /** admin: edita tudo e define o lojista responsável. lojista: só promoções, descontos e dados de contato da própria loja. */
+  modo?: 'admin' | 'lojista'
 }
 
-export function PartnerEditor({ parceiro, onClose }: Props) {
+export function PartnerEditor({ parceiro, onClose, modo = 'admin' }: Props) {
+  const lojista = modo === 'lojista'
+  const [donoUid, setDonoUid] = useState(parceiro?.donoUid ?? '')
+  const [jogadores, setJogadores] = useState<Player[]>([])
+  useEffect(() => {
+    if (lojista) return
+    return onSnapshot(query(collection(db, 'players'), orderBy('nomeCompleto')), (snap) => setJogadores(snap.docs.map((d) => d.data() as Player)))
+  }, [lojista])
+
   const [nome, setNome] = useState(parceiro?.nome ?? '')
   const [categoria, setCategoria] = useState(parceiro?.categoria ?? CATEGORIAS_PARCEIRO[0])
   const [desconto, setDesconto] = useState(parceiro?.desconto ?? '')
@@ -47,8 +58,7 @@ export function PartnerEditor({ parceiro, onClose }: Props) {
 
     setSalvando(true)
     try {
-      const dados = {
-        nome: nome.trim(),
+      const comuns = {
         categoria,
         desconto: desconto.trim(),
         descricao: descricao.trim() || null,
@@ -56,8 +66,9 @@ export function PartnerEditor({ parceiro, onClose }: Props) {
         telefone: telefone.trim() || null,
         link: link ? urlHttp(link) : null,
         logoUrl,
-        ativo,
       }
+      // o lojista não mexe no nome, no status ativo nem no responsável (as regras do banco também impedem)
+      const dados = lojista ? comuns : { ...comuns, nome: nome.trim(), ativo, donoUid: donoUid || null }
       if (parceiro) await updateDoc(doc(db, 'partners', parceiro.id), dados)
       else await addDoc(collection(db, 'partners'), { ...dados, criadoEm: serverTimestamp() })
       onClose()
@@ -72,7 +83,7 @@ export function PartnerEditor({ parceiro, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/85 p-4">
       <form onSubmit={salvar} className="panel my-4 w-full max-w-lg space-y-3 p-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-ink">{parceiro ? 'Editar parceiro' : 'Novo parceiro'}</h2>
+          <h2 className="text-sm font-bold text-ink">{lojista ? `Minha loja: ${parceiro?.nome ?? ''}` : parceiro ? 'Editar parceiro' : 'Novo parceiro'}</h2>
           <button type="button" onClick={onClose} aria-label="Fechar" className="px-2 text-lg leading-none text-mute hover:text-ink">
             ×
           </button>
@@ -98,7 +109,7 @@ export function PartnerEditor({ parceiro, onClose }: Props) {
           </div>
         </div>
 
-        <input required maxLength={80} placeholder="Nome do estabelecimento" value={nome} onChange={(e) => setNome(e.target.value)} className="input" />
+        {!lojista && <input required maxLength={80} placeholder="Nome do estabelecimento" value={nome} onChange={(e) => setNome(e.target.value)} className="input" />}
         <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="input">
           {CATEGORIAS_PARCEIRO.map((c) => (
             <option key={c}>{c}</option>
@@ -118,10 +129,26 @@ export function PartnerEditor({ parceiro, onClose }: Props) {
           />
           <input maxLength={200} placeholder="Instagram ou site (link)" value={instagram} onChange={(e) => setInstagram(e.target.value)} className="input" />
         </div>
-        <label className="flex items-center gap-2 text-sm text-ink">
-          <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
-          Parceria ativa (aparece para os associados)
-        </label>
+        {!lojista && (
+          <>
+            <label className="block text-sm text-mute">
+              Lojista responsável (edita esta loja na aba Parceiros)
+              <select value={donoUid} onChange={(e) => setDonoUid(e.target.value)} className="input mt-1">
+                <option value="">Ninguém (só o admin edita)</option>
+                {jogadores.map((j) => (
+                  <option key={j.uid} value={j.uid}>
+                    {j.nomeCompleto}{temCargo(j, 'parceiro') ? '' : ' (sem o cargo de parceiro)'}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-[11px] text-mute/80">A pessoa também precisa ter o cargo de parceiro (Admin → Cargos); é ele que libera a edição e a conquista exclusiva.</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm text-ink">
+              <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
+              Parceria ativa (aparece para os associados)
+            </label>
+          </>
+        )}
 
         {erro && <p className="text-sm text-danger">{erro}</p>}
         <div className="flex justify-end gap-2">

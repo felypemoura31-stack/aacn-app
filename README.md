@@ -185,6 +185,12 @@ para receber o aviso de pagamento.
   cai exatamente o custo do jogo e, no mesmo lote, a inscrição passa a "presente".
 - Créditos não expiram.
 
+## Vários cargos por pessoa e o cargo de parceiro (lojista)
+
+- **Mais de um cargo:** em **Admin → Cargos** cada pessoa tem caixas de marcar (**Tesoureiro**, **Organizador**, **Parceiro (lojista)**) e pode ter qualquer combinação, por exemplo organizador e parceiro, mas não tesoureiro. Os cargos delegados ficam em `players/{uid}.cargos`; o campo `role` continua sendo o cargo principal (`player` ou `admin`, este só definido no console). Cadastros antigos com um cargo único em `role` continuam valendo e, ao serem editados na tela de Cargos, passam para a lista. O menu de gestão mostra os grupos de quem tem **qualquer** um dos cargos (o organizador+parceiro vê Jogos e Comunicação, sem Tesouraria), e as regras do banco aplicam cada cargo separadamente (`temCargo` em `firestore.rules`). Só o admin altera cargos (o jogador não consegue se dar um).
+- **Parceiro (lojista):** o admin vincula a pessoa à loja em **Admin → Parceiros → Editar → Lojista responsável** (a pessoa também precisa do cargo de parceiro em Admin → Cargos). Na aba **Parceiros** o lojista vê o painel **Minha loja** (mesmo se a parceria estiver inativa) com **Editar promoções e dados**: ele altera o benefício/desconto, a descrição e as condições, o endereço, o telefone/WhatsApp, o link (Instagram/site), a logo e a categoria da **própria** loja. Ele **não** muda o nome, o status ativo/inativo nem o responsável, não cria nem apaga lojas e não tem acesso a mais nada (as regras do banco impõem tudo isso).
+- **Conquista exclusiva:** **Lojista parceiro** (+10 créditos, ícone de loja em `src/assets/conquistas/parceiro.svg`). É concedida **sozinha** assim que a pessoa passa a ter o cargo de parceiro (na próxima vez que abre o app) e só aparece na lista de conquistas de quem tem o cargo ou já a ganhou. Se o cargo for retirado depois, a conquista já ganha continua.
+
 ## Cargo de tesoureiro
 
 O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
@@ -529,7 +535,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (370 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (405 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

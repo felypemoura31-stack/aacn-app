@@ -12,6 +12,8 @@ export interface ConquistaDoJogador extends DefConquista {
   atingida: boolean
   /** Conquista do jogador (selo visível). */
   resgatada: boolean
+  /** Aparece nas listas: as exclusivas só para quem a tem ou pode ter. */
+  visivel: boolean
   /** Créditos que esta conquista pagou (0 se a diretoria concedeu sem bônus). */
   pago: number
 }
@@ -74,15 +76,15 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
   }, [parts, games])
 
   const contexto = useMemo(
-    () => contextoDoJogador({ timeAprovado: !!player?.timeAprovado }, stats ?? null, faltas, paraMillis(player?.criadoEm)),
-    [player?.timeAprovado, player?.criadoEm, stats, faltas],
+    () => contextoDoJogador({ timeAprovado: !!player?.timeAprovado, role: player?.role ?? 'player', cargos: player?.cargos }, stats ?? null, faltas, paraMillis(player?.criadoEm)),
+    [player?.timeAprovado, player?.role, player?.cargos, player?.criadoEm, stats, faltas],
   )
 
   const conquistas = useMemo<ConquistaDoJogador[]>(
     () =>
       CONQUISTAS.map((c) => {
         const d = resgatadas?.[c.id]
-        return { ...c, atingida: c.ok(contexto), resgatada: !!d, pago: d ? Number(d.creditos ?? 0) : 0 }
+        return { ...c, atingida: c.ok(contexto), resgatada: !!d, visivel: !c.exclusiva || !!d || c.ok(contexto), pago: d ? Number(d.creditos ?? 0) : 0 }
       }),
     [contexto, resgatadas],
   )

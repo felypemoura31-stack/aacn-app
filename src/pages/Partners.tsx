@@ -3,6 +3,8 @@ import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { CATEGORIAS_PARCEIRO } from '../lib/parceiros'
+import { PartnerEditor } from '../components/PartnerEditor'
+import { temCargo } from '../lib/roles'
 import { linkWhatsapp } from '../lib/whatsapp'
 import { statusEfetivo } from '../lib/status'
 import type { Partner } from '../types'
@@ -12,6 +14,7 @@ export function Partners() {
   const [parceiros, setParceiros] = useState<Partner[] | null>(null)
   const [categoria, setCategoria] = useState('')
   const [busca, setBusca] = useState('')
+  const [editando, setEditando] = useState<Partner | null>(null)
 
   useEffect(() => {
     const q = query(collection(db, 'partners'), orderBy('nome'))
@@ -28,6 +31,9 @@ export function Partners() {
   )
 
   const emDia = player ? statusEfetivo(player) === 'pago' : false
+  // lojista: a loja em que ele é o responsável (aparece aqui mesmo se a parceria estiver inativa)
+  const ehLojista = temCargo(player, 'parceiro')
+  const minha = ehLojista && player ? (parceiros ?? []).find((p) => p.donoUid === player.uid) ?? null : null
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -35,6 +41,29 @@ export function Partners() {
       <p className="mb-4 text-sm text-mute">
         Descontos para associados em dia com a mensalidade. Mostre o QR da sua carteirinha no estabelecimento.
       </p>
+
+      {ehLojista && parceiros && (
+        <div className="panel panel-destaque mb-5 p-4">
+          <h2 className="text-sm font-bold text-ink">Minha loja</h2>
+          {minha ? (
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-white">
+                {minha.logoUrl ? <img src={minha.logoUrl} alt="" className="max-h-full max-w-full object-contain" /> : <span className="font-bold text-slate-400">{minha.nome.slice(0, 2).toUpperCase()}</span>}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-ink">{minha.nome}</p>
+                <p className="truncate text-xs text-gold">{minha.desconto}</p>
+                {!minha.ativo && <p className="text-xs text-warn">Sua parceria está inativa: a loja não aparece para os associados. Fale com a diretoria.</p>}
+              </div>
+              <button onClick={() => setEditando(minha)} className="btn-primary">
+                Editar promoções e dados
+              </button>
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-mute">Nenhuma loja está vinculada ao seu cadastro ainda. Peça à diretoria para vincular a sua loja.</p>
+          )}
+        </div>
+      )}
 
       {player && (
         <p
@@ -96,6 +125,8 @@ export function Partners() {
           )
         })}
       </div>
+
+      {editando && <PartnerEditor parceiro={editando} modo="lojista" onClose={() => setEditando(null)} />}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { faltasDoCadastro } from '../lib/cadastro'
+import { temCargo } from '../lib/roles'
 import type { UserRole } from '../types'
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -33,7 +34,7 @@ function RoleRoute({ roles, children }: { roles: UserRole[]; children: ReactNode
 
   if (loading) return <CenteredMessage>Carregando...</CenteredMessage>
   if (!currentUser) return <Navigate to="/login" replace />
-  if (!player || !roles.includes(player.role)) return <Navigate to="/" replace />
+  if (!player || !roles.some((r) => temCargo(player, r))) return <Navigate to="/" replace />
 
   return <>{children}</>
 }
