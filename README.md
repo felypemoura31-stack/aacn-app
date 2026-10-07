@@ -360,6 +360,8 @@ pelo app. **Limite:** o app não consegue apagar o e-mail/senha do jogador no Fi
 servidor ou o console). Se ele entrar de novo, vê a tela **"Cadastro excluído"**, que oferece criar o cadastro do
 zero; para bloquear de vez, apague o usuário em Authentication no console do Firebase.
 
+**Voltar depois de excluído:** a conta de acesso (e-mail/senha) do jogador excluído pelo admin continua existindo, então a tela **Criar conta** dizia "e-mail já em uso". Agora, se o e-mail já tem conta de acesso mas **não tem cadastro** e a senha digitada confere, o app refaz o cadastro (com o CPF e o nome informados). Se a senha não confere, aparece "Este e-mail já tem uma conta" com os caminhos: entrar, ou **Esqueci minha senha** e depois entrar (a tela "Cadastro excluído" oferece recriar). Quem tem cadastro vivo continua precisando entrar pelo login. Para apagar de vez a conta de acesso, só no console do Firebase (Authentication).
+
 **O jogador exclui a própria conta** (Meus dados, no fim da página): pede a senha de novo e uma confirmação. Cancela
 as inscrições ainda sem check-in, apaga cadastro, foto, contato e cartão público e, por fim, a conta de acesso.
 Pagamentos, extrato e presenças em jogos já realizados ficam com a associação (registro financeiro/histórico).

@@ -16,10 +16,12 @@ export function Register() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [aceita, setAceita] = useState(false)
+  const [emailEmUso, setEmailEmUso] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    setEmailEmUso(false)
 
     if (!cpfValido(cpf)) {
       setError('Informe um CPF válido.')
@@ -46,7 +48,8 @@ export function Register() {
     } catch (err) {
       const code = (err as { code?: string }).code
       if (code === 'auth/email-already-in-use') {
-        setError('Este e-mail já está cadastrado.')
+        setEmailEmUso(true)
+        setError('Este e-mail já tem uma conta.')
       } else if (code === 'cpf-em-uso') {
         setError('Este CPF já está cadastrado em outra conta. Se for seu, entre com a conta que você já tem ou use "Esqueci minha senha".')
       } else {
@@ -128,7 +131,20 @@ export function Register() {
           </span>
         </label>
 
-        {error && <p className="mb-4 text-sm text-danger">{error}</p>}
+        {error && <p className="mb-2 text-sm text-danger">{error}</p>}
+        {emailEmUso && (
+          <p className="mb-4 text-xs text-mute">
+            Se você já é associado,{' '}
+            <Link to="/login" className="text-ink underline">
+              entre
+            </Link>
+            . Se esqueceu a senha, ou se seu cadastro foi excluído e você quer voltar, use{' '}
+            <Link to="/esqueci-senha" className="text-ink underline">
+              Esqueci minha senha
+            </Link>{' '}
+            e depois entre: o app refaz o seu cadastro. Se ainda lembra a senha antiga, é só repeti-la aqui.
+          </p>
+        )}
 
         <button
           type="submit"

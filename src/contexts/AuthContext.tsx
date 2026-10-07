@@ -107,13 +107,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!cpfValido(cpf)) throw new Error('Informe um CPF válido.')
     setOcupado(true)
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email, senha)
+      let cred
+      let contaAntiga = false
+      try {
+        cred = await createUserWithEmailAndPassword(auth, email, senha)
+      } catch (e) {
+        if ((e as { code?: string }).code !== 'auth/email-already-in-use') throw e
+        // O e-mail já tem conta de acesso. Quem foi excluído pela associação continua com ela (o app não
+        // apaga contas de acesso de outras pessoas): se a senha confere e não há cadastro, refaz o cadastro.
+        try {
+          cred = await signInWithEmailAndPassword(auth, email, senha)
+        } catch {
+          throw e // senha diferente: segue como "e-mail já cadastrado"
+        }
+        if ((await getDoc(doc(db, 'players', cred.user.uid))).exists()) {
+          await signOut(auth) // o cadastro está vivo: é para entrar, não criar de novo
+          throw e
+        }
+        contaAntiga = true
+      }
       await updateProfile(cred.user, { displayName: nomeCompleto })
       try {
         await criarCadastro(cred.user.uid, email, nomeCompleto, soDigitos(cpf))
       } catch (e) {
-        // sem cadastro não fica conta de acesso solta: desfaz a criação (e o CPF repetido pode tentar de novo)
-        await deleteUser(cred.user).catch(() => {})
+        // sem cadastro não fica conta de acesso solta: desfaz a criação (e o CPF repetido pode tentar de novo).
+        // Uma conta que já existia antes não é apagada; a pessoa só sai.
+        if (contaAntiga) await signOut(auth).catch(() => {})
+        else await deleteUser(cred.user).catch(() => {})
         throw e
       }
     } finally {
