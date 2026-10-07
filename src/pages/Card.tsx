@@ -7,6 +7,7 @@ import { AvisosPanel } from '../components/AvisosPanel'
 import { AvisoMensalidade } from '../components/AvisoMensalidade'
 import { salvarDestaques } from '../lib/publicCard'
 import { useTeam } from '../lib/useTeam'
+import { useConquistas } from '../contexts/ConquistasContext'
 
 /**
  * Tela inicial: a carteirinha de um lado e, ao lado dela (no computador), um resumo da conta, as
@@ -15,10 +16,13 @@ import { useTeam } from '../lib/useTeam'
 export function Card() {
   const { currentUser, player } = useAuth()
   const time = useTeam(player?.timeAprovado ? player.timeId : null)
+  const { conquistas, carregando } = useConquistas()
 
   if (!currentUser || !player) return null
 
   const verifyUrl = `${window.location.origin}/verificar/${player.uid}`
+  // só vale como destaque a conquista que o jogador ainda tem (se o admin remover uma, ela sai da carteirinha)
+  const destaques = (player.destaques ?? []).filter((id) => carregando || conquistas.some((c) => c.id === id && c.resgatada))
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -31,7 +35,7 @@ export function Card() {
             verifyUrl={verifyUrl}
             timeNome={time?.nome ?? player.timeNome}
             timeLogoUrl={time?.logoUrl ?? null}
-            destaques={player.destaques}
+            destaques={destaques}
           />
 
           <div className="no-print mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -50,11 +54,8 @@ export function Card() {
           <SelosConquistas
             uid={player.uid}
             className=""
-            escolhidas={player.destaques ?? []}
-            onAlternar={(id) => {
-              const atuais = player.destaques ?? []
-              return salvarDestaques(player.uid, atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id])
-            }}
+            escolhidas={destaques}
+            onAlternar={(id) => salvarDestaques(player.uid, destaques.includes(id) ? destaques.filter((x) => x !== id) : [...destaques, id])}
           />
           <AvisosPanel />
         </div>

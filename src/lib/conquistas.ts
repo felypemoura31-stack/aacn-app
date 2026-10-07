@@ -185,7 +185,6 @@ export async function concederConquista(
     })
   }
   await batch.commit()
-  await tirarDosDestaques(alvo.uid, c.id)
 }
 
 /** Se a conquista estava entre as 3 da carteirinha, sai de lá (cadastro e cartão público). */
@@ -197,8 +196,9 @@ export async function tirarDosDestaques(uid: string, conquistaId: string) {
     const novos = atuais.filter((x) => x !== conquistaId)
     await updateDoc(doc(db, 'players', uid), { destaques: novos, atualizadoEm: serverTimestamp() })
     await updateDoc(doc(db, 'publicCards', uid), { destaques: novos, atualizadoEm: serverTimestamp() })
-  } catch {
-    // sem problema: a carteirinha só mostra insígnias de conquistas válidas na próxima edição
+  } catch (e) {
+    // a tela da carteirinha também ignora insígnias de conquistas que o jogador não tem mais
+    console.warn('Não consegui tirar a conquista da carteirinha', e)
   }
 }
 
@@ -237,4 +237,5 @@ export async function removerConquista(
     })
   }
   await batch.commit()
+  await tirarDosDestaques(alvo.uid, c.id)
 }
