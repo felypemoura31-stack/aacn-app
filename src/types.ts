@@ -34,6 +34,8 @@ export interface Player {
   status: PlayerStatus
   vencimento: number | null // ms; pago enquanto vencimento > agora
   ultimoPagamento: number | null
+  /** Id do último pagamento estornado (a tesouraria grava junto com o estorno; liga a mudança de vencimento ao estorno nas regras). */
+  ultimoEstornoId?: string
   /** Cargo principal: 'player' ou 'admin' (definido no console). Cargos delegados antigos também podem estar aqui. */
   role: UserRole
   /** Cargos delegados pelo admin (tesoureiro, organizador, parceiro). Uma pessoa pode ter mais de um. */
@@ -90,7 +92,8 @@ export interface PixConfig {
   whatsapp?: string
 }
 
-export type PaymentStatus = 'pendente' | 'confirmado'
+/** pendente = Pix gerado, aguardando a baixa; confirmado = baixa dada; estornado = baixa desfeita (fica no histórico). */
+export type PaymentStatus = 'pendente' | 'confirmado' | 'estornado'
 
 export interface Payment {
   id: string
@@ -103,6 +106,17 @@ export interface Payment {
   confirmadoEm: unknown
   dataPagamento: unknown
   creditosGerados?: number
+  /** Log da baixa: quem confirmou o recebimento (a data e a hora estão em confirmadoEm). */
+  confirmadoPor?: string
+  confirmadoPorNome?: string
+  /** Como o jogador estava antes da baixa; serve para desfazer exatamente no estorno. */
+  statusAntes?: PlayerStatus
+  vencimentoAntes?: number | null
+  /** Log do estorno: quem desfez a baixa, quando e por quê. */
+  estornadoEm?: unknown
+  estornadoPor?: string
+  estornadoPorNome?: string
+  estornoMotivo?: string
 }
 
 export interface Wallet {
@@ -169,7 +183,7 @@ export interface Participation {
   checkInPorNome?: string
 }
 
-export type LedgerTipo = 'pagamento' | 'jogo' | 'estorno' | 'ajuste' | 'bonus'
+export type LedgerTipo = 'pagamento' | 'jogo' | 'estorno' | 'ajuste' | 'bonus' | 'estorno_pagamento'
 
 export interface LedgerEntry {
   id: string

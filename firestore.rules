@@ -216,7 +216,7 @@ service cloud.firestore {
       )) || (
         isOwner(uid) &&
         !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['role', 'cargos', 'cargoAlteradoPor', 'cargoAlteradoEm', 'status', 'vencimento', 'ultimoPagamento', 'uid', 'email']) &&
+          .hasAny(['role', 'cargos', 'cargoAlteradoPor', 'cargoAlteradoEm', 'status', 'vencimento', 'ultimoPagamento', 'ultimoEstornoId', 'uid', 'email']) &&
         fotoValida(request.resource.data.get('fotoUrl', null)) &&
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['aceiteTermosEm']) ||
           request.resource.data.aceiteTermosEm == request.time) &&
@@ -245,6 +245,22 @@ service cloud.firestore {
          (request.resource.data.status == 'pago' && resource.data.status != 'inativo')) &&
         request.resource.data.vencimento >
           (resource.data.vencimento == null ? 0 : resource.data.vencimento)
+      ) || (
+        // Tesoureiro: só ao estornar uma baixa dada indevidamente (no mesmo lote, a cobrança desse jogador passa de
+        // "confirmada" para "estornada"). Aqui o vencimento só volta no tempo, o status só cai para inadimplente
+        // (nunca mexe em inativo) e o jogador não é tocado em nenhum outro campo.
+        isTesoureiro() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'vencimento', 'ultimoPagamento', 'ultimoEstornoId', 'atualizadoEm']) &&
+        request.resource.data.get('ultimoEstornoId', null) is string &&
+        get(/databases/$(database)/documents/payments/$(request.resource.data.ultimoEstornoId)).data.uid == uid &&
+        get(/databases/$(database)/documents/payments/$(request.resource.data.ultimoEstornoId)).data.status == 'confirmado' &&
+        getAfter(/databases/$(database)/documents/payments/$(request.resource.data.ultimoEstornoId)).data.status == 'estornado' &&
+        (request.resource.data.status == resource.data.status ||
+         (request.resource.data.status == 'inadimplente' && resource.data.status != 'inativo')) &&
+        (request.resource.data.get('vencimento', null) == null ||
+         (resource.data.get('vencimento', null) != null && request.resource.data.vencimento <= resource.data.vencimento)) &&
+        (request.resource.data.get('ultimoPagamento', null) == null || request.resource.data.ultimoPagamento is number)
       ));
 
       // Excluir: o próprio jogador (conta dele) ou o admin. Um admin (cargo definido só no console)
@@ -342,7 +358,31 @@ service cloud.firestore {
       allow create: if isSignedIn() &&
         request.resource.data.uid == request.auth.uid &&
         request.resource.data.status == 'pendente';
-      allow update: if isFinanceiro();
+      // Só dois passos, e cada um assinado por quem o faz (o log de "quem deu a baixa" e "quem estornou" não se reescreve):
+      //  - baixa: pendente -> confirmado, com quem confirmou e a hora do servidor;
+      //  - estorno: confirmado -> estornado, com quem estornou, a hora do servidor e o motivo.
+      // Nada volta para "pendente" e uma cobrança estornada não muda mais.
+      allow update: if isFinanceiro() && (
+        (resource.data.status == 'pendente' &&
+         request.resource.data.status == 'confirmado' &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['status', 'confirmadoEm', 'dataPagamento', 'creditosGerados', 'confirmadoPor', 'confirmadoPorNome', 'statusAntes', 'vencimentoAntes']) &&
+         request.resource.data.get('confirmadoPor', null) == request.auth.uid &&
+         request.resource.data.get('confirmadoEm', null) == request.time &&
+         request.resource.data.get('confirmadoPorNome', '') is string &&
+         request.resource.data.get('confirmadoPorNome', '').size() <= 120) ||
+        (resource.data.status == 'confirmado' &&
+         request.resource.data.status == 'estornado' &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['status', 'estornadoEm', 'estornadoPor', 'estornadoPorNome', 'estornoMotivo']) &&
+         request.resource.data.get('estornadoPor', null) == request.auth.uid &&
+         request.resource.data.get('estornadoEm', null) == request.time &&
+         request.resource.data.get('estornadoPorNome', '') is string &&
+         request.resource.data.get('estornadoPorNome', '').size() <= 120 &&
+         request.resource.data.get('estornoMotivo', '') is string &&
+         request.resource.data.get('estornoMotivo', '').size() >= 3 &&
+         request.resource.data.get('estornoMotivo', '').size() <= 200)
+      );
       // Cobrança PENDENTE (Pix ainda não pago): o próprio jogador, o tesoureiro ou o admin cancelam.
       // Pagamento já confirmado só o admin apaga (reset de dados de teste na ficha do jogador).
       allow delete: if isAdmin() || (

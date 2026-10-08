@@ -3,8 +3,8 @@ import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from '
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { confirmarPagamento } from '../../lib/payments'
+import { HistoricoBaixas } from '../../components/HistoricoBaixas'
 import { formatarTelefone, telefoneValido } from '../../lib/cadastro'
-import { formatarData, paraMillis } from '../../lib/status'
 import { gerarPixCopiaECola, normalizarChavePix, tipoDaChavePix } from '../../lib/pix'
 import type { Payment, PixConfig } from '../../types'
 
@@ -19,7 +19,6 @@ export function AdminPayments() {
   const [datas, setDatas] = useState<Record<string, string>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
-  const [verTodos, setVerTodos] = useState(false)
   const podeEditarPix = admin?.role === 'admin'
 
   useEffect(() => {
@@ -79,7 +78,6 @@ export function AdminPayments() {
   }
 
   const pendentes = payments.filter((p) => p.status === 'pendente')
-  const confirmados = payments.filter((p) => p.status === 'confirmado')
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -90,7 +88,7 @@ export function AdminPayments() {
       {erro && <p className="mb-4 text-sm text-danger">{erro}</p>}
       <h2 className="mb-1 text-sm font-semibold text-ink">Aguardando confirmação</h2>
       <p className="mb-2 text-xs text-mute">
-        Confirme quando o Pix cair na conta, ou cancele a cobrança se o jogador desistiu de pagar. O jogador manda o comprovante pelo seu WhatsApp.
+        Dê a baixa quando o Pix cair na conta, ou cancele a cobrança se o jogador desistiu de pagar. O jogador manda o comprovante pelo seu WhatsApp.
       </p>
       {pendentes.length === 0 && (
         <p className="mb-6 text-sm text-mute/70">Nenhuma cobrança pendente.</p>
@@ -116,7 +114,7 @@ export function AdminPayments() {
                 className="input w-auto"
               />
               <button disabled={busyId === p.id} onClick={() => confirmar(p)} className="btn-primary">
-                Confirmar
+                Dar baixa
               </button>
               <button disabled={busyId === p.id} onClick={() => cancelarCobranca(p)} className="btn-ghost text-danger">
                 Cancelar cobrança
@@ -126,25 +124,7 @@ export function AdminPayments() {
         ))}
       </div>
 
-      <h2 className="mb-2 text-sm font-semibold text-ink">Histórico</h2>
-      <div className="space-y-2">
-        {(verTodos ? confirmados : confirmados.slice(0, 8)).map((p) => (
-          <div
-            key={p.id}
-            className="flex justify-between rounded-sm border border-line bg-surface2 px-4 py-2 text-sm text-mute"
-          >
-            <span>
-              {p.jogadorNome} · {reais(p.valor)}
-            </span>
-            <span className="text-ok">pago em {formatarData(paraMillis(p.dataPagamento))}</span>
-          </div>
-        ))}
-      </div>
-      {confirmados.length > 8 && (
-        <button type="button" onClick={() => setVerTodos((v) => !v)} className="mt-2 text-xs text-mute underline hover:text-ink">
-          {verTodos ? 'Mostrar menos' : `Ver todos (${confirmados.length})`}
-        </button>
-      )}
+      <HistoricoBaixas payments={payments} autor={admin ? { uid: admin.uid, nome: admin.nomeCompleto } : null} />
         </div>
 
         <details className="panel" open={!cfg.chave.trim()}>

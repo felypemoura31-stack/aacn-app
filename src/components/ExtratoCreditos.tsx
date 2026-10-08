@@ -11,6 +11,7 @@ const ROTULO: Record<LedgerTipo, string> = {
   estorno: 'Estorno',
   ajuste: 'Ajuste',
   bonus: 'Bônus',
+  estorno_pagamento: 'Pix estornado',
 }
 
 export function ExtratoCreditos({ uid }: { uid: string }) {

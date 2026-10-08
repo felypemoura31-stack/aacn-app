@@ -100,6 +100,14 @@ export async function descontar(batch: WriteBatch, uid: string, d: { jogos: numb
   )
 }
 
+/** Tira uma mensalidade do contador (baixa estornada), sem deixar ficar negativo. Sem contador, não há o que tirar. */
+export async function descontarMensalidade(batch: WriteBatch, uid: string) {
+  const atual = await getDoc(doc(db, 'stats', uid))
+  if (!atual.exists()) return
+  const m = (atual.data() as { mensalidades?: number }).mensalidades ?? 0
+  batch.set(doc(db, 'stats', uid), { mensalidades: Math.max(0, m - 1), atualizadoEm: serverTimestamp() }, { merge: true })
+}
+
 /** Grava a mudança de saldo e o lançamento no extrato, sempre juntos no mesmo lote. */
 export function lancar(
   batch: WriteBatch,

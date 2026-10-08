@@ -53,7 +53,8 @@ export function History() {
 
     const pagas = payments.filter((p) => p.status === 'confirmado')
     const totalPago = pagas.reduce((s, p) => s + p.valor, 0)
-    const recebidos = ledger.filter((l) => l.tipo === 'pagamento' && l.creditos > 0).reduce((s, l) => s + l.creditos, 0)
+    // créditos de mensalidade, já descontados os de baixas estornadas
+    const recebidos = Math.max(0, ledger.filter((l) => l.tipo === 'pagamento' || l.tipo === 'estorno_pagamento').reduce((s, l) => s + l.creditos, 0))
     const usados = Math.max(0, -ledger.filter((l) => l.tipo === 'jogo' || l.tipo === 'estorno').reduce((s, l) => s + l.creditos, 0))
     return { jogados, presentes, faltas, frequencia, pagas: pagas.length, totalPago, recebidos, usados }
   }, [parts, games, payments, ledger])

@@ -253,7 +253,7 @@ store.partners['pt-3'] = { nome: 'Oficina Velha (inativa)', categoria: 'Serviço
 const mes = (n, dia) => { const d = new Date(); d.setMonth(d.getMonth() - n); d.setDate(dia); return d.getTime() }
 const pagos = [[0, 'u-jogador', 'Carlos Silva', 10, 3], [1, 'u-jogador', 'Carlos Silva', 10, 5], [2, 'u-jogador', 'Carlos Silva', 10, 5], [0, 'u-pedro', 'Pedro Alves', 5, 2], [1, 'u-pedro', 'Pedro Alves', 5, 4], [3, 'u-marcos', 'Marcos Lima', 5, 8]]
 pagos.forEach(([n, uid, nome, valor, dia], i) => {
-  store.payments['pg-h' + i] = { uid, jogadorNome: nome, valor, txid: 'AACNHIST' + i, status: 'confirmado', criadoEm: mes(n, dia), confirmadoEm: mes(n, dia), dataPagamento: mes(n, dia), creditosGerados: valor * 2 }
+  store.payments['pg-h' + i] = { uid, jogadorNome: nome, valor, txid: 'AACNHIST' + i, status: 'confirmado', criadoEm: mes(n, dia), confirmadoEm: mes(n, dia), dataPagamento: mes(n, dia), creditosGerados: valor * 2, ...(i === 5 ? {} : i % 2 ? { confirmadoPor: 'u-admin', confirmadoPorNome: 'Administrador AACN' } : { confirmadoPor: 'u-tesoureiro', confirmadoPorNome: 'Tiago Tesoureiro' }) }
 })
 
 for (const p of seedPlayers) {

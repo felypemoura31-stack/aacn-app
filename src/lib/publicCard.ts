@@ -33,7 +33,7 @@ export async function sincronizarCartaoPublico(player: PublicCardSource) {
 export async function atualizarPagamentoNoCartaoPublico(
   uid: string,
   status: Player['status'],
-  vencimento: number,
+  vencimento: number | null,
 ) {
   await updateDoc(doc(db, 'publicCards', uid), {
     status,

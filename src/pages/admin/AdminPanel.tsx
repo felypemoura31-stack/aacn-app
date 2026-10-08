@@ -108,10 +108,15 @@ export function AdminPanel() {
   const maxMes = Math.max(...meses.map((m) => m.total), 0)
   const mesAtual = meses[meses.length - 1]
 
+  const dataHora = (v: unknown) => {
+    const ms = paraMillis(v)
+    return ms ? new Date(ms).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''
+  }
+
   function exportarPagamentos() {
     baixarCsv(
       `pagamentos-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Data do pagamento', 'Jogador', 'Valor (R$)', 'Créditos gerados', 'Situação', 'Identificador Pix'],
+      ['Data do pagamento', 'Jogador', 'Valor (R$)', 'Créditos gerados', 'Situação', 'Identificador Pix', 'Baixa dada por', 'Baixa em', 'Estornada por', 'Estornada em', 'Motivo do estorno'],
       [...payments]
         .sort((a, b) => (paraMillis(b.dataPagamento) ?? 0) - (paraMillis(a.dataPagamento) ?? 0))
         .map((p) => [
@@ -119,8 +124,13 @@ export function AdminPanel() {
           p.jogadorNome,
           p.valor.toFixed(2).replace('.', ','),
           p.creditosGerados ?? '',
-          p.status === 'confirmado' ? 'Confirmado' : 'Pendente',
+          p.status === 'confirmado' ? 'Confirmado' : p.status === 'estornado' ? 'Estornado' : 'Pendente',
           p.txid,
+          p.confirmadoPorNome ?? '',
+          dataHora(p.confirmadoEm),
+          p.estornadoPorNome ?? '',
+          dataHora(p.estornadoEm),
+          p.estornoMotivo ?? '',
         ]),
     )
   }
