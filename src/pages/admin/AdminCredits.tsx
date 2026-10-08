@@ -108,7 +108,7 @@ export function AdminCredits() {
 
             {aberto === p.uid && modo === 'extrato' && (
               <div className="mt-4">
-                <ExtratoCreditos uid={p.uid} />
+                <ExtratoCreditos uid={p.uid} autor={admin ? { uid: admin.uid, nome: admin.nomeCompleto } : null} />
               </div>
             )}
 

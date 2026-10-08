@@ -14,6 +14,7 @@ import {
 import { db } from '../firebase'
 import type {
   Game,
+  LedgerEntry,
   LedgerTipo,
   Participation,
   Player,
@@ -331,6 +332,31 @@ export async function adminAjustarSaldo(
     descricao: motivo.trim(),
     refId: null,
     autor: admin,
+    existe: c.existe,
+  })
+  await batch.commit()
+}
+
+/**
+ * Desfaz um ajuste manual com um lançamento contrário: o extrato nunca é apagado nem editado, então o ajuste
+ * errado e o que o desfez ficam os dois registrados. Só ajustes manuais (sem origem) e só uma vez cada: o
+ * lançamento contrário tem id próprio ("desfazer_<id>"), então um segundo clique é recusado pelo banco.
+ */
+export async function desfazerAjuste(e: LedgerEntry, admin: Autor) {
+  if (e.tipo !== 'ajuste' || e.refId != null) throw new Error('Só dá para desfazer ajustes manuais.')
+  const id = 'desfazer_' + e.id
+  if ((await getDoc(doc(db, 'ledger', id))).exists()) throw new Error('Este ajuste já foi desfeito.')
+  const c = await lerCarteira(e.uid)
+  const batch = writeBatch(db)
+  lancar(batch, {
+    uid: e.uid,
+    saldoAntes: c.saldo,
+    delta: -e.creditos,
+    tipo: 'ajuste',
+    descricao: `Ajuste desfeito: ${e.descricao}`,
+    refId: e.id,
+    autor: admin,
+    ledgerId: id,
     existe: c.existe,
   })
   await batch.commit()
