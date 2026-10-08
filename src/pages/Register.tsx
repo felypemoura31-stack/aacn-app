@@ -5,7 +5,7 @@ import { PasswordInput } from '../components/PasswordInput'
 import { cpfValido, formatarCpf } from '../lib/cadastro'
 
 export function Register() {
-  const { register } = useAuth()
+  const { register, resetPassword } = useAuth()
   const navigate = useNavigate()
   const { state } = useLocation()
   const [nomeCompleto, setNomeCompleto] = useState('')
@@ -17,11 +17,13 @@ export function Register() {
   const [loading, setLoading] = useState(false)
   const [aceita, setAceita] = useState(false)
   const [emailEmUso, setEmailEmUso] = useState(false)
+  const [redefinicao, setRedefinicao] = useState<'enviando' | 'enviada' | 'erro' | null>(null)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setEmailEmUso(false)
+    setRedefinicao(null)
 
     if (!cpfValido(cpf)) {
       setError('Informe um CPF válido.')
@@ -57,6 +59,17 @@ export function Register() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  /** E-mail que já tem acesso (cadastro excluído ou senha esquecida): manda o link para criar uma nova senha, sem sair da tela. */
+  async function enviarRedefinicao() {
+    setRedefinicao('enviando')
+    try {
+      await resetPassword(email.trim())
+      setRedefinicao('enviada')
+    } catch {
+      setRedefinicao('erro')
     }
   }
 
@@ -133,17 +146,30 @@ export function Register() {
 
         {error && <p className="mb-2 text-sm text-danger">{error}</p>}
         {emailEmUso && (
-          <p className="mb-4 text-xs text-mute">
-            Se você já é associado,{' '}
-            <Link to="/login" className="text-ink underline">
-              entre
-            </Link>
-            . Se esqueceu a senha, ou se seu cadastro foi excluído e você quer voltar, use{' '}
-            <Link to="/esqueci-senha" className="text-ink underline">
-              Esqueci minha senha
-            </Link>{' '}
-            e depois entre: o app refaz o seu cadastro. Se ainda lembra a senha antiga, é só repeti-la aqui.
-          </p>
+          <div className="mb-4 rounded-sm border border-line bg-surface2 p-3 text-xs text-mute">
+            <p>
+              Esse e-mail já tem um acesso ao app. Se você já é associado,{' '}
+              <Link to="/login" className="text-ink underline">
+                entre
+              </Link>
+              .
+            </p>
+            <p className="mt-2">
+              Se o seu cadastro foi <b className="text-ink">excluído</b> e você quer voltar, ou se esqueceu a senha, receba um e-mail para criar uma nova senha.
+              Depois é só entrar: o app refaz o seu cadastro.
+            </p>
+            {redefinicao === 'enviada' ? (
+              <p className="mt-2 text-ok">
+                Enviamos o e-mail para <b>{email.trim()}</b>. Abra o link, escolha a nova senha e entre. Se não chegar, olhe o spam.
+              </p>
+            ) : (
+              <button type="button" onClick={enviarRedefinicao} disabled={redefinicao === 'enviando'} className="btn-ghost mt-2 w-full">
+                {redefinicao === 'enviando' ? 'Enviando...' : 'Enviar e-mail para criar nova senha'}
+              </button>
+            )}
+            {redefinicao === 'erro' && <p className="mt-2 text-danger">Não consegui enviar o e-mail agora. Tente de novo em instantes.</p>}
+            <p className="mt-2">Se ainda lembra a senha antiga, é só repeti-la no campo de senha e criar a conta de novo.</p>
+          </div>
         )}
 
         <button
