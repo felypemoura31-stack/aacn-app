@@ -188,7 +188,10 @@ h2 {
 .cc-nome {
   font-weight: 800;
   line-height: 1.12;
-  overflow-wrap: anywhere;
+  /* uma linha só: o texto já vem abreviado/ajustado (lib/nomeCarteirinha); o corte é só a rede de segurança */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cc-info {
   margin-right: 23mm;

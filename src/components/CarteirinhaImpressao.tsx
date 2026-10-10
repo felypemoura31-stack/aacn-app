@@ -1,17 +1,11 @@
+import { useMemo } from 'react'
 import QRCode from 'react-qr-code'
 import { ITENS_LEGAIS, NOTA_LEGAL, REGRAS_CONDUTA, TITULO_CONDUTA, TITULO_LEGAL } from '../lib/regulamento'
 import { formatarData, paraMillis } from '../lib/status'
 import { CONQUISTAS } from '../lib/conquistas'
+import { nomeNaCarteirinha } from '../lib/nomeCarteirinha'
 import { IconeConquista } from './IconeConquista'
 import type { Player } from '../types'
-
-/** Nomes longos usam fonte menor para continuar cabendo (a frente é pequena). */
-function tamanhoNome(nome: string) {
-  const n = nome.trim().length
-  if (n <= 22) return 12.5
-  if (n <= 34) return 10.6
-  return 8.8
-}
 
 interface Props {
   player: Pick<Player, 'nomeCompleto' | 'fotoUrl' | 'dataNascimento' | 'criadoEm' | 'timeAprovado'>
@@ -30,6 +24,8 @@ function dataBr(iso: string) {
 /** Só a frente da carteirinha (85,6 x 54 mm): é a que aparece na tela, na prévia da lista e na folha de impressão. */
 export function CarteirinhaFrente({ player, verifyUrl, timeNome, timeLogoUrl, destaques = [] }: Props) {
   const insignias = destaques.filter((id) => CONQUISTAS.some((c) => c.id === id)).slice(0, 3)
+  // o nome ocupa uma linha só: abrevia os nomes do meio (e diminui a letra) quando não cabe
+  const nome = useMemo(() => nomeNaCarteirinha(player.nomeCompleto), [player.nomeCompleto])
   return (
     <div className="cc-face cc-frente">
       <div className="cc-topo">
@@ -55,8 +51,8 @@ export function CarteirinhaFrente({ player, verifyUrl, timeNome, timeLogoUrl, de
         </div>
 
         <div className="cc-dados">
-          <p className="cc-nome" style={{ fontSize: `${tamanhoNome(player.nomeCompleto)}pt` }}>
-            {player.nomeCompleto}
+          <p className="cc-nome" style={{ fontSize: `${nome.pt}pt` }} title={player.nomeCompleto}>
+            {nome.texto}
           </p>
           <div className="cc-info">
             <div className="cc-par">

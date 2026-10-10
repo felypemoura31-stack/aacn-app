@@ -339,6 +339,8 @@ pagamentos (tesoureiro, organizador e jogador não).
 
 ## Ver e imprimir a carteirinha de outros jogadores
 
+**Nome na carteirinha, sempre em uma linha:** se o nome inteiro não cabe nem com a letra um pouco menor (de 12,5 pt até 10 pt), o app **abrevia os nomes do meio**, um de cada vez, da esquerda para a direita, até caber: "Ryan Pablo Borges Soares de Oliveira" vira "Ryan P. B. Soares de Oliveira" e "Sérgio Henrique Almeida de Moraes" vira "Sérgio H. Almeida de Moraes". O primeiro nome e o último sobrenome nunca são abreviados, e "de", "da", "do", "dos", "das" e "e" ficam como estão. A medida usa a mesma fonte do cartão (`src/lib/nomeCarteirinha.ts`), então vale igual na tela, na prévia e na impressão; passar o mouse no nome mostra o nome completo. O cadastro do jogador continua com o nome inteiro: a abreviação é só da frente da carteirinha.
+
 **Admin e tesoureiro** têm o item **Carteirinhas** (menu de gestão, em Tesouraria): a tela mostra a **prévia da frente da carteirinha de todos os jogadores em grade de 4 colunas** (2 no celular), em ordem alfabética, com o status (adimplente, inadimplente ou inativo) embaixo de cada uma, e busca por nome ou time. A prévia é a mesma frente da impressão, só reduzida para caber na coluna. Tocar numa carteirinha a abre ampliada no topo da página, com **Imprimir** e **Fechar**. No admin também há o atalho **"Ver e imprimir a
 carteirinha"** na ficha do jogador. O tesoureiro não lê o cadastro, então o **nascimento** e o **membro desde**
 vêm de uma cópia (`contatos/{uid}`, a mesma do celular de cobrança), que o jogador atualiza ao abrir o app e que o
