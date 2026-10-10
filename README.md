@@ -339,8 +339,7 @@ pagamentos (tesoureiro, organizador e jogador não).
 
 ## Ver e imprimir a carteirinha de outros jogadores
 
-**Admin e tesoureiro** têm o item **Carteirinhas** (menu de gestão, em Tesouraria): buscam o jogador por nome ou time,
-veem a carteirinha dele (a mesma da impressão) e imprimem. No admin também há o atalho **"Ver e imprimir a
+**Admin e tesoureiro** têm o item **Carteirinhas** (menu de gestão, em Tesouraria): a tela mostra a **prévia da frente da carteirinha de todos os jogadores em grade de 4 colunas** (2 no celular), em ordem alfabética, com o status (adimplente, inadimplente ou inativo) embaixo de cada uma, e busca por nome ou time. A prévia é a mesma frente da impressão, só reduzida para caber na coluna. Tocar numa carteirinha a abre ampliada no topo da página, com **Imprimir** e **Fechar**. No admin também há o atalho **"Ver e imprimir a
 carteirinha"** na ficha do jogador. O tesoureiro não lê o cadastro, então o **nascimento** e o **membro desde**
 vêm de uma cópia (`contatos/{uid}`, a mesma do celular de cobrança), que o jogador atualiza ao abrir o app e que o
 admin repõe sozinho ao abrir as telas Cobranças ou Carteirinhas. Se a cópia ainda não existe, o tesoureiro vê um
