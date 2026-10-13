@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { ConferirConquistas } from '../../components/ConferirConquistas'
-import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../../lib/status'
+import { STATUS_COLORS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import type { Player, PlayerStatus } from '../../types'
 
-type Campo = 'nome' | 'email' | 'time' | 'status' | 'vencimento'
+type Campo = 'nome' | 'email' | 'time' | 'status' | 'vencimento' | 'cadastro'
 type Direcao = 'asc' | 'desc'
 
 const ROTULOS: Record<Campo, string> = {
@@ -15,6 +15,17 @@ const ROTULOS: Record<Campo, string> = {
   time: 'Time',
   status: 'Status',
   vencimento: 'Vencimento',
+  cadastro: 'Cadastro',
+}
+
+/** Campos de data: ordenam do mais recente para o mais antigo no primeiro clique. */
+const ehData = (c: Campo) => c === 'cadastro' || c === 'vencimento'
+const direcaoInicial = (c: Campo): Direcao => (c === 'cadastro' ? 'desc' : 'asc')
+
+/** Dia e hora em que a pessoa criou a conta (aparece ao passar o mouse na data). */
+const dataHora = (p: Player) => {
+  const ms = paraMillis(p.criadoEm)
+  return ms ? new Date(ms).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'sem data registrada'
 }
 
 /** Texto do time como aparece na lista (vazio = sem time). */
@@ -33,6 +44,8 @@ function valorDe(p: Player, campo: Campo): string | number | null {
       return STATUS_LABELS[statusEfetivo(p)]
     case 'vencimento':
       return p.vencimento ?? null
+    case 'cadastro':
+      return paraMillis(p.criadoEm)
   }
 }
 
@@ -71,7 +84,7 @@ export function AdminDashboard() {
 
   /** Clicar na coluna ordena de A→Z; clicar de novo inverte. */
   function ordenarPor(campo: Campo) {
-    setOrdem((o) => (o.campo === campo ? { campo, dir: o.dir === 'asc' ? 'desc' : 'asc' } : { campo, dir: 'asc' }))
+    setOrdem((o) => (o.campo === campo ? { campo, dir: o.dir === 'asc' ? 'desc' : 'asc' } : { campo, dir: direcaoInicial(campo) }))
   }
 
   const seta = (campo: Campo) => (ordem.campo === campo ? (ordem.dir === 'asc' ? '▲' : '▼') : '↕')
@@ -93,7 +106,7 @@ export function AdminDashboard() {
   )
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="mb-6 text-xl font-bold text-ink">
         Admin: Jogadores ({players.length})
       </h1>
@@ -127,7 +140,7 @@ export function AdminDashboard() {
         <select
           id="ordenar"
           value={ordem.campo}
-          onChange={(e) => setOrdem({ campo: e.target.value as Campo, dir: 'asc' })}
+          onChange={(e) => setOrdem({ campo: e.target.value as Campo, dir: direcaoInicial(e.target.value as Campo) })}
           className="input max-w-[11rem]"
         >
           {(Object.keys(ROTULOS) as Campo[]).map((c) => (
@@ -142,7 +155,7 @@ export function AdminDashboard() {
           className="btn-ghost"
           aria-label={ordem.dir === 'asc' ? 'Ordem crescente' : 'Ordem decrescente'}
         >
-          {ordem.dir === 'asc' ? '▲ A→Z' : '▼ Z→A'}
+          {ehData(ordem.campo) ? (ordem.dir === 'asc' ? '▲ Mais antigos' : '▼ Mais recentes') : ordem.dir === 'asc' ? '▲ A→Z' : '▼ Z→A'}
         </button>
       </div>
 
@@ -160,6 +173,9 @@ export function AdminDashboard() {
             <p className="mt-1 text-xs text-mute">
               {textoDoTime(p) || 'Sem time'} · vence {formatarData(p.vencimento)}
             </p>
+            <p className="mt-0.5 text-xs text-mute" title={dataHora(p)}>
+              Conta criada em {formatarData(paraMillis(p.criadoEm))}
+            </p>
           </Link>
         ))}
         {filtrados.length === 0 && <p className="py-6 text-center text-sm text-mute/70">Nenhum jogador encontrado.</p>}
@@ -174,6 +190,7 @@ export function AdminDashboard() {
               <Cabecalho campo="time" />
               <Cabecalho campo="status" />
               <Cabecalho campo="vencimento" />
+              <Cabecalho campo="cadastro" />
             </tr>
           </thead>
           <tbody>
@@ -197,11 +214,14 @@ export function AdminDashboard() {
                   </span>
                 </td>
                 <td className="px-4 py-2 text-mute">{formatarData(p.vencimento)}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-mute" title={dataHora(p)}>
+                  {formatarData(paraMillis(p.criadoEm))}
+                </td>
               </tr>
             ))}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-mute/70">
+                <td colSpan={6} className="px-4 py-6 text-center text-mute/70">
                   Nenhum jogador encontrado.
                 </td>
               </tr>

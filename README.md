@@ -410,7 +410,7 @@ Na **ficha do jogador** (Admin → Jogadores → o jogador), o painel **Conquist
 
 ## Ordenar a lista de jogadores
 
-Em **Admin → Jogadores**, cada coluna (Nome, E-mail, Time, Status, Vencimento) tem uma setinha: clicar ordena de A→Z (▲) e clicar de novo inverte (▼). Quem não tem time (ou vencimento) fica sempre no fim. No celular há o seletor **Ordenar por** e o botão ▲ A→Z / ▼ Z→A.
+Em **Admin → Jogadores**, cada coluna (Nome, E-mail, Time, Status, Vencimento, **Cadastro**) tem uma setinha: clicar ordena de A→Z (▲) e clicar de novo inverte (▼). Quem não tem time (ou vencimento) fica sempre no fim. A coluna **Cadastro** é o **dia em que a pessoa criou a conta** (passar o mouse mostra também a hora); no primeiro clique ela ordena do mais recente para o mais antigo, para ver logo quem acabou de entrar. No celular a data aparece em cada cartão ("Conta criada em ...") e há o seletor **Ordenar por** com o botão ▲ A→Z / ▼ Z→A (nas datas, ▲ Mais antigos / ▼ Mais recentes).
 
 ## Endereço antigo: instalações que não atualizavam
 
