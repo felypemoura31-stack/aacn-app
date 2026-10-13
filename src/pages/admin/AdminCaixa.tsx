@@ -409,7 +409,7 @@ export function AdminCaixa() {
           <div className="panel p-4">
             <h2 className="mb-1 text-sm font-bold text-ink">Prestação de contas aos associados</h2>
             <p className="text-xs text-mute">
-              Mostra aos associados (na aba Ranking) só os totais do mês e por categoria, sem os lançamentos um a um. Você escolhe quando publicar.
+              Mostra aos associados (na página Histórico) só os totais do mês e por categoria, sem os lançamentos um a um. Você escolhe quando publicar.
             </p>
             {mes === 'todos' ? (
               <p className="mt-2 text-xs text-mute/70">Escolha um mês para publicar.</p>

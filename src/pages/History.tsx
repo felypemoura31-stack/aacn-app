@@ -6,6 +6,7 @@ import { formatarCreditos, reais } from '../lib/credits'
 import { formatarData, paraMillis } from '../lib/status'
 import { GRUPOS } from '../lib/conquistas'
 import { IconeConquista } from '../components/IconeConquista'
+import { PrestacaoDeContas } from '../components/PrestacaoDeContas'
 import { useConquistas } from '../contexts/ConquistasContext'
 import type { Game, LedgerEntry, Participation, Payment } from '../types'
 
@@ -138,6 +139,10 @@ export function History() {
         ))}
       </div>
         </section>
+      </div>
+
+      <div className="mt-8 border-t border-line pt-6">
+        <PrestacaoDeContas />
       </div>
     </div>
   )
