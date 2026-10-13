@@ -540,9 +540,45 @@ O admin delega em **Gestão → Cargos**.
 - Alterar o valor de um jogo vale para as próximas inscrições; quem já se inscreveu mantém o que
   foi cobrado.
 
+## Histórico de ações da diretoria (Admin → Histórico de ações)
+
+Tela só do **admin** com o que a diretoria fez pelo app: **quem fez, o quê e quando**. Cada registro tem a ação (Baixa de Pix, Baixa estornada, Cobrança cancelada, Chave Pix, Ajuste de créditos, Ajuste desfeito, Caixa, Prestação de contas, Jogador excluído, Conta excluída, Dados resetados, Ficha editada, Cargo, Conquista concedida/removida, Representante de time, Jogo excluído, Inscrição removida), uma frase pronta ("Deu baixa no Pix de R$ 15,00 de Fulano (pago em 06/10/2026; +30 créditos)"), o autor e, quando há, o jogador atingido.
+
+- **Filtros:** por grupo (Dinheiro, Pessoas, Jogos), por quem fez, por mês e busca por nome ou texto. Mostra os 100 mais recentes e carrega mais sob demanda.
+- **Quando o registro é gravado:** nas ações que já são um lote (baixa, estorno, ajuste, desfazer, conquista, remover inscrição, excluir jogo, excluir jogador, excluir a própria conta, caixa) o registro vai **no mesmo lote**: não existe a ação sem o registro. Nas demais (cancelar cobrança, mudar a chave Pix, cargos, editar ficha, resetar dados, representante de time) ele é gravado logo depois.
+- **Regras do banco:** só o admin lê; admin e tesoureiro gravam, cada um **só em seu nome** e com a **hora do servidor**; o jogador só grava o registro da própria conta excluída; **ninguém edita nem apaga** um registro.
+- **Limite honesto:** é o histórico do que o **app** faz. Quem mexer direto no console do Firebase (ou com um script) não aparece aqui.
+- A mudança da **chave Pix** guarda a chave antiga e a nova, para rastrear qualquer troca.
+
+## Caixa da associação e prestação de contas (Admin → Caixa)
+
+Para **admin e tesoureiro**. Mostra, por mês (ou todo o período): **entradas, saídas, saldo do mês e saldo do caixa**, o movimento, os totais **por categoria** e os últimos meses. Dá para **exportar em CSV**.
+
+- **Entram sozinhas** (não se lançam à mão, e não podem ser lançadas de novo por engano): as **mensalidades por Pix** (baixas confirmadas, já sem as estornadas, pelo dia do pagamento) e o que foi **pago em dinheiro no check-in dos jogos** (valor do jogo × presença em dinheiro).
+- **Lançamentos à mão:** entradas (saldo inicial, doação, patrocínio, venda...) e saídas (campo, material, premiação, alimentação, manutenção, taxas...), com valor, data, categoria (ou uma nova, digitada) e descrição opcional. O valor aceita "1.250,00" ou "1250.5". Cada lançamento guarda quem o criou e, se mudou, quem editou. **Editar e excluir** ficam registrados no Histórico de ações com o valor antigo e o novo.
+- **Saldo inicial:** lance como uma **entrada** da categoria "Saldo inicial", na data em que o caixa começa a valer.
+- **Prestação de contas aos associados:** o botão **"Publicar <mês>"** grava só os **totais do mês e por categoria** (nunca os lançamentos um a um) e o associado vê em **Ranking → Prestação de contas**. "Atualizar com os números de agora" refaz a publicação; "Retirar" tira da vista. Só vai ao ar o que a diretoria publica.
+- **Regras do banco:** a coleção `caixa` só é lida e gravada por admin e tesoureiro (valor positivo e limitado, data no formato certo, categoria e descrição com tamanho máximo, autor e hora do servidor); `prestacaoContas` é lida por todos os logados e gravada por admin e tesoureiro (um documento por mês, só totais).
+
+## Ranking de presença e estatísticas (menu Ranking)
+
+Para **todos os associados**:
+
+- **Jogadores:** ranking de presenças no período, com **Jogos** ou **Noturnos**; os 3 primeiros ganham ouro, prata e bronze; quem empata fica na mesma posição; "Você está em Nº lugar" destaca a pessoa.
+- **Períodos:** todo o período, um ano ou um mês (só aparecem os que têm jogos). Começa no ano atual.
+- **Estatísticas:** jogos realizados, presenças, média de presentes por jogo, jogos noturnos e o mais assíduo.
+- **Times:** soma das presenças dos jogadores de cada time (pelo time de hoje de cada um).
+- **Presença por jogo:** barras com os últimos jogos do período.
+- **Como funciona (e o custo):** o ranking é **um único documento** (`ranking/presencas`), montado por quem pode ler as presenças (admin, tesoureiro e organizador) a partir dos check-ins; o associado lê **só esse documento** (uma leitura), em vez de todas as presenças de todo mundo, o que protege a cota gratuita do Firebase. Só entram jogadores que ainda têm cadastro. Ele se atualiza sozinho **quando a equipe abre o Ranking** (se tem mais de 30 minutos) e **90 segundos depois do último check-in** (ou ao sair da tela de check-in); há também o botão **"Atualizar agora"** para a equipe. Os associados veem a hora da última atualização. Se a cota um dia apertar (milhares de presenças), a montagem pode passar a ser incremental.
+- Aparecem **nome, time e contagem de jogos**; nada de pagamento.
+
+## Adicionar o jogo ao calendário
+
+Em **Jogos**, cada jogo que ainda não passou tem **"Lembrete no calendário"** com dois atalhos: **Google Agenda** (abre o evento já preenchido) e **iPhone / Outlook (.ics)** (baixa o arquivo; no iPhone e no Android o sistema oferece adicionar ao calendário). O evento leva nome, data, horário, local, valor, o mapa e o **link de volta para o jogo no app**. O lembrete é do próprio calendário do celular, então **funciona com o app fechado**: o .ics já traz avisos **1 dia** e **2 horas** antes (jogo sem horário vira evento de dia inteiro, com aviso na manhã do dia anterior). Duração presumida: 4 horas. O horário é o de Brasília (UTC−3; o Brasil não tem horário de verão desde 2019).
+
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (468 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (545 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

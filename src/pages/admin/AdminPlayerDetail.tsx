@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { doc, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
+import { useAuth } from '../../contexts/AuthContext'
+import { registrarAuditoria } from '../../lib/auditoria'
 import { DIA_MS, CICLO_DIAS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import { sincronizarCartaoPublico } from '../../lib/publicCard'
 import { rotulosDosCargos } from '../../lib/roles'
@@ -15,6 +17,7 @@ import type { Player, PlayerStatus } from '../../types'
 export function AdminPlayerDetail() {
   const { uid } = useParams<{ uid: string }>()
   const navigate = useNavigate()
+  const { player: staff } = useAuth()
   const [player, setPlayer] = useState<Player | null>(null)
   const [loading, setLoading] = useState(true)
   const [cpfInicial, setCpfInicial] = useState('')
@@ -78,6 +81,31 @@ export function AdminPlayerDetail() {
         setPlayer(p)
         setOriginal(p)
         setCpfInicial(p.cpf ?? '')
+      }
+      const rotulos: Record<string, string> = {
+        nomeCompleto: 'nome',
+        endereco: 'endereço',
+        bairro: 'bairro',
+        cep: 'CEP',
+        celular: 'celular',
+        dataNascimento: 'data de nascimento',
+        contatoEmergenciaNome: 'contato de emergência (nome)',
+        contatoEmergenciaTelefone: 'contato de emergência (telefone)',
+        condicoesMedicas: 'condições médicas',
+      }
+      const mudou: string[] = Object.keys(alterados).map((k) => {
+        if (k === 'status') return `situação para ${STATUS_LABELS[alterados.status as PlayerStatus]}`
+        if (k === 'vencimento') return `vencimento para ${formatarData(alterados.vencimento as number | null)}`
+        return rotulos[k] ?? k
+      })
+      if ((player.cpf ?? '') !== (original?.cpf ?? '')) mudou.push('CPF')
+      if (staff && mudou.length > 0) {
+        await registrarAuditoria({
+          acao: 'jogador_editado',
+          resumo: `Editou a ficha de ${original?.nomeCompleto ?? player.nomeCompleto}: ${mudou.join(', ')}`,
+          autor: { uid: staff.uid, nome: staff.nomeCompleto },
+          alvo: { uid: player.uid, nome: original?.nomeCompleto ?? player.nomeCompleto },
+        })
       }
       setSavedMessage('Alterações salvas.')
     } finally {

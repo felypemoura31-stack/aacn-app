@@ -1,6 +1,5 @@
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -12,6 +11,7 @@ import {
   type WriteBatch,
 } from 'firebase/firestore'
 import { db } from '../firebase'
+import { auditar } from './auditoria'
 import type {
   Game,
   LedgerEntry,
@@ -310,6 +310,12 @@ export async function adminRemoverParticipante(p: Participation, admin: Autor) {
   })
   if (p.status === 'espera') batch.update(doc(db, 'games', p.gameId), { espera: increment(-1) })
   else if (p.status === 'ativa' || p.status === 'presente') batch.update(doc(db, 'games', p.gameId), { inscritos: increment(-1) })
+  auditar(batch, {
+    acao: 'inscricao_removida',
+    resumo: `Removeu ${p.jogadorNome} do jogo ${p.gameNome} (${p.status === 'presente' ? 'tinha presença' : p.status === 'espera' ? 'estava na lista de espera' : 'estava inscrito'}${p.creditosDebitados > 0 ? `; devolveu ${formatarCreditos(p.creditosDebitados)} créditos` : ''})`,
+    autor: admin,
+    alvo: { uid: p.uid, nome: p.jogadorNome },
+  })
   await batch.commit()
 }
 
@@ -334,6 +340,12 @@ export async function adminAjustarSaldo(
     autor: admin,
     existe: c.existe,
   })
+  auditar(batch, {
+    acao: 'credito_ajuste',
+    resumo: `Ajustou os créditos de ${jogador.nomeCompleto}: ${delta > 0 ? '+' : '−'}${formatarCreditos(Math.abs(delta))} (${motivo.trim()})`,
+    autor: admin,
+    alvo: { uid: jogador.uid, nome: jogador.nomeCompleto },
+  })
   await batch.commit()
 }
 
@@ -347,6 +359,7 @@ export async function desfazerAjuste(e: LedgerEntry, admin: Autor) {
   const id = 'desfazer_' + e.id
   if ((await getDoc(doc(db, 'ledger', id))).exists()) throw new Error('Este ajuste já foi desfeito.')
   const c = await lerCarteira(e.uid)
+  const nome = ((await getDoc(doc(db, 'publicCards', e.uid))).data() as { nomeCompleto?: string } | undefined)?.nomeCompleto ?? 'jogador'
   const batch = writeBatch(db)
   lancar(batch, {
     uid: e.uid,
@@ -358,6 +371,12 @@ export async function desfazerAjuste(e: LedgerEntry, admin: Autor) {
     autor: admin,
     ledgerId: id,
     existe: c.existe,
+  })
+  auditar(batch, {
+    acao: 'credito_ajuste_desfeito',
+    resumo: `Desfez o ajuste "${e.descricao}" (${e.creditos >= 0 ? '+' : '−'}${formatarCreditos(Math.abs(e.creditos))} créditos) de ${nome}`,
+    autor: admin,
+    alvo: { uid: e.uid, nome },
   })
   await batch.commit()
 }
@@ -392,5 +411,12 @@ export async function excluirJogo(game: Game, admin: Autor) {
     batch.delete(d.ref)
     await batch.commit()
   }
-  await deleteDoc(doc(db, 'games', game.id))
+  const fim = writeBatch(db)
+  fim.delete(doc(db, 'games', game.id))
+  auditar(fim, {
+    acao: 'jogo_excluido',
+    resumo: `Excluiu o jogo "${game.nome}" de ${game.data.split('-').reverse().join('/')} (${inscricoes.size} inscrição(ões)/presença(s) apagada(s))`,
+    autor: admin,
+  })
+  await fim.commit()
 }

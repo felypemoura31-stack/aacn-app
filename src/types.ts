@@ -223,3 +223,70 @@ export interface Partner {
   ativo: boolean
   criadoEm: unknown
 }
+
+/** Lançamento manual do caixa da associação (as mensalidades entram sozinhas, não ficam aqui). */
+export interface LancamentoCaixa {
+  id: string
+  tipo: 'entrada' | 'saida'
+  valor: number
+  data: string // yyyy-mm-dd
+  categoria: string
+  descricao?: string
+  criadoPor: string
+  criadoPorNome: string
+  criadoEm: unknown
+  editadoPor?: string
+  editadoPorNome?: string
+  editadoEm?: unknown
+}
+
+/** Resumo mensal publicado aos associados (totais e por categoria, sem os lançamentos). */
+export interface PrestacaoContas {
+  mes: string // yyyy-mm
+  entradas: number
+  saidas: number
+  saldoMes: number
+  saldoAcumulado: number
+  entradasPorCategoria: Record<string, number>
+  saidasPorCategoria: Record<string, number>
+  publicadoPor: string
+  publicadoPorNome: string
+  publicadoEm: unknown
+}
+
+/** Ranking de presença (um documento só, montado a partir dos check-ins). */
+export interface RankingJogador {
+  n: string // nome
+  t: string | null // nome do time
+  ti: string | null // id do time
+  m: Record<string, number> // presenças por mês ("2026-10": 3)
+  nt: Record<string, number> // presenças em jogos noturnos por mês
+}
+
+export interface RankingJogo {
+  id: string
+  nome: string
+  data: string // yyyy-mm-dd
+  noturno: boolean
+  presentes: number
+}
+
+export interface RankingDoc {
+  atualizadoEm: unknown
+  atualizadoPor: string
+  atualizadoPorNome: string
+  jogos: RankingJogo[]
+  jogadores: Record<string, RankingJogador>
+}
+
+/** Registro do histórico de ações da diretoria. */
+export interface RegistroDeAcao {
+  id: string
+  acao: string
+  resumo: string
+  porUid: string
+  porNome: string
+  alvoUid: string | null
+  alvoNome: string | null
+  criadoEm: unknown
+}

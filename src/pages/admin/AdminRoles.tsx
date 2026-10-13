@@ -12,6 +12,7 @@ import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { CARGOS_DELEGAVEIS, cargosDe, rotuloDoCargo } from '../../lib/roles'
 import { CONQUISTAS, concederConquista } from '../../lib/conquistas'
+import { registrarAuditoria } from '../../lib/auditoria'
 import type { Player, UserRole } from '../../types'
 
 export function AdminRoles() {
@@ -51,6 +52,13 @@ export function AdminRoles() {
       setBusyUid(null)
       return
     }
+
+    await registrarAuditoria({
+      acao: 'cargo',
+      resumo: `${ligado ? 'Deu' : 'Tirou'} o cargo de ${rotuloDoCargo(cargo)} ${ligado ? 'a' : 'de'} ${p.nomeCompleto}`,
+      autor: { uid: admin.uid, nome: admin.nomeCompleto },
+      alvo: { uid: p.uid, nome: p.nomeCompleto },
+    })
 
     // A conquista exclusiva do parceiro (+10 créditos) é concedida na hora, sem esperar o jogador abrir o app.
     if (ligado && cargo === 'parceiro') {

@@ -6,7 +6,8 @@ import {
 } from 'firebase/auth'
 import { collection, doc, getDoc, getDocs, query, updateDoc, where, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
-import { cancelarMinhaInscricao } from './credits'
+import { auditar } from './auditoria'
+import { cancelarMinhaInscricao, type Autor } from './credits'
 import { apagar, apagarInscricoesDoJogador, docsDoJogador } from './reset'
 import type { Participation, Player } from '../types'
 
@@ -22,7 +23,7 @@ async function timesQueRepresenta(uid: string) {
  * A conta de acesso (e-mail/senha) fica no Firebase Authentication, que o app não consegue apagar:
  * se a pessoa entrar de novo, vê que o cadastro foi excluído e pode criar outro.
  */
-export async function excluirJogador(uid: string, opcoes: { manterFinanceiro: boolean }): Promise<string[]> {
+export async function excluirJogador(uid: string, opcoes: { manterFinanceiro: boolean }, autor: Autor): Promise<string[]> {
   const feito: string[] = []
 
   for (const t of await timesQueRepresenta(uid)) {
@@ -47,6 +48,13 @@ export async function excluirJogador(uid: string, opcoes: { manterFinanceiro: bo
   const cpf = cadastro.exists() ? ((cadastro.data() as Player).cpf ?? '') : ''
   if (cpf) lote.delete(doc(db, 'cpfs', cpf)) // o CPF fica livre para um novo cadastro
   for (const col of ['stats', 'wallets', 'contatos', 'cobrancas', 'leituras', 'publicCards', 'players']) lote.delete(doc(db, col, uid))
+  const nome = cadastro.exists() ? ((cadastro.data() as Player).nomeCompleto ?? 'jogador') : 'jogador'
+  auditar(lote, {
+    acao: 'jogador_excluido',
+    resumo: `Excluiu o jogador ${nome} (${opcoes.manterFinanceiro ? 'manteve os pagamentos e o extrato' : 'apagou também os pagamentos e o extrato'})`,
+    autor,
+    alvo: { uid, nome },
+  })
   await lote.commit()
   feito.push('Cadastro e cartão público excluídos.')
   return feito
@@ -85,6 +93,12 @@ export async function excluirMinhaConta(user: User, player: Player, senha: strin
   const lote = writeBatch(db)
   if (player.cpf) lote.delete(doc(db, 'cpfs', player.cpf)) // o CPF fica livre para um novo cadastro
   for (const col of ['contatos', 'leituras', 'publicCards', 'players']) lote.delete(doc(db, col, user.uid))
+  auditar(lote, {
+    acao: 'conta_excluida',
+    resumo: `${player.nomeCompleto} excluiu a própria conta`,
+    autor: { uid: user.uid, nome: player.nomeCompleto },
+    alvo: { uid: user.uid, nome: player.nomeCompleto },
+  })
   await lote.commit()
 
   await deleteUser(user)

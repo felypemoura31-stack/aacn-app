@@ -713,6 +713,87 @@ service cloud.firestore {
       allow delete: if isFinanceiro() || isOrganizador();
     }
 
+    // Histórico de ações da diretoria: só o admin lê. Admin e tesoureiro gravam, cada um só em seu nome e com a hora
+    // do servidor; o jogador grava apenas o registro da própria conta excluída. Ninguém edita nem apaga.
+    match /auditoria/{aid} {
+      function registroValido(d) {
+        return d.keys().hasOnly(['acao', 'resumo', 'porUid', 'porNome', 'alvoUid', 'alvoNome', 'criadoEm']) &&
+          d.acao in [
+            'pagamento_baixa', 'pagamento_estorno', 'pagamento_cancelado', 'chave_pix', 'credito_ajuste', 'credito_ajuste_desfeito',
+            'caixa_lancamento', 'caixa_edicao', 'caixa_exclusao', 'caixa_publicacao',
+            'jogador_excluido', 'conta_excluida', 'jogador_resetado', 'jogador_editado', 'cargo',
+            'conquista_concedida', 'conquista_removida', 'time_representante', 'jogo_excluido', 'inscricao_removida'
+          ] &&
+          d.resumo is string && d.resumo.size() >= 1 && d.resumo.size() <= 400 &&
+          d.porUid == request.auth.uid &&
+          d.porNome is string && d.porNome.size() <= 120 &&
+          (d.get('alvoUid', null) == null || (d.alvoUid is string && d.alvoUid.size() <= 128)) &&
+          (d.get('alvoNome', null) == null || (d.alvoNome is string && d.alvoNome.size() <= 120)) &&
+          d.get('criadoEm', null) == request.time;
+      }
+
+      allow read: if isAdmin();
+      allow create: if isSignedIn() && registroValido(request.resource.data) && (
+        isFinanceiro() ||
+        (request.resource.data.acao == 'conta_excluida' && request.resource.data.get('alvoUid', null) == request.auth.uid)
+      );
+      allow update, delete: if false;
+    }
+
+    // Caixa da associação: entradas e saídas lançadas à mão (as mensalidades entram sozinhas, pela tela). Só admin e
+    // tesoureiro leem e gravam; cada lançamento guarda quem o criou e, se mudou, quem editou.
+    match /caixa/{lid} {
+      function lancamentoValido(d) {
+        return d.tipo in ['entrada', 'saida'] &&
+          d.valor is number && d.valor > 0 && d.valor <= 1000000 &&
+          d.data is string && d.data.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+          d.categoria is string && d.categoria.size() >= 1 && d.categoria.size() <= 40 &&
+          d.get('descricao', '') is string && d.get('descricao', '').size() <= 200;
+      }
+
+      allow read: if isFinanceiro();
+      allow create: if isFinanceiro() && lancamentoValido(request.resource.data) &&
+        request.resource.data.keys().hasOnly(['tipo', 'valor', 'data', 'categoria', 'descricao', 'criadoPor', 'criadoPorNome', 'criadoEm']) &&
+        request.resource.data.criadoPor == request.auth.uid &&
+        request.resource.data.get('criadoPorNome', '') is string && request.resource.data.get('criadoPorNome', '').size() <= 120 &&
+        request.resource.data.get('criadoEm', null) == request.time;
+      allow update: if isFinanceiro() && lancamentoValido(request.resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['tipo', 'valor', 'data', 'categoria', 'descricao', 'editadoPor', 'editadoPorNome', 'editadoEm']) &&
+        request.resource.data.get('editadoPor', null) == request.auth.uid &&
+        request.resource.data.get('editadoEm', null) == request.time;
+      allow delete: if isFinanceiro();
+    }
+
+    // Prestação de contas publicada para os associados: um resumo por mês (totais e por categoria, sem os lançamentos).
+    // Todos os logados leem; admin e tesoureiro publicam e retiram.
+    match /prestacaoContas/{mes} {
+      allow read: if isSignedIn();
+      allow create, update: if isFinanceiro() &&
+        mes.matches('^[0-9]{4}-[0-9]{2}$') &&
+        request.resource.data.keys().hasOnly(['mes', 'entradas', 'saidas', 'saldoMes', 'saldoAcumulado', 'entradasPorCategoria', 'saidasPorCategoria', 'publicadoPor', 'publicadoPorNome', 'publicadoEm']) &&
+        request.resource.data.mes == mes &&
+        request.resource.data.entradas is number && request.resource.data.saidas is number &&
+        request.resource.data.saldoMes is number && request.resource.data.saldoAcumulado is number &&
+        request.resource.data.entradasPorCategoria is map && request.resource.data.saidasPorCategoria is map &&
+        request.resource.data.publicadoPor == request.auth.uid &&
+        request.resource.data.get('publicadoEm', null) == request.time;
+      allow delete: if isFinanceiro();
+    }
+
+    // Ranking de presença: um documento só, montado por quem lê as presenças (admin, tesoureiro e organizador) a partir
+    // dos check-ins. Todos os logados leem (nomes e contagens de jogos, nada de pagamento).
+    match /ranking/{docId} {
+      allow read: if isSignedIn();
+      allow create, update: if podeGerirJogos() &&
+        docId == 'presencas' &&
+        request.resource.data.keys().hasOnly(['atualizadoEm', 'atualizadoPor', 'atualizadoPorNome', 'jogos', 'jogadores']) &&
+        request.resource.data.atualizadoPor == request.auth.uid &&
+        request.resource.data.jogos is list &&
+        request.resource.data.jogadores is map;
+      allow delete: if false;
+    }
+
     // Parceiros com desconto: todos os logados veem; só o admin cadastra.
     match /partners/{partnerId} {
       function parceiroValido(d) {

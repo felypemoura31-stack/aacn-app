@@ -12,6 +12,8 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
+import { useAuth } from '../../contexts/AuthContext'
+import { registrarAuditoria } from '../../lib/auditoria'
 import { Link } from 'react-router-dom'
 import { TeamEditor } from '../../components/TeamEditor'
 import { atualizarTimeNoCartaoPublico } from '../../lib/publicCard'
@@ -19,6 +21,7 @@ import { TeamLogo } from '../Teams'
 import type { Player, Team } from '../../types'
 
 export function AdminTeams() {
+  const { player: staff } = useAuth()
   const [teams, setTeams] = useState<Team[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [novoNome, setNovoNome] = useState('')
@@ -68,6 +71,14 @@ export function AdminTeams() {
       // Quem vira representante já entra como responsável, se o time ainda não tem um.
       ...(jogador && !team.responsavelNome ? { responsavelNome: jogador.nomeCompleto } : {}),
     })
+    if (staff) {
+      await registrarAuditoria({
+        acao: 'time_representante',
+        resumo: jogador ? `Definiu ${jogador.nomeCompleto} como representante do time ${team.nome}` : `Tirou o representante do time ${team.nome}`,
+        autor: { uid: staff.uid, nome: staff.nomeCompleto },
+        alvo: jogador ? { uid: jogador.uid, nome: jogador.nomeCompleto } : null,
+      })
+    }
 
     // O representante também é membro do time que lidera (se ainda não é de outro time),
     // sem precisar de aprovação: o pedido pendente dele, se houver, é aprovado.

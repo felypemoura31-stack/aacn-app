@@ -25,6 +25,7 @@ const LINKS: LinkItem[] = [
   { to: '/jogos', rotulo: 'Jogos' },
   { to: '/times', rotulo: 'Times' },
   { to: '/parceiros', rotulo: 'Parceiros' },
+  { to: '/ranking', rotulo: 'Ranking' },
   { to: '/historico', rotulo: 'Histórico' },
 ]
 
@@ -37,6 +38,7 @@ const GRUPOS: Grupo[] = [
       { to: '/admin/times', rotulo: 'Times' },
       { to: '/admin/cargos', rotulo: 'Cargos' },
       { to: '/admin/parceiros', rotulo: 'Parceiros' },
+      { to: '/admin/auditoria', rotulo: 'Histórico de ações' },
     ],
   },
   {
@@ -46,6 +48,7 @@ const GRUPOS: Grupo[] = [
       { to: '/admin/painel', rotulo: 'Painel e relatórios' },
       { to: '/admin/pagamentos', rotulo: 'Pagamentos' },
       { to: '/admin/creditos', rotulo: 'Créditos' },
+      { to: '/admin/caixa', rotulo: 'Caixa' },
       { to: '/admin/cobrancas', rotulo: 'Cobranças' },
       { to: '/admin/carteirinhas', rotulo: 'Carteirinhas' },
     ],

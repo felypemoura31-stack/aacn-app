@@ -1,6 +1,7 @@
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { DIA_MS } from './status'
+import { auditar } from './auditoria'
 import { lancar, lerCarteira } from './credits'
 import { temCargo } from './roles'
 import type { Estatisticas, Player } from '../types'
@@ -200,6 +201,12 @@ export async function concederConquista(
       existe: carteira.existe,
     })
   }
+  auditar(batch, {
+    acao: 'conquista_concedida',
+    resumo: `Concedeu a conquista "${c.titulo}" a ${alvo.nome}${creditar ? ` (+${c.bonus} créditos)` : ' (sem créditos)'}`,
+    autor: { uid: admin.uid, nome: admin.nome },
+    alvo: { uid: alvo.uid, nome: alvo.nome },
+  })
   await batch.commit()
 }
 
@@ -252,6 +259,12 @@ export async function removerConquista(
       existe: carteira.existe,
     })
   }
+  auditar(batch, {
+    acao: 'conquista_removida',
+    resumo: `Removeu a conquista "${c.titulo}" de ${alvo.nome}${retirarCreditos && pago > 0 ? ` (retirou ${pago} créditos)` : ''}`,
+    autor: { uid: admin.uid, nome: admin.nome },
+    alvo: { uid: alvo.uid, nome: alvo.nome },
+  })
   await batch.commit()
   await tirarDosDestaques(alvo.uid, c.id)
 }

@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import { ROTULOS_RESET, resetarJogador, type OpcoesReset } from '../lib/reset'
 
 const NADA: OpcoesReset = { extrato: false, conquistas: false, jogos: false, mensalidades: false }
 
 /** Só para o admin: apaga dados de teste de um jogador, parte por parte. */
 export function ResetJogador({ uid, nome, aoTerminar }: { uid: string; nome: string; aoTerminar: () => void }) {
+  const { player: admin } = useAuth()
   const [marcado, setMarcado] = useState<OpcoesReset>(NADA)
   const [executando, setExecutando] = useState(false)
   const [resultado, setResultado] = useState<string[] | null>(null)
@@ -21,7 +23,8 @@ export function ResetJogador({ uid, nome, aoTerminar }: { uid: string; nome: str
     setErro(null)
     setResultado(null)
     try {
-      setResultado(await resetarJogador(uid, marcado))
+      if (!admin) throw new Error('Entre de novo para continuar.')
+      setResultado(await resetarJogador(uid, marcado, { autor: { uid: admin.uid, nome: admin.nomeCompleto }, nome }))
       setMarcado(NADA)
       aoTerminar()
     } catch (e) {

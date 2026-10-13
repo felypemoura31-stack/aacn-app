@@ -26,6 +26,9 @@ import { AdminPanel } from './pages/admin/AdminPanel'
 import { AdminPartners } from './pages/admin/AdminPartners'
 import { Partners } from './pages/Partners'
 import { History } from './pages/History'
+import { Ranking } from './pages/Ranking'
+import { AdminCaixa } from './pages/admin/AdminCaixa'
+import { AdminAuditoria } from './pages/admin/AdminAuditoria'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { OfflineBanner } from './components/OfflineBanner'
 import { TeamProfile } from './pages/TeamProfile'
@@ -125,6 +128,14 @@ function App() {
           element={
             <ProtectedRoute>
               <History />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ranking"
+          element={
+            <ProtectedRoute>
+              <Ranking />
             </ProtectedRoute>
           }
         />
@@ -239,6 +250,23 @@ function App() {
             <JogosRoute>
               <AdminAvisos />
             </JogosRoute>
+          }
+        />
+
+        <Route
+          path="/admin/caixa"
+          element={
+            <FinanceiroRoute>
+              <AdminCaixa />
+            </FinanceiroRoute>
+          }
+        />
+        <Route
+          path="/admin/auditoria"
+          element={
+            <AdminRoute>
+              <AdminAuditoria />
+            </AdminRoute>
           }
         />
 

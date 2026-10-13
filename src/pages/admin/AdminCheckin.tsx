@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { collection, doc, getDoc, onSnapshot, orderBy, query, where } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
@@ -10,6 +10,7 @@ import {
   participationId,
   reais,
 } from '../../lib/credits'
+import { construirRanking } from '../../lib/ranking'
 import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../../lib/status'
 import type { Game, Participation, PlayerStatus } from '../../types'
 
@@ -38,6 +39,31 @@ function extrairUid(texto: string) {
 
 export function AdminCheckin() {
   const { player: staff } = useAuth()
+
+  // o ranking de presença se atualiza 90 segundos depois do último check-in (ou ao sair desta tela, se ainda faltar)
+  const staffRef = useRef(staff)
+  staffRef.current = staff
+  const rankingPendente = useRef(false)
+  const rankingTimer = useRef<number | null>(null)
+  function atualizarRanking() {
+    const s = staffRef.current
+    if (!rankingPendente.current || !s) return
+    rankingPendente.current = false
+    construirRanking({ uid: s.uid, nome: s.nomeCompleto }).catch(() => {})
+  }
+  function agendarRanking() {
+    rankingPendente.current = true
+    if (rankingTimer.current) window.clearTimeout(rankingTimer.current)
+    rankingTimer.current = window.setTimeout(atualizarRanking, 90_000)
+  }
+  useEffect(
+    () => () => {
+      if (rankingTimer.current) window.clearTimeout(rankingTimer.current)
+      atualizarRanking()
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
   const [games, setGames] = useState<Game[]>([])
   const [gameId, setGameId] = useState('')
   const [parts, setParts] = useState<Participation[]>([])
@@ -127,6 +153,7 @@ export function AdminCheckin() {
     setEnviando(true)
     try {
       await fazerCheckIn(game, alvo.part, modo, { uid: staff.uid, nome: staff.nomeCompleto })
+      agendarRanking()
       const saldoNovo = modo === 'creditos' ? alvo.saldo - game.custoCreditos : alvo.saldo
       setAviso({
         tipo: 'ok',

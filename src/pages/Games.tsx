@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { cancelarMinhaInscricao, formatarCreditos, inscreverNoJogo, reais } from '../lib/credits'
 import { useWallet } from '../lib/useWallet'
 import { ExtratoCreditos } from '../components/ExtratoCreditos'
+import { AdicionarAoCalendario } from '../components/AdicionarAoCalendario'
 import type { Game, Participation } from '../types'
 
 function quando(g: Game) {
@@ -47,6 +48,8 @@ export function Games() {
   if (!player) return null
 
   const saldo = wallet?.creditos ?? 0
+  const d0 = new Date()
+  const hojeIso = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`
   const porJogo = new Map(minhas.map((p) => [p.gameId, p]))
   const abertos = games.filter((g) => g.status === 'aberto' || porJogo.has(g.id))
 
@@ -117,6 +120,7 @@ export function Games() {
                     {(g.espera ?? 0) > 0 && ` · ${g.espera} na lista de espera`}
                   </p>
                   {g.descricao && <p className="mt-2 whitespace-pre-line text-sm text-mute">{g.descricao}</p>}
+                  {g.data >= hojeIso && <AdicionarAoCalendario jogo={g} />}
                 </div>
 
                 <div className="text-right">

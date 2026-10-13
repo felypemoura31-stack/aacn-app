@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import { excluirJogador } from '../lib/conta'
 
 /** Só para o admin: exclui um jogador de vez (digitando o nome para confirmar). */
 export function ExcluirJogador({ uid, nome, aoExcluir }: { uid: string; nome: string; aoExcluir: () => void }) {
+  const { player: admin } = useAuth()
   const [aberto, setAberto] = useState(false)
   const [digitado, setDigitado] = useState('')
   const [manter, setManter] = useState(true)
@@ -15,7 +17,8 @@ export function ExcluirJogador({ uid, nome, aoExcluir }: { uid: string; nome: st
     setErro(null)
     setExcluindo(true)
     try {
-      await excluirJogador(uid, { manterFinanceiro: manter })
+      if (!admin) throw new Error('Entre de novo para continuar.')
+      await excluirJogador(uid, { manterFinanceiro: manter }, { uid: admin.uid, nome: admin.nomeCompleto })
       aoExcluir()
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não consegui excluir. Tente de novo.')

@@ -10,6 +10,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../firebase'
+import { auditar } from './auditoria'
 import { contar, creditosDoPagamento, descontarMensalidade, formatarCreditos, lancar, lerCarteira, reais, type Autor } from './credits'
 import { novoTxid } from './pix'
 import { atualizarPagamentoNoCartaoPublico } from './publicCard'
@@ -86,6 +87,12 @@ export async function confirmarPagamento(
     confirmadoPorNome: admin.nome,
     statusAntes: cartao.status,
     vencimentoAntes: cartao.vencimento ?? null,
+  })
+  auditar(batch, {
+    acao: 'pagamento_baixa',
+    resumo: `Deu baixa no Pix de ${reais(payment.valor)} de ${payment.jogadorNome} (pago em ${formatarData(dataPagamento)}; +${formatarCreditos(creditosGerados)} créditos)`,
+    autor: admin,
+    alvo: { uid: payment.uid, nome: payment.jogadorNome },
   })
   await batch.commit()
 
@@ -201,6 +208,12 @@ export async function estornarPagamento(payment: Payment, motivo: string, autor:
     estornadoPor: autor.uid,
     estornadoPorNome: autor.nome,
     estornoMotivo: texto,
+  })
+  auditar(batch, {
+    acao: 'pagamento_estorno',
+    resumo: `Estornou a baixa do Pix de ${reais(payment.valor)} de ${payment.jogadorNome} (retirou ${formatarCreditos(plano.creditosRetirados)} créditos). Motivo: ${texto}`,
+    autor,
+    alvo: { uid: payment.uid, nome: payment.jogadorNome },
   })
   await batch.commit()
 

@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import { registrarAuditoria } from '../../lib/auditoria'
 import { confirmarPagamento } from '../../lib/payments'
 import { HistoricoBaixas } from '../../components/HistoricoBaixas'
 import { formatarTelefone, telefoneValido } from '../../lib/cadastro'
@@ -20,10 +21,14 @@ export function AdminPayments() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const podeEditarPix = admin?.role === 'admin'
+  const cfgSalva = useRef<PixConfig | null>(null) // como está gravado no banco (para registrar o que mudou)
 
   useEffect(() => {
     return onSnapshot(doc(db, 'config', 'pix'), (snap) => {
-      if (snap.exists()) setCfg(snap.data() as PixConfig)
+      if (snap.exists()) {
+        cfgSalva.current = snap.data() as PixConfig
+        setCfg(snap.data() as PixConfig)
+      }
     })
   }, [])
 
@@ -43,6 +48,18 @@ export function AdminPayments() {
     // grava a chave já no formato que os bancos esperam (e-mail em minúsculas, CPF só com números…)
     const chave = normalizarChavePix(cfg.chave)
     await setDoc(doc(db, 'config', 'pix'), { ...cfg, chave, valor: Number(cfg.valor) })
+    const antes = cfgSalva.current
+    if (admin) {
+      const mudou: string[] = []
+      if ((antes?.chave ?? '') !== chave) mudou.push(`a chave de "${antes?.chave ?? ''}" para "${chave}"`)
+      if ((antes?.nome ?? '') !== cfg.nome) mudou.push(`o nome do recebedor para "${cfg.nome}"`)
+      if ((antes?.cidade ?? '') !== cfg.cidade) mudou.push(`a cidade para "${cfg.cidade}"`)
+      if (Number(antes?.valor ?? 0) !== Number(cfg.valor)) mudou.push(`o valor da mensalidade de ${reais(Number(antes?.valor ?? 0))} para ${reais(Number(cfg.valor))}`)
+      if ((antes?.whatsapp ?? '') !== (cfg.whatsapp ?? '')) mudou.push(`o WhatsApp do tesoureiro para "${cfg.whatsapp ?? ''}"`)
+      if (mudou.length > 0) {
+        await registrarAuditoria({ acao: 'chave_pix', resumo: `Mudou na configuração do Pix: ${mudou.join('; ')}`, autor: { uid: admin.uid, nome: admin.nomeCompleto } })
+      }
+    }
     setCfg((c) => ({ ...c, chave }))
     setCfgMsg('Configuração salva.')
   }
@@ -53,6 +70,14 @@ export function AdminPayments() {
     setErro(null)
     try {
       await deleteDoc(doc(db, 'payments', p.id))
+      if (admin) {
+        await registrarAuditoria({
+          acao: 'pagamento_cancelado',
+          resumo: `Cancelou a cobrança de ${reais(p.valor)} de ${p.jogadorNome} (Pix que não foi pago)`,
+          autor: { uid: admin.uid, nome: admin.nomeCompleto },
+          alvo: { uid: p.uid, nome: p.jogadorNome },
+        })
+      }
     } catch (e) {
       setErro((e as Error).message)
     } finally {

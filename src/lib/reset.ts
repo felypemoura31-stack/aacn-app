@@ -13,6 +13,8 @@ import {
   type DocumentReference,
 } from 'firebase/firestore'
 import { db } from '../firebase'
+import { registrarAuditoria } from './auditoria'
+import type { Autor } from './credits'
 import type { Participation, Player } from '../types'
 
 export interface OpcoesReset {
@@ -86,7 +88,7 @@ export async function apagarInscricoesDoJogador(uid: string) {
  * contador de jogos/mensalidades anda junto com os dados que ele conta.
  * Devolve uma linha por etapa, para mostrar ao admin o que foi feito.
  */
-export async function resetarJogador(uid: string, o: OpcoesReset): Promise<string[]> {
+export async function resetarJogador(uid: string, o: OpcoesReset, quem: { autor: Autor; nome: string }): Promise<string[]> {
   const feito: string[] = []
 
   if (o.extrato) {
@@ -136,6 +138,14 @@ export async function resetarJogador(uid: string, o: OpcoesReset): Promise<strin
     await setDoc(doc(db, 'stats', uid), { mensalidades: 0, atualizadoEm: serverTimestamp() }, { merge: true })
     feito.push(`Mensalidade: ${pagamentos.length} pagamento(s) apagado(s) e situação voltou para inadimplente.`)
   }
+
+  const partes = ROTULOS_RESET.filter((r) => o[r.id]).map((r) => r.titulo.toLowerCase())
+  await registrarAuditoria({
+    acao: 'jogador_resetado',
+    resumo: `Resetou os dados de ${quem.nome}: ${partes.join('; ')}`,
+    autor: quem.autor,
+    alvo: { uid, nome: quem.nome },
+  })
 
   return feito
 }

@@ -221,6 +221,21 @@ store.participations['g-1_u-jogador'] = {
   criadoEm: now - day,
 }
 
+// jogos já realizados (para o ranking de presença)
+const passado = (dias) => { const d = new Date(Date.now() - dias * 86400000); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
+const jogosPassados = [
+  ['g-p1', 'Jogo de setembro', passado(30), '08:00', ['u-jogador', 'u-pedro', 'u-marcos', 'u-ana']],
+  ['g-p2', 'Noturna de setembro', passado(20), '19:30', ['u-jogador', 'u-pedro']],
+  ['g-p3', 'Jogo de outubro', passado(6), '08:00', ['u-jogador', 'u-marcos', 'u-organizador']],
+]
+for (const [id, nome, data, horario, uids] of jogosPassados) {
+  store.games[id] = { nome, data, horario, vagas: null, inscritos: uids.length, espera: 0, valor: 10, custoCreditos: 10, status: 'encerrado', criadoEm: now - 40 * day }
+  for (const uid of uids) {
+    const nomeDoJogador = seedPlayers.find((p) => p.uid === uid)?.nomeCompleto ?? uid
+    store.participations[id + '_' + uid] = { gameId: id, gameNome: nome, uid, jogadorNome: nomeDoJogador, pagoCom: uid === 'u-marcos' ? 'dinheiro' : 'creditos', creditosDebitados: uid === 'u-marcos' ? 0 : 10, status: 'presente', criadoEm: now - 40 * day, presenteEm: now - 30 * day }
+  }
+}
+
 for (const p of seedPlayers) if (p.cpf) store.cpfs[p.cpf] = { uid: p.uid }
 store.stats['u-jogador'] = { jogos: 5, noturnos: 1, mensalidades: 1 }
 store.stats['u-pedro'] = { jogos: 1, noturnos: 0, mensalidades: 3 }
@@ -314,6 +329,8 @@ function runQuery(q) {
       return ((x ?? 0) - (y ?? 0)) * dir
     })
   }
+  const lim = q.cons.find((c) => c.t === 'limit')
+  if (lim) rows = rows.slice(0, lim.n)
   return { docs: rows.map(([id]) => docSnap(q.col, id)), empty: rows.length === 0, size: rows.length }
 }
 
@@ -324,6 +341,7 @@ export const collection = (_db, col) => ({ kind: 'col', col })
 export const doc = (_db, col, id) => ({ kind: 'doc', col, id })
 export const orderBy = (field, dir = 'asc') => ({ t: 'order', field, dir })
 export const where = (field, op, value) => ({ t: 'where', field, op, value })
+export const limit = (n) => ({ t: 'limit', n })
 export const query = (c, ...cons) => ({ kind: 'query', col: c.col, cons })
 
 export function onSnapshot(ref, cb) {
