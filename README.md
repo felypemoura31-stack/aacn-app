@@ -576,6 +576,17 @@ Para **todos os associados**:
 
 Em **Jogos**, cada jogo que ainda não passou tem **"Lembrete no calendário"** com dois atalhos: **Google Agenda** (abre o evento já preenchido) e **iPhone / Outlook (.ics)** (baixa o arquivo; no iPhone e no Android o sistema oferece adicionar ao calendário). O evento leva nome, data, horário, local, valor, o mapa e o **link de volta para o jogo no app**. O lembrete é do próprio calendário do celular, então **funciona com o app fechado**: o .ics já traz avisos **1 dia** e **2 horas** antes (jogo sem horário vira evento de dia inteiro, com aviso na manhã do dia anterior). Duração presumida: 4 horas. O horário é o de Brasília (UTC−3; o Brasil não tem horário de verão desde 2019).
 
+## Carteirinha em tela cheia (celular)
+
+No celular, **tocar na carteirinha** da tela principal abre a frente dela **ocupando a tela toda, deitada**, para o parceiro ler o QR code. No computador o clique não faz nada.
+
+- **Android (Chrome):** pede ao navegador a **tela cheia** e a **trava em paisagem** (a trava só vale em tela cheia). O gesto "voltar" e a tecla Esc saem da tela cheia e fecham a carteirinha.
+- **iPhone (Safari):** o navegador não oferece tela cheia para páginas nem trava de rotação, então a carteirinha cobre a tela do app e, **se o celular está em pé, é girada 90°** por CSS (basta virar o aparelho para ler); se o celular já está deitado, aparece normal. Ela acompanha a rotação do aparelho.
+- **Fundo branco e o maior tamanho possível** (a frente é reduzida ou ampliada para caber, com uma pequena margem), o que deixa o QR code com cerca de **2 vezes** o tamanho que tem na tela principal.
+- **Tela ligada:** enquanto a carteirinha está aberta, o app usa o "wake lock" para a tela não apagar (onde o aparelho suporta).
+- **Brilho:** **um site não consegue mudar o brilho do aparelho** (nenhum navegador permite isso). Por isso o app só **lembra** o usuário, no rodapé da tela cheia ("Aumente o brilho do celular para o leitor ler o QR code melhor"). Mexer no brilho de verdade só seria possível com um aplicativo nativo (por exemplo, empacotando o app com Capacitor).
+- Botão **Fechar** no canto da tela (fora da parte girada). O código está em `src/components/CarteirinhaTelaCheia.tsx` e `src/lib/telaCheia.ts`.
+
 ## Testes das regras do Firestore
 
 As regras foram verificadas contra o Firebase com a API de testes de regras (545 casos: o que
