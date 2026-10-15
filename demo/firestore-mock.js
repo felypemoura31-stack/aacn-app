@@ -416,6 +416,11 @@ export const initializeFirestore = () => ({})
 export const persistentLocalCache = () => ({})
 export const persistentMultipleTabManager = () => ({})
 
+export async function getCountFromServer(ref) {
+  const r = runQuery(ref.kind === 'col' ? { col: ref.col, cons: [] } : ref)
+  return { data: () => ({ count: r.size }) }
+}
+
 export async function getDocs(ref) {
   return runQuery(ref.kind === 'col' ? { col: ref.col, cons: [] } : ref)
 }

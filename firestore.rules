@@ -559,6 +559,8 @@ service cloud.firestore {
         pid == request.resource.data.gameId + '_' + request.auth.uid &&
         request.resource.data.pagoCom == 'pendente' &&
         request.resource.data.creditosDebitados == 0 &&
+        // a foto 3x4 é obrigatória para ter a carteirinha e jogar: sem foto, nada de inscrição (nem pelo lado do servidor)
+        get(/databases/$(database)/documents/players/$(request.auth.uid)).data.get('fotoUrl', null) != null &&
         get(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.status == 'aberto' &&
         (
           (request.resource.data.status == 'ativa' &&
@@ -792,6 +794,23 @@ service cloud.firestore {
         request.resource.data.jogos is list &&
         request.resource.data.jogadores is map;
       allow delete: if false;
+    }
+
+    // Quem já leu cada aviso: um documento por aviso e leitor ("<avisoId>_<uid>"), gravado pelo próprio leitor quando toca em
+    // "Lido", com o nome do cadastro e a hora do servidor. A diretoria (admin, tesoureiro e organizador) lê, para saber quem
+    // recebeu a informação. O leitor pode regravar o próprio registro (atualiza a hora); ninguém grava em nome de outro.
+    // Quem apaga um aviso apaga também as leituras dele.
+    match /avisoLeituras/{lid} {
+      allow read: if podeGerirJogos();
+      allow create, update: if isSignedIn() &&
+        request.resource.data.keys().hasOnly(['avisoId', 'uid', 'nome', 'lidoEm']) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.avisoId is string &&
+        lid == request.resource.data.avisoId + '_' + request.auth.uid &&
+        exists(/databases/$(database)/documents/avisos/$(request.resource.data.avisoId)) &&
+        request.resource.data.nome == get(/databases/$(database)/documents/players/$(request.auth.uid)).data.nomeCompleto &&
+        request.resource.data.get('lidoEm', null) == request.time;
+      allow delete: if isFinanceiro() || isOrganizador();
     }
 
     // Parceiros com desconto: todos os logados veem; só o admin cadastra.

@@ -1,13 +1,14 @@
 import { useRef, useState } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase'
-import { reduzirLogo } from '../lib/foto'
+import { CropLogo } from './CropLogo'
 import type { Team } from '../types'
 
 /** Mostra e troca a logo de um time. Usado pelo admin e pelo representante do time. */
 export function TeamLogoEditor({ team }: { team: Team }) {
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [arquivo, setArquivo] = useState<File | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function salvar(logoUrl: string | null) {
@@ -23,9 +24,19 @@ export function TeamLogoEditor({ team }: { team: Team }) {
       if (inputRef.current) inputRef.current.value = ''
       return
     }
+    setArquivo(file) // abre o recorte; a logo só é salva quando a pessoa confirma
+  }
+
+  function cancelarRecorte() {
+    setArquivo(null)
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  async function confirmarRecorte(dataUrl: string) {
+    setArquivo(null)
     setEnviando(true)
     try {
-      await salvar(await reduzirLogo(file))
+      await salvar(dataUrl)
     } catch (err) {
       setErro((err as Error).message || 'Não foi possível salvar a logo. Tente novamente.')
     } finally {
@@ -71,8 +82,9 @@ export function TeamLogoEditor({ team }: { team: Team }) {
         )}
         {enviando && <p className="mt-1 text-xs text-mute">Salvando...</p>}
         {erro && <p className="mt-1 text-xs text-danger">{erro}</p>}
-        <p className="mt-1 text-xs text-mute/70">Aparece na carteirinha dos jogadores do time. PNG com fundo transparente fica melhor.</p>
+        <p className="mt-1 text-xs text-mute/70">Aparece na carteirinha dos jogadores do time. Depois de escolher o arquivo você enquadra e recorta a logo. PNG com fundo transparente fica melhor.</p>
       </div>
+      {arquivo && <CropLogo file={arquivo} titulo={`Enquadre a logo de ${team.nome}`} onCancel={cancelarRecorte} onConfirm={confirmarRecorte} />}
     </div>
   )
 }

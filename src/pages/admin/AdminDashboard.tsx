@@ -164,7 +164,10 @@ export function AdminDashboard() {
         {filtrados.map((p) => (
           <Link key={p.uid} to={`/admin/jogadores/${p.uid}`} className="panel block p-3">
             <div className="flex items-start justify-between gap-2">
-              <p className="min-w-0 font-semibold text-ink">{p.nomeCompleto || '(sem nome)'}</p>
+              <p className="min-w-0 font-semibold text-ink">
+                {p.nomeCompleto || '(sem nome)'}
+                {!p.fotoUrl && <span className="ml-2 rounded-full border border-danger/40 bg-danger/15 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-danger">sem foto</span>}
+              </p>
               <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[statusEfetivo(p)]}`}>
                 {STATUS_LABELS[statusEfetivo(p)]}
               </span>
@@ -203,6 +206,7 @@ export function AdminDashboard() {
                   >
                     {p.nomeCompleto || '(sem nome)'}
                   </Link>
+                  {!p.fotoUrl && <span className="ml-2 rounded-full border border-danger/40 bg-danger/15 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-danger">sem foto</span>}
                 </td>
                 <td className="px-4 py-2 text-mute">{p.email}</td>
                 <td className="px-4 py-2 text-mute">{textoDoTime(p) || '—'}</td>

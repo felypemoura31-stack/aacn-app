@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { addDoc, collection, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase'
-import { reduzirLogo } from '../lib/foto'
+import { CropLogo } from './CropLogo'
 import { CATEGORIAS_PARCEIRO } from '../lib/parceiros'
 import { urlHttp } from '../lib/redes'
 import { formatarTelefone, telefoneValido } from '../lib/cadastro'
@@ -35,17 +35,23 @@ export function PartnerEditor({ parceiro, onClose, modo = 'admin' }: Props) {
   const [logoUrl, setLogoUrl] = useState<string | null>(parceiro?.logoUrl ?? null)
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
+  const [arquivoLogo, setArquivoLogo] = useState<File | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  async function escolherLogo(e: React.ChangeEvent<HTMLInputElement>) {
+  function escolherLogo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setErro(null)
-    try {
-      setLogoUrl(await reduzirLogo(file))
-    } catch (err) {
-      setErro((err as Error).message)
+    if (!file.type.startsWith('image/')) {
+      setErro('Selecione um arquivo de imagem.')
+      if (inputRef.current) inputRef.current.value = ''
+      return
     }
+    setArquivoLogo(file) // abre o recorte
+  }
+
+  function fecharRecorte() {
+    setArquivoLogo(null)
     if (inputRef.current) inputRef.current.value = ''
   }
 
@@ -106,6 +112,7 @@ export function PartnerEditor({ parceiro, onClose, modo = 'admin' }: Props) {
                 Remover logo
               </button>
             )}
+            <p className="mt-1 text-[11px] text-mute/70">Depois de escolher o arquivo você enquadra e recorta a imagem.</p>
           </div>
         </div>
 
@@ -160,6 +167,18 @@ export function PartnerEditor({ parceiro, onClose, modo = 'admin' }: Props) {
           </button>
         </div>
       </form>
+
+      {arquivoLogo && (
+        <CropLogo
+          file={arquivoLogo}
+          titulo="Enquadre a foto ou a logo da loja"
+          onCancel={fecharRecorte}
+          onConfirm={(dataUrl) => {
+            setLogoUrl(dataUrl)
+            fecharRecorte()
+          }}
+        />
+      )}
     </div>
   )
 }

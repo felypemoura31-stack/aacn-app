@@ -1,17 +1,22 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   addDoc,
   collection,
-  deleteDoc,
   doc,
+  getCountFromServer,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  where,
+  writeBatch,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
+import { LeitoresDoAviso, type Membro } from '../../components/LeitoresDoAviso'
+import { ehFinanceiro } from '../../lib/roles'
 import { formatarData, paraMillis } from '../../lib/status'
 import type { Aviso } from '../../types'
 
@@ -22,11 +27,64 @@ export function AdminAvisos() {
   const [texto, setTexto] = useState('')
   const [fixado, setFixado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [totalMembros, setTotalMembros] = useState<number | null>(null)
+  const [membros, setMembros] = useState<Membro[] | null>(null)
+  const carregando = useRef(false)
 
   useEffect(() => {
     const q = query(collection(db, 'avisos'), orderBy('criadoEm', 'desc'))
     return onSnapshot(q, (snap) => setAvisos(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Aviso)))
   }, [])
+
+  // quantos associados existem (contagem barata do servidor) para o "lido por N de M"
+  useEffect(() => {
+    getCountFromServer(collection(db, 'publicCards'))
+      .then((s) => setTotalMembros(s.data().count))
+      .catch(() => {})
+  }, [])
+
+  /** A lista de associados só é baixada quando a diretoria abre "Ver quem leu" pela primeira vez. */
+  async function carregarMembros() {
+    if (carregando.current || membros) return
+    carregando.current = true
+    try {
+      const cartoes = await getDocs(collection(db, 'publicCards'))
+      // a data da conta só a tesouraria enxerga; sem ela, todos contam como "ainda não leu"
+      const entrou = new Map<string, number>()
+      if (ehFinanceiro(staff)) {
+        try {
+          for (const c of (await getDocs(collection(db, 'contatos'))).docs) {
+            const ms = paraMillis((c.data() as { criadoEm?: unknown }).criadoEm)
+            if (ms != null) entrou.set(c.id, ms)
+          }
+        } catch {
+          /* sem acesso: segue sem a data */
+        }
+      }
+      setMembros(cartoes.docs.map((d) => ({ uid: d.id, nome: (d.data() as { nomeCompleto: string }).nomeCompleto, entrouEm: entrou.get(d.id) ?? null })))
+    } finally {
+      carregando.current = false
+    }
+  }
+
+  /** Apagar o aviso apaga também o registro de quem leu. */
+  async function apagar(a: Aviso) {
+    if (!window.confirm(`Apagar o aviso "${a.titulo}"? O registro de quem leu também é apagado.`)) return
+    setErro(null)
+    try {
+      const leituras = await getDocs(query(collection(db, 'avisoLeituras'), where('avisoId', '==', a.id)))
+      for (let i = 0; i < leituras.docs.length; i += 400) {
+        const lote = writeBatch(db)
+        leituras.docs.slice(i, i + 400).forEach((d) => lote.delete(d.ref))
+        await lote.commit()
+      }
+      const lote = writeBatch(db)
+      lote.delete(doc(db, 'avisos', a.id))
+      await lote.commit()
+    } catch {
+      setErro('Não foi possível apagar o aviso.')
+    }
+  }
 
   async function publicar(e: FormEvent) {
     e.preventDefault()
@@ -93,12 +151,13 @@ export function AdminAvisos() {
                 <button onClick={() => updateDoc(doc(db, 'avisos', a.id), { fixado: !a.fixado })} className="btn-ghost">
                   {a.fixado ? 'Desafixar' : 'Fixar'}
                 </button>
-                <button onClick={() => deleteDoc(doc(db, 'avisos', a.id))} className="btn-ghost text-danger">
+                <button onClick={() => apagar(a)} className="btn-ghost text-danger">
                   Apagar
                 </button>
               </div>
             </div>
             <p className="mt-2 whitespace-pre-line text-sm text-mute">{a.texto}</p>
+            <LeitoresDoAviso aviso={a} totalMembros={totalMembros} membros={membros} aoAbrir={carregarMembros} />
           </div>
         ))}
       </div>

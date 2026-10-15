@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore'
+import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from './AuthContext'
 import { paraMillis } from '../lib/status'
@@ -56,12 +56,29 @@ export function AvisosProvider({ children }: { children: ReactNode }) {
     return { naoLidos: nao, lidos: avisos.filter(jaLido) }
   }, [avisos, lidosIds, criadaEm])
 
+  /**
+   * Marca avisos como lidos: atualiza a lista do próprio jogador (leituras/{uid}) e deixa o registro de quem leu
+   * (avisoLeituras/{aviso}_{uid}) para a diretoria acompanhar. Em blocos de 10, para respeitar o limite de consultas
+   * das regras do banco; cada bloco já leva a lista completa até ali.
+   */
   async function gravar(ids: string[]) {
-    if (!uid || !avisos) return
+    if (!uid || !avisos || !player) return
     // só guarda ids de avisos que ainda existem (a lista não cresce para sempre)
     const existentes = new Set(avisos.map((a) => a.id))
     const lista = [...new Set(ids)].filter((id) => existentes.has(id)).slice(-LIMITE_LEITURAS)
-    await setDoc(doc(db, 'leituras', uid), { avisos: lista, atualizadoEm: serverTimestamp() })
+    const jaLidos = new Set(lidosIds ?? [])
+    const novos = lista.filter((id) => !jaLidos.has(id))
+    let acumulado = lista.filter((id) => jaLidos.has(id))
+    for (let i = 0; i === 0 || i < novos.length; i += 10) {
+      const bloco = novos.slice(i, i + 10)
+      acumulado = [...acumulado, ...bloco]
+      const lote = writeBatch(db)
+      lote.set(doc(db, 'leituras', uid), { avisos: acumulado, atualizadoEm: serverTimestamp() })
+      for (const id of bloco) {
+        lote.set(doc(db, 'avisoLeituras', `${id}_${uid}`), { avisoId: id, uid, nome: player.nomeCompleto, lidoEm: serverTimestamp() })
+      }
+      await lote.commit()
+    }
   }
 
   const value: AvisosValue = {

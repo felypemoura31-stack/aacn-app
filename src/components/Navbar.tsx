@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { usePedidos } from '../contexts/PedidosContext'
 import { rotulosDosCargos, temCargo } from '../lib/roles'
@@ -119,8 +119,11 @@ export function Navbar() {
             <span className="hidden md:inline">Gestão</span>
             {qtdPedidos > 0 && <span className="h-2 w-2 rounded-full bg-gold md:hidden" aria-label="Há pedidos de entrada no seu time" />}
           </button>
-          <img src="/logo.png" alt="AACN" className="h-8 w-8 shrink-0 rounded-full ring-1 ring-accent-hi/60" />
-          <span className="text-sm font-bold uppercase tracking-widest text-ink md:hidden">AACN</span>
+          {/* a logo (e o nome, no celular) levam para a Minha carteirinha */}
+          <Link to="/" aria-label="Ir para Minha carteirinha" className="flex shrink-0 items-center gap-2 rounded-sm">
+            <img src="/logo.png" alt="AACN" className="h-8 w-8 shrink-0 rounded-full ring-1 ring-accent-hi/60" />
+            <span className="text-sm font-bold uppercase tracking-widest text-ink md:hidden">AACN</span>
+          </Link>
 
           {/* computador: os links ficam na barra; se faltar espaço, a faixa rola de lado */}
           <div className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden">

@@ -28,6 +28,11 @@ export function CartaoVerificado({ card }: { card: CartaoPublico }) {
         {emDia ? 'Associado em dia: tem direito aos descontos de parceiros.' : 'Associado não está em dia com a associação.'}
       </p>
       <p className="mt-1 text-xs text-mute/70">Vencimento: {formatarData(card.vencimento)}</p>
+      {!card.fotoUrl && (
+        <p className="mt-4 rounded-sm border border-danger/40 bg-danger/10 px-3 py-2 text-xs font-semibold text-danger">
+          Esta carteirinha está sem foto. Sem foto 3x4 o cadastro está incompleto e a carteirinha não vale: confira o documento com foto da pessoa.
+        </p>
+      )}
     </>
   )
 }

@@ -105,8 +105,13 @@ export function AdminCarteirinhas() {
             timeLogoUrl={time?.logoUrl ?? null}
             destaques={escolhido.destaques}
           />
+          {!escolhido.fotoUrl && (
+            <p className="no-print mx-auto mt-4 max-w-md rounded-sm border border-danger/40 bg-danger/10 px-3 py-2 text-center text-sm text-danger">
+              {escolhido.nomeCompleto.split(' ')[0]} ainda não enviou a foto 3x4. A carteirinha só pode ser impressa com foto: peça para a pessoa enviar em Meus dados.
+            </p>
+          )}
           <div className="no-print mt-6 flex flex-wrap justify-center gap-2">
-            <button onClick={() => window.print()} className="btn-primary">
+            <button onClick={() => window.print()} disabled={!escolhido.fotoUrl} className="btn-primary">
               Imprimir carteirinha de {escolhido.nomeCompleto.split(' ')[0]}
             </button>
             <button onClick={() => navigate('/admin/carteirinhas')} className="btn-ghost">
@@ -155,7 +160,8 @@ export function AdminCarteirinhas() {
                   timeLogoUrl={t?.logoUrl ?? null}
                   destaques={c.destaques}
                 />
-                <div className="mt-1.5 flex justify-end">
+                <div className="mt-1.5 flex items-center justify-end gap-1.5">
+                  {!c.fotoUrl && <span className="rounded-full border border-danger/40 bg-danger/15 px-2 py-0.5 text-[10px] font-semibold text-danger">Sem foto</span>}
                   <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[st]}`}>{STATUS_LABELS[st]}</span>
                 </div>
               </div>

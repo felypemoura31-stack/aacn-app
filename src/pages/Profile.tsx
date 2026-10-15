@@ -195,8 +195,13 @@ export function Profile() {
         </div>
       )}
 
-      <div className="panel mb-4 p-4">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Foto 3x4 (obrigatória)</h2>
+      <div className={`panel mb-4 p-4 ${player.fotoUrl ? '' : 'border-danger/60'}`}>
+        <h2 className="mb-1 text-sm font-semibold text-ink">Foto 3x4 (obrigatória)</h2>
+        {!player.fotoUrl && (
+          <p className="mb-3 text-xs font-semibold text-danger">
+            Sem a foto não existe carteirinha: você não consegue abrir a carteirinha nem se inscrever em jogos. Escolha uma foto do rosto, de frente, e enquadre.
+          </p>
+        )}
         <PhotoUploader currentUrl={player.fotoUrl} onChange={handleFoto} />
       </div>
 

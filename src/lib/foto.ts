@@ -82,37 +82,66 @@ export function exportarFoto(img: ImagemCarregada, centro: Centro, zoom: number)
   throw new Error('Não foi possível reduzir a foto o bastante. Tente outra imagem.')
 }
 
-const LOGO_MAX_LADO = 192
+/** Logos de time e fotos de lojas: recorte quadrado, até este lado (em pixels) e este tamanho (em caracteres do base64). */
+export const LOGO_LADO = 192
 export const LOGO_MAX_CARACTERES = 60000
 
-/** Reduz a logo do time (mantém proporção e transparência) para caber no banco. */
-export async function reduzirLogo(file: File): Promise<string> {
-  const img = await abrirImagem(file)
-  try {
-    for (const lado of [LOGO_MAX_LADO, 160, 128, 96]) {
-      const escala = Math.min(1, lado / Math.max(img.largura, img.altura))
-      const w = Math.max(1, Math.round(img.largura * escala))
-      const h = Math.max(1, Math.round(img.altura * escala))
-      const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img.fonte, 0, 0, w, h)
-      const png = canvas.toDataURL('image/png')
-      if (png.length <= LOGO_MAX_CARACTERES) return png
-      // logo "de foto" (muitos detalhes): JPEG sobre fundo branco costuma caber
-      const fundo = document.createElement('canvas')
-      fundo.width = w
-      fundo.height = h
-      const c2 = fundo.getContext('2d')!
-      c2.fillStyle = '#ffffff'
-      c2.fillRect(0, 0, w, h)
-      c2.drawImage(canvas, 0, 0)
-      const jpg = fundo.toDataURL('image/jpeg', 0.8)
-      if (jpg.length <= LOGO_MAX_CARACTERES) return jpg
-    }
-    throw new Error('Não foi possível reduzir a logo o bastante. Tente uma imagem mais simples.')
-  } finally {
-    img.fechar()
+/** Lado (em pixels da imagem original) da janela quadrada recortada. Com zoom 1 cabe a imagem inteira. */
+function ladoDaJanela(img: ImagemCarregada, zoom: number) {
+  return Math.max(img.largura, img.altura) / zoom
+}
+
+/** Mantém a janela quadrada dentro da imagem; num eixo em que a imagem é menor que a janela, fica centralizada. */
+export function limitarCentroQuadrado(img: ImagemCarregada, c: Centro, zoom: number): Centro {
+  const lado = ladoDaJanela(img, zoom)
+  const limitar = (v: number, dim: number) => (lado >= dim ? dim / 2 : Math.min(Math.max(v, lado / 2), dim - lado / 2))
+  return { x: limitar(c.x, img.largura), y: limitar(c.y, img.altura) }
+}
+
+/** Quantos pixels da imagem original equivalem a 1 pixel de tela, para o arrasto. */
+export function pixelsPorToqueQuadrado(img: ImagemCarregada, zoom: number, ladoTela: number) {
+  return ladoDaJanela(img, zoom) / ladoTela
+}
+
+/** Desenha o recorte quadrado (as sobras ficam transparentes, ou com o `fundo` dado). */
+export function desenharRecorteQuadrado(canvas: HTMLCanvasElement, img: ImagemCarregada, centro: Centro, zoom: number, fundo: string | null) {
+  const lado = ladoDaJanela(img, zoom)
+  const c = limitarCentroQuadrado(img, centro, zoom)
+  const ctx = canvas.getContext('2d')!
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  if (fundo) {
+    ctx.fillStyle = fundo
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
+  const x0 = c.x - lado / 2
+  const y0 = c.y - lado / 2
+  // só a parte da janela que tem imagem
+  const sx = Math.max(0, x0)
+  const sy = Math.max(0, y0)
+  const ex = Math.min(img.largura, x0 + lado)
+  const ey = Math.min(img.altura, y0 + lado)
+  const esc = canvas.width / lado
+  ctx.drawImage(img.fonte, sx, sy, ex - sx, ey - sy, (sx - x0) * esc, (sy - y0) * esc, (ex - sx) * esc, (ey - sy) * esc)
+}
+
+/**
+ * Gera a imagem final do recorte: PNG (mantém a transparência) e, se não couber no limite do banco, vai diminuindo o
+ * lado e tenta JPEG sobre fundo branco.
+ */
+export function exportarLogo(img: ImagemCarregada, centro: Centro, zoom: number): string {
+  for (const lado of [LOGO_LADO, 160, 128, 96]) {
+    const canvas = document.createElement('canvas')
+    canvas.width = lado
+    canvas.height = lado
+    desenharRecorteQuadrado(canvas, img, centro, zoom, null)
+    const png = canvas.toDataURL('image/png')
+    if (png.length <= LOGO_MAX_CARACTERES) return png
+    const branco = document.createElement('canvas')
+    branco.width = lado
+    branco.height = lado
+    desenharRecorteQuadrado(branco, img, centro, zoom, '#ffffff')
+    const jpg = branco.toDataURL('image/jpeg', 0.8)
+    if (jpg.length <= LOGO_MAX_CARACTERES) return jpg
+  }
+  throw new Error('Não foi possível reduzir a imagem o bastante. Tente uma imagem mais simples.')
 }

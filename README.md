@@ -245,7 +245,7 @@ O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
 Para usar a carteirinha, os jogos e a área do time, o jogador precisa preencher: nome completo,
 **CPF**, foto 3x4, endereço (rua e número), **bairro**, **CEP**, data de nascimento, **celular** (com DDD), nome e telefone do contato de
 emergência. Enquanto faltar algo, o app leva para **Meus dados** e lista o que falta. Condições
-médicas continuam opcionais. A regra é aplicada na tela (não nas regras do banco).
+médicas continuam opcionais. A regra é aplicada na tela e, para a **foto**, também nas regras do banco no que importa: **sem foto 3x4 não existe carteirinha** (a tela principal e os jogos levam para Meus dados, que mostra um aviso vermelho no bloco da foto) e **o banco recusa a inscrição em jogo (e a lista de espera)** de quem não tem foto. Para a diretoria: a lista de jogadores e a grade de Carteirinhas marcam **"sem foto"**, o botão de **imprimir** a carteirinha fica desativado até a pessoa enviar a foto, e a **verificação pelo QR** (e o validador de parceiros) avisa em vermelho que a carteirinha está sem foto e que é preciso conferir o documento.
 
 **CPF:** é pedido já na tela **Criar conta** e também em **Meus dados** (e o admin edita na ficha do jogador). O app
 confere os dois dígitos verificadores (não aceita CPF inventado nem números repetidos) e guarda só os 11 dígitos;
@@ -471,9 +471,15 @@ A aba **Solicitações do time** só aparece para quem é representante de algum
 - No perfil do jogador, se o time tem WhatsApp cadastrado, aparece **Avisar o time pelo WhatsApp**
   enquanto o pedido de entrada está pendente (não depende do e-mail automático, que exige o Blaze).
 
+## Atalho da logo
+
+Na barra de cima, a **logo da AACN** (e o nome "AACN", no celular) leva para **Minha carteirinha**, a tela principal, de qualquer página.
+
 ## Avisos com botão "Lido"
 
 Os avisos que o jogador ainda **não leu** aparecem **logo abaixo do menu, acima de qualquer tela** (não só na carteirinha), com o botão **Lido** (e "Marcar todos como lidos" quando passam de 3). O que ele já leu vai para **Avisos anteriores**, recolhido na tela da carteirinha. A leitura fica guardada por jogador (`leituras/{uid}`), então vale em todos os aparelhos. Um aviso que já existia antes de a conta ser criada conta como lido, exceto os fixados.
+
+**Quem leu cada aviso (controle da diretoria):** ao tocar em **Lido**, o app também grava um registro em `avisoLeituras/<aviso>_<uid>` com o **nome do jogador e a hora do servidor**. Em **Gestão → Avisos** (admin, tesoureiro e organizador), cada aviso mostra **"Lido por N de M associados"** (contagem barata, feita pelo servidor) e o link **Ver quem leu**, que abre duas listas: **Leram** (nome, dia e hora) e **Ainda não leram**, com o botão **Copiar nomes** para cobrar pelo WhatsApp. Quem entrou **depois** de um aviso comum não o recebe (só os fixados aparecem para quem entra depois), então sai de "ainda não leram" e vira uma observação ("N pessoas entraram depois deste aviso") quando a tela sabe a data da conta (admin e tesoureiro; a organização não lê esse dado). Os avisos que já tinham sido lidos antes de o registro existir foram preenchidos a partir da lista de cada jogador e aparecem como "antes do registro" (sem hora). As regras do banco só deixam o jogador gravar a leitura **dele mesmo**, com o nome do cadastro e a hora do servidor, e só de um aviso que existe; só a diretoria lê; **apagar um aviso apaga o registro de leituras dele**.
 
 ## Mural de avisos e lembrete de mensalidade
 
@@ -502,7 +508,7 @@ Os avisos que o jogador ainda **não leu** aparecem **logo abaixo do menu, acima
   outro time; nesse caso ele continua no outro time, mas aparece no perfil do time que lidera com a etiqueta
   "Representante" e conta na lista de membros.
 - **Quem edita:** o admin edita tudo (inclusive o nome do time); o representante edita só o perfil do
-  próprio time. A logo é reduzida (até 192 px, ~10–40 KB) e guardada no Firestore.
+  próprio time. A logo é **recortada** (quadrado) e reduzida (até 192 px, ~10–40 KB) e guardada no Firestore. Ao escolher o arquivo abre a janela de **recorte**: com o zoom no mínimo aparece a imagem inteira (as sobras ficam transparentes) e, aumentando o zoom e arrastando, recorta só a parte que interessa. O PNG com fundo transparente continua transparente. O mesmo recorte vale para a **logo/foto da loja parceira** (admin e lojista).
 - **Links seguros:** só são aceitos endereços http/https (ou @usuário/número); `javascript:`, `data:`
   e similares são recusados.
 - **Membros** são os jogadores com o time aprovado pelo representante. A lista vem do cartão público
@@ -589,7 +595,7 @@ No celular, **tocar na carteirinha** da tela principal abre a frente dela **ocup
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (545 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (565 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

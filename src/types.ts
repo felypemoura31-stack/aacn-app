@@ -290,3 +290,11 @@ export interface RegistroDeAcao {
   alvoNome: string | null
   criadoEm: unknown
 }
+
+/** Registro de que um jogador marcou um aviso como lido (avisoLeituras/<avisoId>_<uid>). Sem data = lido antes do registro existir. */
+export interface AvisoLeitura {
+  avisoId: string
+  uid: string
+  nome: string
+  lidoEm: unknown
+}
