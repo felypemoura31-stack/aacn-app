@@ -31,6 +31,8 @@ interface RegisterInput {
   email: string
   senha: string
   aceitaTermos: boolean
+  /** Foto 3x4 já enquadrada (JPEG em base64): obrigatória para criar o cadastro. */
+  fotoUrl: string
 }
 
 interface AuthContextValue {
@@ -43,7 +45,7 @@ interface AuthContextValue {
   logout: () => Promise<void>
   /** Entrou com e-mail/senha, mas o cadastro foi excluído (pelo admin). */
   cadastroExcluido: boolean
-  recriarCadastro: () => Promise<void>
+  recriarCadastro: (fotoUrl: string) => Promise<void>
   /** Exclui a própria conta (pede a senha de novo). */
   excluirConta: (senha: string) => Promise<void>
 }
@@ -102,9 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
   }, [player])
 
-  async function register({ nomeCompleto, cpf, email, senha, aceitaTermos }: RegisterInput) {
+  async function register({ nomeCompleto, cpf, email, senha, aceitaTermos, fotoUrl }: RegisterInput) {
     if (!aceitaTermos) throw new Error('É preciso aceitar o termo de responsabilidade.')
     if (!cpfValido(cpf)) throw new Error('Informe um CPF válido.')
+    if (!fotoUrl) throw new Error('Envie a sua foto 3x4 para criar a conta.')
     setOcupado(true)
     try {
       let cred
@@ -128,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       await updateProfile(cred.user, { displayName: nomeCompleto })
       try {
-        await criarCadastro(cred.user.uid, email, nomeCompleto, soDigitos(cpf))
+        await criarCadastro(cred.user.uid, email, nomeCompleto, fotoUrl, soDigitos(cpf))
       } catch (e) {
         // sem cadastro não fica conta de acesso solta: desfaz a criação (e o CPF repetido pode tentar de novo).
         // Uma conta que já existia antes não é apagada; a pessoa só sai.
@@ -142,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   /** Cria o cadastro inicial (jogador, inadimplente) e o cartão público; a carteira só se ainda não existir. */
-  async function criarCadastro(uid: string, email: string, nomeCompleto: string, cpf = '') {
+  async function criarCadastro(uid: string, email: string, nomeCompleto: string, fotoUrl: string, cpf = '') {
     const now = Date.now()
     const newPlayer: Player = {
       uid,
@@ -157,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       contatoEmergenciaTelefone: '',
       celular: '',
       condicoesMedicas: '',
-      fotoUrl: null,
+      fotoUrl,
       timeId: null,
       timeNome: null,
       timeAprovado: false,
@@ -205,11 +208,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth)
   }
 
-  async function recriarCadastro() {
+  async function recriarCadastro(fotoUrl: string) {
     if (!currentUser?.email) return
+    if (!fotoUrl) throw new Error('Envie a sua foto 3x4 para criar o cadastro.')
     setOcupado(true)
     try {
-      await criarCadastro(currentUser.uid, currentUser.email, currentUser.displayName || currentUser.email)
+      await criarCadastro(currentUser.uid, currentUser.email, currentUser.displayName || currentUser.email, fotoUrl)
     } finally {
       setOcupado(false)
     }

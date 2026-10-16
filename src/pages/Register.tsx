@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { PasswordInput } from '../components/PasswordInput'
+import { PhotoUploader } from '../components/PhotoUploader'
 import { cpfValido, formatarCpf } from '../lib/cadastro'
 
 export function Register() {
@@ -16,6 +17,7 @@ export function Register() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [aceita, setAceita] = useState(false)
+  const [foto, setFoto] = useState<string | null>(null)
   const [emailEmUso, setEmailEmUso] = useState(false)
   const [redefinicao, setRedefinicao] = useState<'enviando' | 'enviada' | 'erro' | null>(null)
 
@@ -25,6 +27,10 @@ export function Register() {
     setEmailEmUso(false)
     setRedefinicao(null)
 
+    if (!foto) {
+      setError('Envie a sua foto 3x4: sem a foto não dá para criar a conta nem a carteirinha.')
+      return
+    }
     if (!cpfValido(cpf)) {
       setError('Informe um CPF válido.')
       return
@@ -45,7 +51,7 @@ export function Register() {
 
     setLoading(true)
     try {
-      await register({ nomeCompleto, cpf, email, senha, aceitaTermos: aceita })
+      await register({ nomeCompleto, cpf, email, senha, aceitaTermos: aceita, fotoUrl: foto })
       navigate('/perfil', { state })
     } catch (err) {
       const code = (err as { code?: string }).code
@@ -88,6 +94,12 @@ export function Register() {
         <p className="mb-6 text-center text-sm text-mute">
           Depois de criar a conta, complete seus dados de associado.
         </p>
+
+        <div className={`mb-4 rounded-sm border p-3 ${foto ? 'border-line' : 'border-warn/50'}`}>
+          <p className="mb-2 text-sm font-medium text-ink">Foto 3x4 (obrigatória)</p>
+          <PhotoUploader currentUrl={foto} onChange={async (d) => setFoto(d)} mensagemOk="Foto escolhida." />
+          <p className="mt-2 text-[11px] text-mute/80">É a foto que vai na sua carteirinha: rosto de frente, sem óculos escuros nem boné.</p>
+        </div>
 
         <label className="mb-1 block text-sm font-medium text-ink">
           Nome completo

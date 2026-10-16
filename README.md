@@ -245,7 +245,7 @@ O admin delega o cargo em **Gestão → Cargos** (ver seção 6).
 Para usar a carteirinha, os jogos e a área do time, o jogador precisa preencher: nome completo,
 **CPF**, foto 3x4, endereço (rua e número), **bairro**, **CEP**, data de nascimento, **celular** (com DDD), nome e telefone do contato de
 emergência. Enquanto faltar algo, o app leva para **Meus dados** e lista o que falta. Condições
-médicas continuam opcionais. A regra é aplicada na tela e, para a **foto**, também nas regras do banco no que importa: **sem foto 3x4 não existe carteirinha** (a tela principal e os jogos levam para Meus dados, que mostra um aviso vermelho no bloco da foto) e **o banco recusa a inscrição em jogo (e a lista de espera)** de quem não tem foto. Para a diretoria: a lista de jogadores e a grade de Carteirinhas marcam **"sem foto"**, o botão de **imprimir** a carteirinha fica desativado até a pessoa enviar a foto, e a **verificação pelo QR** (e o validador de parceiros) avisa em vermelho que a carteirinha está sem foto e que é preciso conferir o documento.
+médicas continuam opcionais. A regra é aplicada na tela e, para a **foto**, também nas regras do banco no que importa: **sem foto 3x4 não existe carteirinha** (a tela principal e os jogos levam para Meus dados, que mostra um aviso vermelho no bloco da foto) e **o banco recusa a inscrição em jogo (e a lista de espera)** de quem não tem foto. **A foto é pedida já no cadastro:** a tela **Criar conta** abre com o bloco **"Foto 3x4 (obrigatória)"** (escolher o arquivo e enquadrar o rosto); sem foto a conta **não é criada**. A foto vai junto na criação do cadastro e do cartão público. As regras do banco exigem, na criação do cadastro, uma **imagem de verdade** (JPEG, PNG ou WebP em base64, com algum tamanho: um texto qualquer ou um arquivo que não é imagem é recusado), e quem já tem foto **não consegue apagá-la** (só trocar por outra); cadastros antigos sem foto continuam editando os demais dados e enviam a foto quando quiserem. Quem foi excluído e volta pela tela **"Cadastro excluído"** também envia a foto para recriar o cadastro. Para a diretoria: a lista de jogadores e a grade de Carteirinhas marcam **"sem foto"**, o botão de **imprimir** a carteirinha fica desativado até a pessoa enviar a foto, e a **verificação pelo QR** (e o validador de parceiros) avisa em vermelho que a carteirinha está sem foto e que é preciso conferir o documento.
 
 **CPF:** é pedido já na tela **Criar conta** e também em **Meus dados** (e o admin edita na ficha do jogador). O app
 confere os dois dígitos verificadores (não aceita CPF inventado nem números repetidos) e guarda só os 11 dígitos;
@@ -595,7 +595,7 @@ No celular, **tocar na carteirinha** da tela principal abre a frente dela **ocup
 
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (565 casos: o que
+As regras foram verificadas contra o Firebase com a API de testes de regras (578 casos: o que
 organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
 proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
 permissões.

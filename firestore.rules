@@ -57,6 +57,11 @@ service cloud.firestore {
       return v == null || (v is string && v.size() < 80000);
     }
 
+    // Foto obrigatória no cadastro: uma imagem de verdade (JPEG/PNG/WebP em base64, alguns KB), não um texto qualquer.
+    function fotoDeVerdade(v) {
+      return v is string && v.size() >= 500 && v.size() < 80000 && v.matches('^data:image/(jpeg|png|webp);base64,.*');
+    }
+
     // Logo do time (PNG/JPEG pequeno em base64, ~192px). Limite de tamanho.
     function logoValida(v) {
       return v == null || (v is string && v.size() < 70000);
@@ -200,7 +205,7 @@ service cloud.firestore {
         request.resource.data.vencimento == null &&
         request.resource.data.timeAprovado == false &&
         request.resource.data.get('aceiteTermosEm', request.time) == request.time &&
-        fotoValida(request.resource.data.get('fotoUrl', null));
+        fotoDeVerdade(request.resource.data.get('fotoUrl', null));
 
       // O próprio jogador NÃO pode mexer em papel, status, vencimento, e-mail
       // nem se aprovar em um time; isso é só do admin/representante.
@@ -218,6 +223,7 @@ service cloud.firestore {
         !request.resource.data.diff(resource.data).affectedKeys()
           .hasAny(['role', 'cargos', 'cargoAlteradoPor', 'cargoAlteradoEm', 'status', 'vencimento', 'ultimoPagamento', 'ultimoEstornoId', 'uid', 'email']) &&
         fotoValida(request.resource.data.get('fotoUrl', null)) &&
+        (resource.data.get('fotoUrl', null) == null || request.resource.data.get('fotoUrl', null) != null) &&
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['aceiteTermosEm']) ||
           request.resource.data.aceiteTermosEm == request.time) &&
         (request.resource.data.timeAprovado == resource.data.timeAprovado ||

@@ -4,9 +4,11 @@ import { CropFoto } from './CropFoto'
 interface PhotoUploaderProps {
   currentUrl: string | null
   onChange: (dataUrl: string) => Promise<void>
+  /** Mensagem depois de escolher a foto (padrão: "Foto salva."). */
+  mensagemOk?: string
 }
 
-export function PhotoUploader({ currentUrl, onChange }: PhotoUploaderProps) {
+export function PhotoUploader({ currentUrl, onChange, mensagemOk = 'Foto salva.' }: PhotoUploaderProps) {
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -69,7 +71,7 @@ export function PhotoUploader({ currentUrl, onChange }: PhotoUploaderProps) {
         />
         {enviando && <p className="mt-1 text-xs text-mute">Salvando...</p>}
         {erro && <p className="mt-1 text-xs text-danger">{erro}</p>}
-        {salva && <p className="mt-1 text-xs text-ok">Foto salva.</p>}
+        {salva && <p className="mt-1 text-xs text-ok">{mensagemOk}</p>}
         <p className="mt-1 text-xs text-mute/70">
           Escolha a foto e enquadre só o rosto. O app reduz sozinho.
         </p>
