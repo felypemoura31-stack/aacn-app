@@ -593,12 +593,34 @@ No celular, **tocar na carteirinha** da tela principal abre a frente dela **ocup
 - **Brilho:** **um site não consegue mudar o brilho do aparelho** (nenhum navegador permite isso). Por isso o app só **lembra** o usuário, no rodapé da tela cheia ("Aumente o brilho do celular para o leitor ler o QR code melhor"). Mexer no brilho de verdade só seria possível com um aplicativo nativo (por exemplo, empacotando o app com Capacitor).
 - Botão **Fechar** no canto da tela (fora da parte girada). O código está em `src/components/CarteirinhaTelaCheia.tsx` e `src/lib/telaCheia.ts`.
 
+## Sorteio de times com peso (Gestão → Sorteio de times)
+
+Para **admin, tesoureiro e organizador**. Sorteia os jogadores **presentes** num jogo (quem fez check-in) em **times equilibrados pelo peso** de cada um:
+
+- **Peso:** cada jogador tem um peso de **1 (novato) a 10**; **5 = veterano**. Sem peso definido, vale 1. **Só o admin define** (em **Administração → Pesos do sorteio**, ou direto na lista do sorteio): o banco recusa a gravação de qualquer outro cargo, o jogador não vê nem o próprio peso, e cada mudança vai para o Histórico de ações ("de 1 (Novato) para 5 (Veterano)").
+- **Equilíbrio:** o sorteio faz centenas de divisões ao acaso, mantém o **número de jogadores de cada time com diferença de no máximo 1** e escolhe, entre as mais equilibradas (diferença de soma de pesos até 1 ponto acima da melhor), uma **ao acaso**: justo, mas imprevisível; "Sortear de novo" dá outro resultado. Testado com vários cenários (22 jogadores, veteranos × novatos, um craque entre novatos...): a diferença de pesos fica no mínimo possível.
+- **Opções:** de 2 a 8 times, **nomes editáveis** (padrão Azul, Vermelho, Verde...), e dá para **tirar do sorteio** quem está presente mas não joga (árbitro, convidado).
+- **Resultado:** cada time mostra os jogadores com o peso, o total e a **diferença entre o time mais forte e o mais fraco**. Fica gravado por jogo (`sorteios/<jogo>`, **sem os pesos**) como **rascunho** que só a diretoria vê.
+- **Publicar:** o botão **"Publicar aos jogadores"** mostra o resultado na página **Jogos** ("Times sorteados" e **"Você está no time X"**, só nomes, nunca pesos); dá para retirar da vista. Sortear de novo depois de publicado pede confirmação e tira o resultado da vista até publicar o novo.
+- **Compartilhar:** **Copiar texto** e **Enviar no WhatsApp** (lista dos times, sem pesos).
+- No **Check-in**, quando há 2 ou mais presentes aparece o atalho "Sortear os times dos N presentes".
+- **Regras do banco:** `pesos/<jogador>` (lê quem conduz o sorteio; grava só o admin, peso inteiro de 1 a 10, assinado e com a hora do servidor) e `sorteios/<jogo>` (a diretoria lê e grava; os jogadores só leem depois de publicado; de 2 a 8 times; sem campos extras, como pesos). O organizador também registra o sorteio no histórico de ações.
+
+## Check-in de jogos na tela inicial
+
+Quem tem cargo de **admin, tesoureiro ou organizador** vê, na **tela inicial** (Minha carteirinha), o painel **"Check-in de jogos"**: abre sozinho quando há jogo **hoje** e fica recolhido numa linha nos outros dias. É o mesmo painel da página **Check-in** (Gestão → Jogos): escolher o jogo, **ler o QR** da carteirinha (câmera) ou colar o código, ou tocar em "Fazer check-in" na **lista de inscritos**, e então **debitar os créditos** (o app confere o saldo) ou registrar que recebeu em **dinheiro**. As regras do banco já permitiam que o organizador, o tesoureiro e o admin façam o check-in com débito (no organizador, amarrado ao jogo, ao saldo exato e à presença no mesmo lote). Novo: **quem chegou sem inscrição** (ou está na lista de espera) pode ser **inscrito e ter a presença confirmada na hora** por **admin e tesoureiro**, debitando créditos ou em dinheiro; o organizador só confirma os inscritos e é avisado de que precisa de um admin ou tesoureiro para o caso sem inscrição. Cada check-in atualiza o ranking de presença.
+
 ## Testes das regras do Firestore
 
-As regras foram verificadas contra o Firebase com a API de testes de regras (578 casos: o que
-organizador, tesoureiro, admin e jogador podem e não podem fazer, incluindo o check-in e a
-proteção do saldo). O script é descartável e não está no repositório; refaça-o ao mudar
-permissões.
+As regras são verificadas contra o Firebase com a API de testes de regras, caso a caso (o que organizador, tesoureiro, admin e
+jogador podem e não podem fazer). O executor está **no repositório**: `node scripts/testar-regras.cjs` (precisa do
+`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **141 casos**, cobrindo as regras criadas
+a partir da baixa com log: baixa/estorno, desfazer ajuste, histórico de ações, caixa, prestação de contas, ranking, leitura de
+avisos, foto obrigatória (cadastro e inscrição em jogo), pesos e sorteio de times. `RULES=outro.rules node scripts/testar-regras.cjs`
+testa uma versão alterada das regras (serve para conferir que um teste realmente "pega" uma falha). **Observação:** a bateria
+anterior (578 casos, que também cobria as regras mais antigas: organizador, check-in, CPF, times, parceiros, conquistas...) ficava
+numa pasta temporária e foi perdida; os casos de regras antigas precisam ser recriados aqui aos poucos, e toda regra nova deve entrar
+nesse arquivo.
 
 ## Ícones do app
 

@@ -29,6 +29,8 @@ import { History } from './pages/History'
 import { Ranking } from './pages/Ranking'
 import { AdminCaixa } from './pages/admin/AdminCaixa'
 import { AdminAuditoria } from './pages/admin/AdminAuditoria'
+import { AdminSorteio } from './pages/admin/AdminSorteio'
+import { AdminPesos } from './pages/admin/AdminPesos'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { OfflineBanner } from './components/OfflineBanner'
 import { TeamProfile } from './pages/TeamProfile'
@@ -253,6 +255,22 @@ function App() {
           }
         />
 
+        <Route
+          path="/admin/sorteio"
+          element={
+            <JogosRoute>
+              <AdminSorteio />
+            </JogosRoute>
+          }
+        />
+        <Route
+          path="/admin/pesos"
+          element={
+            <AdminRoute>
+              <AdminPesos />
+            </AdminRoute>
+          }
+        />
         <Route
           path="/admin/caixa"
           element={

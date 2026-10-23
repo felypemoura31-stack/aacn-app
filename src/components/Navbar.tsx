@@ -38,6 +38,7 @@ const GRUPOS: Grupo[] = [
       { to: '/admin/times', rotulo: 'Times' },
       { to: '/admin/cargos', rotulo: 'Cargos' },
       { to: '/admin/parceiros', rotulo: 'Parceiros' },
+      { to: '/admin/pesos', rotulo: 'Pesos do sorteio' },
       { to: '/admin/auditoria', rotulo: 'Histórico de ações' },
     ],
   },
@@ -59,6 +60,7 @@ const GRUPOS: Grupo[] = [
     itens: [
       { to: '/admin/checkin', rotulo: 'Check-in por QR' },
       { to: '/admin/jogos', rotulo: 'Gerenciar jogos' },
+      { to: '/admin/sorteio', rotulo: 'Sorteio de times' },
     ],
   },
   {

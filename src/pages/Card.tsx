@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { CarteirinhaImpressao } from '../components/CarteirinhaImpressao'
 import { CarteirinhaTelaCheia } from '../components/CarteirinhaTelaCheia'
+import { CheckinNaTelaInicial } from '../components/CheckinNaTelaInicial'
 import { ResumoConta } from '../components/ResumoConta'
 import { SelosConquistas } from '../components/SelosConquistas'
 import { AvisosPanel } from '../components/AvisosPanel'
@@ -46,6 +47,9 @@ export function Card() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
       <AvisoMensalidade player={player} />
+
+      {/* admin, tesoureiro e organizador: check-in dos jogos direto na tela inicial */}
+      <CheckinNaTelaInicial />
 
       <div className="grid items-start gap-6 lg:grid-cols-[26rem_minmax(0,1fr)]">
         <div className="min-w-0">

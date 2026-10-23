@@ -30,6 +30,8 @@ export type AcaoAuditoria =
   | 'time_representante'
   | 'jogo_excluido'
   | 'inscricao_removida'
+  | 'sorteio_times'
+  | 'peso_sorteio'
 
 export const ROTULO_ACAO: Record<AcaoAuditoria, string> = {
   pagamento_baixa: 'Baixa de Pix',
@@ -52,6 +54,8 @@ export const ROTULO_ACAO: Record<AcaoAuditoria, string> = {
   time_representante: 'Representante de time',
   jogo_excluido: 'Jogo excluído',
   inscricao_removida: 'Inscrição removida',
+  sorteio_times: 'Sorteio de times',
+  peso_sorteio: 'Peso no sorteio',
 }
 
 export type GrupoAuditoria = 'dinheiro' | 'pessoas' | 'jogos'
@@ -76,9 +80,9 @@ export const GRUPOS_AUDITORIA: { id: GrupoAuditoria; rotulo: string; acoes: Acao
   {
     id: 'pessoas',
     rotulo: 'Pessoas',
-    acoes: ['jogador_excluido', 'conta_excluida', 'jogador_resetado', 'jogador_editado', 'cargo', 'conquista_concedida', 'conquista_removida', 'time_representante'],
+    acoes: ['jogador_excluido', 'conta_excluida', 'jogador_resetado', 'jogador_editado', 'cargo', 'conquista_concedida', 'conquista_removida', 'time_representante', 'peso_sorteio'],
   },
-  { id: 'jogos', rotulo: 'Jogos', acoes: ['jogo_excluido', 'inscricao_removida'] },
+  { id: 'jogos', rotulo: 'Jogos', acoes: ['jogo_excluido', 'inscricao_removida', 'sorteio_times'] },
 ]
 
 export interface RegistroAuditoria {

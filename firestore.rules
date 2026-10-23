@@ -730,7 +730,8 @@ service cloud.firestore {
             'pagamento_baixa', 'pagamento_estorno', 'pagamento_cancelado', 'chave_pix', 'credito_ajuste', 'credito_ajuste_desfeito',
             'caixa_lancamento', 'caixa_edicao', 'caixa_exclusao', 'caixa_publicacao',
             'jogador_excluido', 'conta_excluida', 'jogador_resetado', 'jogador_editado', 'cargo',
-            'conquista_concedida', 'conquista_removida', 'time_representante', 'jogo_excluido', 'inscricao_removida'
+            'conquista_concedida', 'conquista_removida', 'time_representante', 'jogo_excluido', 'inscricao_removida',
+            'sorteio_times', 'peso_sorteio'
           ] &&
           d.resumo is string && d.resumo.size() >= 1 && d.resumo.size() <= 400 &&
           d.porUid == request.auth.uid &&
@@ -743,7 +744,8 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isSignedIn() && registroValido(request.resource.data) && (
         isFinanceiro() ||
-        (request.resource.data.acao == 'conta_excluida' && request.resource.data.get('alvoUid', null) == request.auth.uid)
+        (request.resource.data.acao == 'conta_excluida' && request.resource.data.get('alvoUid', null) == request.auth.uid) ||
+        (request.resource.data.acao == 'sorteio_times' && isOrganizador())
       );
       allow update, delete: if false;
     }
@@ -817,6 +819,44 @@ service cloud.firestore {
         request.resource.data.nome == get(/databases/$(database)/documents/players/$(request.auth.uid)).data.nomeCompleto &&
         request.resource.data.get('lidoEm', null) == request.time;
       allow delete: if isFinanceiro() || isOrganizador();
+    }
+
+    // Peso de cada jogador no sorteio de times (1 = novato ... 10): quem DEFINE é só o admin. Quem conduz o sorteio (admin,
+    // tesoureiro e organizador) lê. O jogador não vê o próprio peso nem o dos outros. Sem documento, o peso é 1.
+    match /pesos/{uid} {
+      allow read: if podeGerirJogos();
+      allow create, update: if isAdmin() &&
+        request.resource.data.keys().hasOnly(['peso', 'definidoPor', 'definidoPorNome', 'definidoEm']) &&
+        request.resource.data.peso is int && request.resource.data.peso >= 1 && request.resource.data.peso <= 10 &&
+        request.resource.data.definidoPor == request.auth.uid &&
+        request.resource.data.definidoPorNome is string && request.resource.data.definidoPorNome.size() <= 120 &&
+        request.resource.data.get('definidoEm', null) == request.time;
+      allow delete: if isAdmin();
+    }
+
+    // Times sorteados de um jogo (um documento por jogo). Quem conduz o sorteio lê e grava; os jogadores só leem
+    // depois que a diretoria publica (publicado == true). O documento tem só os nomes dos times e dos jogadores: nunca os pesos.
+    match /sorteios/{gid} {
+      function sorteioValido(d) {
+        return d.keys().hasOnly(['gameId', 'times', 'publicado', 'criadoPor', 'criadoPorNome', 'criadoEm', 'publicadoEm']) &&
+          d.gameId == gid &&
+          d.times is list && d.times.size() >= 2 && d.times.size() <= 8 &&
+          d.publicado is bool &&
+          d.criadoPorNome is string && d.criadoPorNome.size() <= 120;
+      }
+
+      allow read: if podeGerirJogos() || (isSignedIn() && resource.data.get('publicado', false) == true);
+      // novo sorteio (ou sorteio de novo): grava tudo com a hora do servidor
+      allow create: if podeGerirJogos() && sorteioValido(request.resource.data) &&
+        request.resource.data.criadoPor == request.auth.uid &&
+        request.resource.data.get('criadoEm', null) == request.time;
+      // sorteio existente: ou refaz tudo (hora nova) ou só publica/retira da vista dos jogadores (times e hora intactos)
+      allow update: if podeGerirJogos() && sorteioValido(request.resource.data) && (
+        (request.resource.data.criadoPor == request.auth.uid && request.resource.data.get('criadoEm', null) == request.time) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['publicado', 'publicadoEm']) &&
+         request.resource.data.get('publicadoEm', request.time) == request.time)
+      );
+      allow delete: if podeGerirJogos();
     }
 
     // Parceiros com desconto: todos os logados veem; só o admin cadastra.

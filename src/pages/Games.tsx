@@ -7,6 +7,7 @@ import { cancelarMinhaInscricao, formatarCreditos, inscreverNoJogo, reais } from
 import { useWallet } from '../lib/useWallet'
 import { ExtratoCreditos } from '../components/ExtratoCreditos'
 import { AdicionarAoCalendario } from '../components/AdicionarAoCalendario'
+import { TimesSorteadosDoJogo, type SorteioPublicado } from '../components/TimesSorteadosDoJogo'
 import type { Game, Participation } from '../types'
 
 function quando(g: Game) {
@@ -21,6 +22,7 @@ export function Games() {
   const jogoDoLink = params.get('jogo') // link recebido pelo WhatsApp: leva direto a este jogo
   const [games, setGames] = useState<Game[]>([])
   const [minhas, setMinhas] = useState<Participation[]>([])
+  const [sorteios, setSorteios] = useState<Record<string, SorteioPublicado>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -38,6 +40,16 @@ export function Games() {
       setMinhas(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation))
     })
   }, [player])
+
+  // times sorteados que a diretoria já publicou (a consulta precisa do filtro, senão as regras do banco recusam)
+  useEffect(() => {
+    const q = query(collection(db, 'sorteios'), where('publicado', '==', true))
+    return onSnapshot(q, (snap) => {
+      const m: Record<string, SorteioPublicado> = {}
+      snap.docs.forEach((d) => (m[d.id] = d.data() as SorteioPublicado))
+      setSorteios(m)
+    })
+  }, [])
 
   // abre o jogo do link: rola até ele depois que a lista carrega
   useEffect(() => {
@@ -121,6 +133,7 @@ export function Games() {
                   </p>
                   {g.descricao && <p className="mt-2 whitespace-pre-line text-sm text-mute">{g.descricao}</p>}
                   {g.data >= hojeIso && <AdicionarAoCalendario jogo={g} />}
+                  {sorteios[g.id] && <TimesSorteadosDoJogo sorteio={sorteios[g.id]} meuUid={player.uid} />}
                 </div>
 
                 <div className="text-right">
