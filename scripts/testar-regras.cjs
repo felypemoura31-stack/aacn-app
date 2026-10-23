@@ -178,6 +178,17 @@ t('leitura: organizador apaga (ao apagar o aviso)', 'ALLOW', 'o1', 'delete', 'av
 t('leitura: jogador NAO apaga leitura', 'DENY', 'u1', 'delete', 'avisoLeituras/a1_u1', null, leitura, dono())
 ts('leitura (estrito): NAO sem a hora do servidor', 'DENY', 'u1', 'create', 'avisoLeituras/a1_u1', leitura, null, dono([...avisoMock]))
 
+// ===== lista de inscritos visivel aos jogadores (so inscricoes ativas e presencas)
+const inscDe = (status) => ({ ...insc, uid: 'u2', status })
+t('inscritos: jogador le a inscricao ativa de outro', 'ALLOW', 'u1', 'get', 'participations/g1_u2', null, inscDe('ativa'), dono())
+t('inscritos: jogador le a presenca de outro', 'ALLOW', 'u1', 'get', 'participations/g1_u2', null, inscDe('presente'), dono())
+t('inscritos: jogador NAO le a lista de espera de outro', 'DENY', 'u1', 'get', 'participations/g1_u2', null, inscDe('espera'), dono())
+t('inscritos: jogador NAO le inscricao removida de outro', 'DENY', 'u1', 'get', 'participations/g1_u2', null, inscDe('removida'), dono())
+t('inscritos: jogador le a propria espera', 'ALLOW', 'u1', 'get', 'participations/g1_u1', null, { ...insc, status: 'espera' }, dono())
+t('inscritos: anonimo NAO le', 'DENY', null, 'get', 'participations/g1_u2', null, inscDe('ativa'), [])
+t('inscritos: organizador le tudo (inclusive a espera)', 'ALLOW', 'o1', 'get', 'participations/g1_u2', null, inscDe('espera'), org())
+t('inscritos: jogador NAO apaga inscricao de outro', 'DENY', 'u1', 'delete', 'participations/g1_u2', null, inscDe('ativa'), dono())
+
 // ===== foto 3x4 obrigatoria: sem foto nao ha inscricao em jogo
 const donoSemFoto = (extra = []) => [mockGet('get', 'players/u1', { ...u1, fotoUrl: null }), ...extra]
 const donoComFoto = (extra = []) => [mockGet('get', 'players/u1', { ...u1, fotoUrl: FOTO_REAL }), ...extra]

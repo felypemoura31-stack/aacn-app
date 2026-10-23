@@ -556,7 +556,12 @@ service cloud.firestore {
     // contador do jogo no mesmo lote (getAfter). A cobrança e a presença são feitas
     // pela organização no check-in (ver wallets acima).
     match /participations/{pid} {
-      allow read: if podeGerirJogos() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      // A diretoria lê tudo; o jogador lê as próprias inscrições e, para a lista de inscritos do jogo, as inscrições ativas e as
+      // presenças de todos (lista de espera e inscrições removidas continuam privadas). A consulta precisa filtrar por status.
+      allow read: if podeGerirJogos() || (isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        resource.data.status in ['ativa', 'presente']
+      ));
 
       allow create: if isFinanceiro() || (
         isSignedIn() &&

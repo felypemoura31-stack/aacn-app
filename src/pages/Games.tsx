@@ -7,6 +7,7 @@ import { cancelarMinhaInscricao, formatarCreditos, inscreverNoJogo, reais } from
 import { useWallet } from '../lib/useWallet'
 import { ExtratoCreditos } from '../components/ExtratoCreditos'
 import { AdicionarAoCalendario } from '../components/AdicionarAoCalendario'
+import { ListaDeInscritos } from '../components/ListaDeInscritos'
 import { TimesSorteadosDoJogo, type SorteioPublicado } from '../components/TimesSorteadosDoJogo'
 import type { Game, Participation } from '../types'
 
@@ -133,6 +134,7 @@ export function Games() {
                   </p>
                   {g.descricao && <p className="mt-2 whitespace-pre-line text-sm text-mute">{g.descricao}</p>}
                   {g.data >= hojeIso && <AdicionarAoCalendario jogo={g} />}
+                  <ListaDeInscritos jogo={g} meuUid={player.uid} />
                   {sorteios[g.id] && <TimesSorteadosDoJogo sorteio={sorteios[g.id]} meuUid={player.uid} />}
                 </div>
 
