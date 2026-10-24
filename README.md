@@ -597,14 +597,14 @@ No celular, **tocar na carteirinha** da tela principal abre a frente dela **ocup
 
 Para **admin, tesoureiro e organizador**. Sorteia os jogadores **presentes** num jogo (quem fez check-in) em **times equilibrados pelo peso** de cada um:
 
-- **Peso:** cada jogador tem um peso de **1 (novato) a 10**; **5 = veterano**. Sem peso definido, vale 1. **Só o admin define** (em **Administração → Pesos do sorteio**, ou direto na lista do sorteio): o banco recusa a gravação de qualquer outro cargo, o jogador não vê nem o próprio peso, e cada mudança vai para o Histórico de ações ("de 1 (Novato) para 5 (Veterano)").
+- **Peso:** escala de **10 níveis, de 0 a 9**: **0 = Highlander** (abaixo do novato), **1 = novato**, 2 = iniciante, 3 = intermediário, 4 = experiente, **5 = veterano** e, **acima do veterano, só 4 níveis: 6, 7, 8 e 9**. Sem peso definido, vale 1. (A escala chegou a ir de 1 a 10; ao criar o Highlander ela passou para 0 a 9, e os pesos 10 que já existiam viraram 9.) **Só o admin define** (em **Administração → Pesos do sorteio**, ou direto na lista do sorteio): o banco recusa a gravação de qualquer outro cargo, o jogador não vê nem o próprio peso, e cada mudança vai para o Histórico de ações ("de 1 (Novato) para 5 (Veterano)").
 - **Equilíbrio:** o sorteio faz centenas de divisões ao acaso, mantém o **número de jogadores de cada time com diferença de no máximo 1** e escolhe, entre as mais equilibradas (diferença de soma de pesos até 1 ponto acima da melhor), uma **ao acaso**: justo, mas imprevisível; "Sortear de novo" dá outro resultado. Testado com vários cenários (22 jogadores, veteranos × novatos, um craque entre novatos...): a diferença de pesos fica no mínimo possível.
 - **Opções:** de 2 a 8 times, **nomes editáveis** (padrão Azul, Vermelho, Verde...), e dá para **tirar do sorteio** quem está presente mas não joga (árbitro, convidado).
 - **Resultado:** cada time mostra os jogadores com o peso, o total e a **diferença entre o time mais forte e o mais fraco**. Fica gravado por jogo (`sorteios/<jogo>`, **sem os pesos**) como **rascunho** que só a diretoria vê.
 - **Publicar:** o botão **"Publicar aos jogadores"** mostra o resultado na página **Jogos** ("Times sorteados" e **"Você está no time X"**, só nomes, nunca pesos); dá para retirar da vista. Sortear de novo depois de publicado pede confirmação e tira o resultado da vista até publicar o novo.
 - **Compartilhar:** **Copiar texto** e **Enviar no WhatsApp** (lista dos times, sem pesos).
 - No **Check-in**, quando há 2 ou mais presentes aparece o atalho "Sortear os times dos N presentes".
-- **Regras do banco:** `pesos/<jogador>` (lê quem conduz o sorteio; grava só o admin, peso inteiro de 1 a 10, assinado e com a hora do servidor) e `sorteios/<jogo>` (a diretoria lê e grava; os jogadores só leem depois de publicado; de 2 a 8 times; sem campos extras, como pesos). O organizador também registra o sorteio no histórico de ações.
+- **Regras do banco:** `pesos/<jogador>` (lê quem conduz o sorteio; grava só o admin, peso inteiro de 0 a 9, assinado e com a hora do servidor) e `sorteios/<jogo>` (a diretoria lê e grava; os jogadores só leem depois de publicado; de 2 a 8 times; sem campos extras, como pesos). O organizador também registra o sorteio no histórico de ações.
 
 ## Check-in de jogos (Gestão → Check-in) e lista de inscritos
 
@@ -615,7 +615,7 @@ Para **admin, tesoureiro e organizador**. Sorteia os jogadores **presentes** num
 
 As regras são verificadas contra o Firebase com a API de testes de regras, caso a caso (o que organizador, tesoureiro, admin e
 jogador podem e não podem fazer). O executor está **no repositório**: `node scripts/testar-regras.cjs` (precisa do
-`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **149 casos**, cobrindo as regras criadas
+`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **152 casos**, cobrindo as regras criadas
 a partir da baixa com log: baixa/estorno, desfazer ajuste, histórico de ações, caixa, prestação de contas, ranking, leitura de
 avisos, foto obrigatória (cadastro e inscrição em jogo), pesos, sorteio de times e a lista de inscritos. `RULES=outro.rules node scripts/testar-regras.cjs`
 testa uma versão alterada das regras (serve para conferir que um teste realmente "pega" uma falha). **Observação:** a bateria

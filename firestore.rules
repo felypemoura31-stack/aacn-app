@@ -826,13 +826,13 @@ service cloud.firestore {
       allow delete: if isFinanceiro() || isOrganizador();
     }
 
-    // Peso de cada jogador no sorteio de times (1 = novato ... 10): quem DEFINE é só o admin. Quem conduz o sorteio (admin,
+    // Peso de cada jogador no sorteio de times (0 = Highlander, 1 = novato ... 5 = veterano ... 9): quem DEFINE é só o admin. Quem conduz o sorteio (admin,
     // tesoureiro e organizador) lê. O jogador não vê o próprio peso nem o dos outros. Sem documento, o peso é 1.
     match /pesos/{uid} {
       allow read: if podeGerirJogos();
       allow create, update: if isAdmin() &&
         request.resource.data.keys().hasOnly(['peso', 'definidoPor', 'definidoPorNome', 'definidoEm']) &&
-        request.resource.data.peso is int && request.resource.data.peso >= 1 && request.resource.data.peso <= 10 &&
+        request.resource.data.peso is int && request.resource.data.peso >= 0 && request.resource.data.peso <= 9 &&
         request.resource.data.definidoPor == request.auth.uid &&
         request.resource.data.definidoPorNome is string && request.resource.data.definidoPorNome.size() <= 120 &&
         request.resource.data.get('definidoEm', null) == request.time;

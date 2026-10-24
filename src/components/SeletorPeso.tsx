@@ -1,6 +1,6 @@
 import { PESO_MAX, PESO_MIN, rotuloDoPeso } from '../lib/sorteio'
 
-/** Escolha do peso (1 = novato ... 5 = veterano ... 10). Só o admin vê como seletor; os demais veem o valor. */
+/** Escolha do peso (0 = Highlander, 1 = novato ... 5 = veterano ... 9). Só o admin vê como seletor; os demais veem o valor. */
 export function SeletorPeso({ valor, aoMudar, desabilitado = false }: { valor: number; aoMudar: (peso: number) => void; desabilitado?: boolean }) {
   const opcoes = Array.from({ length: PESO_MAX - PESO_MIN + 1 }, (_, i) => PESO_MIN + i)
   return (
@@ -23,5 +23,5 @@ export function SeletorPeso({ valor, aoMudar, desabilitado = false }: { valor: n
 /** Etiqueta do peso para quem só lê. */
 export function EtiquetaPeso({ peso }: { peso: number }) {
   const cor = peso >= 5 ? 'border-gold/40 bg-gold/15 text-gold' : peso >= 2 ? 'border-accent-hi/40 bg-accent/15 text-accent-hi' : 'border-line text-mute'
-  return <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cor}`}>peso {peso}</span>
+  return <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cor}`}>{peso === 0 ? 'Highlander' : `peso ${peso}`}</span>
 }

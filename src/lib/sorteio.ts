@@ -5,18 +5,23 @@ import type { Autor } from './credits'
 import type { Game } from '../types'
 
 /**
- * Sorteio de times dos jogadores presentes num jogo, equilibrado por PESO: cada jogador tem um peso (1 = novato ...
- * 5 = veterano, até 10) que só o admin define; o sorteio espalha os pesos para que a soma de cada time fique parecida
+ * Sorteio de times dos jogadores presentes num jogo, equilibrado por PESO: cada jogador tem um peso (0 = Highlander, 1 = novato ...
+ * 5 = veterano, até 9) que só o admin define; o sorteio espalha os pesos para que a soma de cada time fique parecida
  * e o número de jogadores de cada time difira no máximo em 1. Continua sendo sorteio: entre as divisões equilibradas
  * sai uma ao acaso, então refazer dá outro resultado.
  */
 
-export const PESO_MIN = 1
-export const PESO_MAX = 10
+/** Escala de 10 níveis: 0 (Highlander, abaixo do novato) a 9. Novato continua 1 e veterano 5; acima do veterano ficam 6, 7, 8 e 9. */
+export const PESO_MIN = 0
+export const PESO_MAX = 9
 export const PESO_PADRAO = 1
 
+/** Mantém o peso dentro da escala (pesos antigos de 10, de quando a escala ia até 10, valem 9). */
+export const ajustarPeso = (n: number) => Math.min(PESO_MAX, Math.max(PESO_MIN, Math.round(n)))
+
 export function rotuloDoPeso(peso: number) {
-  if (peso <= 1) return 'Novato'
+  if (peso <= 0) return 'Highlander'
+  if (peso === 1) return 'Novato'
   if (peso === 2) return 'Iniciante'
   if (peso === 3) return 'Intermediário'
   if (peso === 4) return 'Experiente'

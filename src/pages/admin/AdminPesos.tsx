@@ -3,7 +3,7 @@ import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { SeletorPeso } from '../../components/SeletorPeso'
-import { PESO_PADRAO, definirPeso, rotuloDoPeso } from '../../lib/sorteio'
+import { PESO_PADRAO, ajustarPeso, definirPeso, rotuloDoPeso } from '../../lib/sorteio'
 
 interface Linha {
   uid: string
@@ -13,7 +13,7 @@ interface Linha {
 
 const simples = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 
-/** Só o admin: o peso de cada jogador no sorteio de times (1 = novato ... 5 = veterano ... 10). Sem peso definido, vale 1. */
+/** Só o admin: o peso de cada jogador no sorteio de times (0 = Highlander, 1 = novato ... 5 = veterano ... 9). Sem peso definido, vale 1. */
 export function AdminPesos() {
   const { player: staff } = useAuth()
   const [jogadores, setJogadores] = useState<Linha[] | null>(null)
@@ -28,7 +28,7 @@ export function AdminPesos() {
     )
     const u2 = onSnapshot(collection(db, 'pesos'), (snap) => {
       const m: Record<string, number> = {}
-      snap.docs.forEach((d) => (m[d.id] = Number((d.data() as { peso?: number }).peso ?? PESO_PADRAO)))
+      snap.docs.forEach((d) => (m[d.id] = ajustarPeso(Number((d.data() as { peso?: number }).peso ?? PESO_PADRAO))))
       setPesos(m)
     })
     return () => {
@@ -64,8 +64,8 @@ export function AdminPesos() {
     <div className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="mb-1 text-xl font-bold text-ink">Pesos do sorteio</h1>
       <p className="mb-4 max-w-2xl text-sm text-mute">
-        Só o admin define. O peso diz quanto o jogador pesa no equilíbrio do sorteio de times: <b className="text-ink">1 = novato</b>, <b className="text-ink">5 = veterano</b> (vai até 10). Quem não tem peso definido
-        vale 1. Cada mudança fica registrada no Histórico de ações. O jogador não vê o próprio peso.
+        Só o admin define. O peso diz quanto o jogador pesa no equilíbrio do sorteio de times: <b className="text-ink">0 = Highlander</b> (abaixo do novato), <b className="text-ink">1 = novato</b>, <b className="text-ink">5 = veterano</b>, e
+        acima do veterano 6, 7, 8 e 9. Quem não tem peso definido vale 1. Cada mudança fica registrada no Histórico de ações. O jogador não vê o próprio peso.
       </p>
 
       <div className="mb-3 flex flex-wrap gap-1.5 text-xs">

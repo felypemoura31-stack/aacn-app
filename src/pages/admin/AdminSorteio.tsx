@@ -8,6 +8,7 @@ import { temCargo } from '../../lib/roles'
 import {
   NOMES_PADRAO_DOS_TIMES,
   PESO_PADRAO,
+  ajustarPeso,
   definirPeso,
   linkWhatsappTexto,
   publicarSorteio,
@@ -76,7 +77,7 @@ export function AdminSorteio() {
   useEffect(() => {
     return onSnapshot(collection(db, 'pesos'), (snap) => {
       const m: Record<string, number> = {}
-      snap.docs.forEach((d) => (m[d.id] = Number((d.data() as { peso?: number }).peso ?? PESO_PADRAO)))
+      snap.docs.forEach((d) => (m[d.id] = ajustarPeso(Number((d.data() as { peso?: number }).peso ?? PESO_PADRAO))))
       setPesos(m)
     })
   }, [])
@@ -185,7 +186,7 @@ export function AdminSorteio() {
     <div className="mx-auto max-w-4xl px-4 py-6">
       <h1 className="mb-1 text-xl font-bold text-ink">Sorteio de times</h1>
       <p className="mb-5 max-w-2xl text-sm text-mute">
-        Sorteia os jogadores <b className="text-ink">presentes</b> (com check-in) em times equilibrados pelo <b className="text-ink">peso</b> de cada um: novato 1, veterano 5. O sorteio espalha os pesos
+        Sorteia os jogadores <b className="text-ink">presentes</b> (com check-in) em times equilibrados pelo <b className="text-ink">peso</b> de cada um: Highlander 0, novato 1, veterano 5 (até 9). O sorteio espalha os pesos
         para a soma ficar parecida em todos os times e o número de jogadores diferir no máximo em 1. {ehAdmin ? 'Você define os pesos aqui ou em Pesos do sorteio.' : 'Só o admin define os pesos.'}
       </p>
 
