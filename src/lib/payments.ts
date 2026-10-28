@@ -13,6 +13,7 @@ import { db } from '../firebase'
 import { auditar } from './auditoria'
 import { contar, creditosDoPagamento, descontarMensalidade, formatarCreditos, lancar, lerCarteira, reais, type Autor } from './credits'
 import { novoTxid } from './pix'
+import { calcularSequencia, gravarSequencia } from './sequencia'
 import { atualizarPagamentoNoCartaoPublico } from './publicCard'
 import { calcularNovoVencimento, formatarData, paraMillis } from './status'
 import type { Payment, PixConfig, Player, PlayerStatus } from '../types'
@@ -43,10 +44,11 @@ export async function confirmarPagamento(
   admin: Autor,
 ) {
   // Lê só o cartão público (nome/status/vencimento): o tesoureiro não tem acesso aos dados pessoais.
-  const [cartaoSnap, carteira, paymentSnap] = await Promise.all([
+  const [cartaoSnap, carteira, paymentSnap, doJogadorSnap] = await Promise.all([
     getDoc(doc(db, 'publicCards', payment.uid)),
     lerCarteira(payment.uid),
     getDoc(doc(db, 'payments', payment.id)),
+    getDocs(query(collection(db, 'payments'), where('uid', '==', payment.uid))),
   ])
   if (!cartaoSnap.exists()) throw new Error('Jogador não encontrado')
   const atualPag = paymentSnap.data() as Payment | undefined
@@ -61,8 +63,15 @@ export async function confirmarPagamento(
     ultimoPagamento: dataPagamento,
   }
   const creditosGerados = creditosDoPagamento(payment.valor)
+  // mensalidades seguidas (conquista "1 ano de AACN"): as baixas que já existem mais esta
+  const datasAnteriores = doJogadorSnap.docs
+    .filter((d) => d.id !== payment.id && (d.data() as Payment).status === 'confirmado')
+    .map((d) => paraMillis((d.data() as Payment).dataPagamento))
+    .filter((ms): ms is number => ms != null)
+  const sequencia = calcularSequencia([...datasAnteriores, dataPagamento])
 
   const batch = writeBatch(db)
+  gravarSequencia(batch, payment.uid, sequencia)
   batch.update(doc(db, 'players', payment.uid), {
     ...atualizado,
     atualizadoEm: serverTimestamp(),
@@ -106,6 +115,8 @@ export interface PlanoDeEstorno {
   vencimentoNovo: number | null
   statusNovo: PlayerStatus
   ultimoPagamentoNovo: number | null
+  /** Mensalidades seguidas depois do estorno (refeita com as baixas que sobraram). */
+  sequenciaNova: number
   /** Créditos que a baixa gerou, o que dá para retirar agora (o jogador pode já ter usado parte) e o saldo atual. */
   creditosGerados: number
   creditosRetirados: number
@@ -161,6 +172,7 @@ export async function planejarEstorno(payment: Payment): Promise<PlanoDeEstorno>
     vencimentoNovo,
     statusNovo,
     ultimoPagamentoNovo: outras.length ? (paraMillis(outras[outras.length - 1].dataPagamento) ?? null) : null,
+    sequenciaNova: calcularSequencia(outras.map((p) => paraMillis(p.dataPagamento)).filter((ms): ms is number => ms != null)),
     creditosGerados,
     creditosRetirados: Math.min(creditosGerados, carteira.saldo),
     saldo: carteira.saldo,
@@ -179,6 +191,7 @@ export async function estornarPagamento(payment: Payment, motivo: string, autor:
   const plano = await planejarEstorno(payment)
 
   const batch = writeBatch(db)
+  gravarSequencia(batch, payment.uid, plano.sequenciaNova)
   batch.update(doc(db, 'players', payment.uid), {
     status: plano.statusNovo,
     vencimento: plano.vencimentoNovo,

@@ -1,23 +1,8 @@
 import { useEffect, useState } from 'react'
-import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore'
+import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
+import { carregarTimes } from '../lib/listaInscritos'
 import type { Game, Participation } from '../types'
-
-/** Nome do time de cada jogador (do cartão público). Baixado uma vez por visita, só quando alguém abre uma lista. */
-let timesPorUid: Promise<Record<string, string | null>> | null = null
-function carregarTimes() {
-  timesPorUid ??= getDocs(collection(db, 'publicCards'))
-    .then((snap) => {
-      const m: Record<string, string | null> = {}
-      snap.docs.forEach((d) => (m[d.id] = (d.data() as { timeNome?: string | null }).timeNome ?? null))
-      return m
-    })
-    .catch(() => {
-      timesPorUid = null
-      return {}
-    })
-  return timesPorUid
-}
 
 /**
  * "Ver lista de inscritos" de um jogo: quem já está inscrito (e quem já fez check-in), em ordem alfabética, com o time.

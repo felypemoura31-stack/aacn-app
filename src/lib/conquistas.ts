@@ -1,17 +1,17 @@
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
-import { DIA_MS } from './status'
 import { auditar } from './auditoria'
 import { lancar, lerCarteira } from './credits'
 import { temCargo } from './roles'
+import { MESES_PARA_UM_ANO } from './sequencia'
 import type { Estatisticas, Player } from '../types'
 
 export interface ContextoConquistas {
   jogos: number
   noturnos: number
   mensalidades: number
-  faltas: number
-  dias: number
+  /** Mensalidades pagas em sequência, sem deixar vencer (sequencias/{uid}). */
+  sequencia: number
   timeAprovado: boolean
   /** Tem o cargo de parceiro (lojista). */
   parceiro: boolean
@@ -29,7 +29,7 @@ export interface DefConquista {
   /** Exclusiva: só aparece para quem a conquistou ou pode conquistar (hoje, quem tem o cargo de parceiro). */
   exclusiva?: boolean
   /** Contador que alimenta a conquista (para mostrar o progresso). */
-  campo?: 'jogos' | 'noturnos' | 'mensalidades'
+  campo?: 'jogos' | 'noturnos' | 'mensalidades' | 'sequencia'
   meta?: number
   ok: (c: ContextoConquistas) => boolean
 }
@@ -50,15 +50,6 @@ export const CONQUISTAS: DefConquista[] = [
   porJogos('campo', 'Em campo', 5, 10, '5 jogos jogados'),
   porJogos('veterano', 'Veterano', 10, 15, '10 jogos jogados'),
   porJogos('lenda', 'Lenda', 25, 20, '25 jogos jogados'),
-  {
-    id: 'assiduo',
-    titulo: 'Assíduo',
-    desc: 'Frequência de 80% ou mais (a partir de 5 jogos)',
-    bonus: 20,
-    grupo: 'jogos',
-    icone: '★',
-    ok: (c) => c.jogos >= 5 && c.jogos / (c.jogos + c.faltas) >= 0.8,
-  },
   porNoites('noturno1', 'Primeiro noturno', 1, 5, 'Jogou um jogo noturno (a partir das 18h)'),
   porNoites('penumbra', 'Na penumbra', 5, 5, '5 jogos noturnos'),
   porNoites('escuridao', 'Na escuridão', 10, 10, '10 jogos noturnos'),
@@ -77,11 +68,13 @@ export const CONQUISTAS: DefConquista[] = [
   {
     id: 'ano',
     titulo: '1 ano de AACN',
-    desc: 'Associado há um ano ou mais',
+    desc: '12 mensalidades pagas em sequência, sem atraso',
     bonus: 100,
     grupo: 'associacao',
     icone: '★',
-    ok: (c) => c.dias >= 365,
+    campo: 'sequencia',
+    meta: MESES_PARA_UM_ANO,
+    ok: (c) => c.sequencia >= MESES_PARA_UM_ANO,
   },
   {
     id: 'parceiro',
@@ -113,15 +106,13 @@ export const GRUPOS: { id: GrupoConquista; titulo: string }[] = [
 export function contextoDoJogador(
   player: Pick<Player, 'timeAprovado' | 'role' | 'cargos'>,
   stats: Estatisticas | null,
-  faltas: number,
-  criadoEmMs: number | null,
+  sequencia: number,
 ): ContextoConquistas {
   return {
     jogos: stats?.jogos ?? 0,
     noturnos: stats?.noturnos ?? 0,
     mensalidades: stats?.mensalidades ?? 0,
-    faltas,
-    dias: criadoEmMs ? (Date.now() - criadoEmMs) / DIA_MS : 0,
+    sequencia,
     timeAprovado: !!player.timeAprovado,
     parceiro: temCargo(player, 'parceiro'),
   }

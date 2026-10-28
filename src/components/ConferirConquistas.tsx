@@ -4,7 +4,6 @@ import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { CONQUISTAS, concederConquista, contextoDoJogador, type DefConquista } from '../lib/conquistas'
 import { formatarCreditos } from '../lib/credits'
-import { paraMillis } from '../lib/status'
 import type { Estatisticas, Player } from '../types'
 
 interface Pendencia {
@@ -15,8 +14,7 @@ interface Pendencia {
 
 /**
  * Admin: procura jogadores que já atingiram uma conquista (pelos contadores e pelo cadastro) e ainda não a
- * receberam, e concede todas de uma vez com o bônus. O "Assíduo" fica de fora (depende de faltas, que só o
- * app do jogador calcula).
+ * receberam, e concede todas de uma vez com o bônus.
  */
 export function ConferirConquistas() {
   const { player: admin } = useAuth()
@@ -31,19 +29,21 @@ export function ConferirConquistas() {
     setCarregando(true)
     setMsg(null)
     try {
-      const [jogadores, estatisticas, concedidas] = await Promise.all([
+      const [jogadores, estatisticas, concedidas, sequencias] = await Promise.all([
         getDocs(collection(db, 'players')),
         getDocs(collection(db, 'stats')),
         getDocs(collection(db, 'conquistas')),
+        getDocs(collection(db, 'sequencias')),
       ])
       const stats = new Map(estatisticas.docs.map((d) => [d.id, d.data() as Estatisticas]))
+      const seguidas = new Map(sequencias.docs.map((d) => [d.id, Number((d.data() as { meses?: number }).meses ?? 0)]))
       const jaTem = new Set(concedidas.docs.map((d) => `${d.id}`))
       const lista: Pendencia[] = []
       for (const d of jogadores.docs) {
         const p = d.data() as Player
-        const ctx = contextoDoJogador(p, stats.get(d.id) ?? null, 0, paraMillis(p.criadoEm))
+        const ctx = contextoDoJogador(p, stats.get(d.id) ?? null, seguidas.get(d.id) ?? 0)
         for (const c of CONQUISTAS) {
-          if (c.id === 'assiduo' || !c.ok(ctx) || jaTem.has(`${d.id}_${c.id}`)) continue
+          if (!c.ok(ctx) || jaTem.has(`${d.id}_${c.id}`)) continue
           lista.push({ uid: d.id, nome: p.nomeCompleto?.trim() || '(sem nome)', conquista: c })
         }
       }

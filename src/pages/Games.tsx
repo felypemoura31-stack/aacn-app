@@ -7,6 +7,7 @@ import { cancelarMinhaInscricao, formatarCreditos, inscreverNoJogo, reais } from
 import { useWallet } from '../lib/useWallet'
 import { ExtratoCreditos } from '../components/ExtratoCreditos'
 import { AdicionarAoCalendario } from '../components/AdicionarAoCalendario'
+import { BotaoListaWhatsapp } from '../components/BotaoListaWhatsapp'
 import { ListaDeInscritos } from '../components/ListaDeInscritos'
 import { TimesSorteadosDoJogo, type SorteioPublicado } from '../components/TimesSorteadosDoJogo'
 import type { Game, Participation } from '../types'
@@ -24,6 +25,7 @@ export function Games() {
   const [games, setGames] = useState<Game[]>([])
   const [minhas, setMinhas] = useState<Participation[]>([])
   const [sorteios, setSorteios] = useState<Record<string, SorteioPublicado>>({})
+  const [recemInscrito, setRecemInscrito] = useState<string | null>(null) // jogo em que a pessoa acabou de se inscrever
   const [busyId, setBusyId] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -133,6 +135,12 @@ export function Games() {
                     {(g.espera ?? 0) > 0 && ` · ${g.espera} na lista de espera`}
                   </p>
                   {g.descricao && <p className="mt-2 whitespace-pre-line text-sm text-mute">{g.descricao}</p>}
+                  {recemInscrito === g.id && p?.status === 'ativa' && (
+                    <div className="mt-3 rounded-sm border border-ok/40 bg-ok/10 p-3">
+                      <p className="mb-2 text-sm font-semibold text-ok">Inscrição feita! Avise o pessoal no WhatsApp:</p>
+                      <BotaoListaWhatsapp jogo={g} destaque />
+                    </div>
+                  )}
                   {g.data >= hojeIso && <AdicionarAoCalendario jogo={g} />}
                   <ListaDeInscritos jogo={g} meuUid={player.uid} />
                   {sorteios[g.id] && <TimesSorteadosDoJogo sorteio={sorteios[g.id]} meuUid={player.uid} />}
@@ -166,11 +174,25 @@ export function Games() {
                       <button disabled={busyId === g.id} onClick={() => agir(g, () => cancelarMinhaInscricao(p))} className="mt-1 text-[11px] text-danger hover:underline">
                         Cancelar inscrição
                       </button>
+                      {recemInscrito !== g.id && (
+                        <div>
+                          <BotaoListaWhatsapp jogo={g} />
+                        </div>
+                      )}
                     </>
                   )}
 
                   {!p && (
-                    <button disabled={busyId === g.id} onClick={() => agir(g, () => inscreverNoJogo(player, g))} className="btn-primary">
+                    <button
+                      disabled={busyId === g.id}
+                      onClick={() =>
+                        agir(g, async () => {
+                          const r = await inscreverNoJogo(player, g)
+                          if (r === 'ativa') setRecemInscrito(g.id)
+                        })
+                      }
+                      className="btn-primary"
+                    >
                       {lotado ? 'Entrar na lista de espera' : 'Inscrever-se'}
                     </button>
                   )}

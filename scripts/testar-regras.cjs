@@ -271,6 +271,37 @@ t('auditoria: organizador NAO registra baixa de Pix', 'DENY', 'o1', 'create', 'a
 t('auditoria: admin registra o peso do sorteio', 'ALLOW', 'a1', 'create', 'auditoria/r1', { ...regSorteio, acao: 'peso_sorteio', porUid: 'a1', porNome: 'Adm' }, null, adm())
 t('auditoria: jogador NAO registra sorteio', 'DENY', 'u1', 'create', 'auditoria/r1', { ...regSorteio, porUid: 'u1' }, null, dono())
 
+// ===== sequencia de mensalidades (1 ano de AACN = 12 seguidas) e fim da conquista Assiduo
+const seq = { meses: 12 }
+t('sequencia: tesoureiro grava na baixa', 'ALLOW', 't1', 'update', 'sequencias/u2', seq, { meses: 11 }, tes())
+t('sequencia: admin grava', 'ALLOW', 'a1', 'create', 'sequencias/u2', { meses: 1 }, null, adm())
+t('sequencia: zerar (reset/estorno) vale', 'ALLOW', 't1', 'update', 'sequencias/u2', { meses: 0 }, seq, tes())
+t('sequencia: organizador NAO grava', 'DENY', 'o1', 'update', 'sequencias/u2', seq, { meses: 1 }, org())
+t('sequencia: jogador NAO grava a propria', 'DENY', 'u1', 'update', 'sequencias/u1', seq, { meses: 1 }, dono())
+t('sequencia: jogador NAO cria a propria', 'DENY', 'u1', 'create', 'sequencias/u1', seq, null, dono())
+t('sequencia: NAO campo extra', 'DENY', 't1', 'update', 'sequencias/u2', { ...seq, bonus: 100 }, seq, tes())
+t('sequencia: NAO negativa', 'DENY', 't1', 'update', 'sequencias/u2', { meses: -1 }, seq, tes())
+t('sequencia: NAO em texto', 'DENY', 't1', 'update', 'sequencias/u2', { meses: '12' }, seq, tes())
+t('sequencia: NAO fracionada', 'DENY', 't1', 'update', 'sequencias/u2', { meses: 12.5 }, seq, tes())
+t('sequencia: NAO absurda', 'DENY', 't1', 'update', 'sequencias/u2', { meses: 5000 }, seq, tes())
+t('sequencia: dono le a propria', 'ALLOW', 'u1', 'get', 'sequencias/u1', null, seq, dono())
+t('sequencia: jogador NAO le a de outro', 'DENY', 'u1', 'get', 'sequencias/u2', null, seq, dono())
+t('sequencia: tesoureiro le', 'ALLOW', 't1', 'get', 'sequencias/u2', null, seq, tes())
+t('sequencia: dono apaga junto com a conta', 'ALLOW', 'u1', 'delete', 'sequencias/u1', null, seq, dono())
+t('sequencia: jogador NAO apaga a de outro', 'DENY', 'u1', 'delete', 'sequencias/u2', null, seq, dono())
+t('sequencia: admin apaga', 'ALLOW', 'a1', 'delete', 'sequencias/u2', null, seq, adm())
+
+const noAno = (meses) => dono([mockGet('get', 'sequencias/u1', { meses })])
+t('ano: 12 mensalidades seguidas libera os 100 creditos', 'ALLOW', 'u1', 'create', 'conquistas/u1_ano', { uid: 'u1', conquista: 'ano', creditos: 100 }, null, noAno(12))
+t('ano: mais de 12 tambem vale', 'ALLOW', 'u1', 'create', 'conquistas/u1_ano', { uid: 'u1', conquista: 'ano', creditos: 100 }, null, noAno(18))
+t('ano: 11 NAO basta', 'DENY', 'u1', 'create', 'conquistas/u1_ano', { uid: 'u1', conquista: 'ano', creditos: 100 }, null, noAno(11))
+t('ano: sem sequencia registrada NAO libera', 'DENY', 'u1', 'create', 'conquistas/u1_ano', { uid: 'u1', conquista: 'ano', creditos: 100 }, null, dono())
+t('ano: NAO com valor diferente de 100', 'DENY', 'u1', 'create', 'conquistas/u1_ano', { uid: 'u1', conquista: 'ano', creditos: 500 }, null, noAno(12))
+t('ano: admin ainda concede na mao (excecao)', 'ALLOW', 'a1', 'create', 'conquistas/u2_ano', { uid: 'u2', conquista: 'ano', creditos: 100, concedidaPor: 'a1', concedidaPorNome: 'Adm' }, null, adm())
+t('lenda: continua valendo com 25 jogos', 'ALLOW', 'u1', 'create', 'conquistas/u1_lenda', { uid: 'u1', conquista: 'lenda', creditos: 20 }, null, dono([mockGet('get', 'stats/u1', { jogos: 25 })]))
+t('assiduo: NAO existe mais (jogador nao resgata)', 'DENY', 'u1', 'create', 'conquistas/u1_assiduo', { uid: 'u1', conquista: 'assiduo', creditos: 20 }, null, dono([mockGet('get', 'stats/u1', { jogos: 30 })]))
+t('assiduo: NAO existe mais (admin nao concede)', 'DENY', 'a1', 'create', 'conquistas/u2_assiduo', { uid: 'u2', conquista: 'assiduo', creditos: 20, concedidaPor: 'a1', concedidaPorNome: 'Adm' }, null, adm())
+
 // ---------- execucao
 ;(async () => {
   const token = await auth.getAccessToken(cfg.tokens.refresh_token, [])

@@ -4,8 +4,7 @@ import { db } from '../firebase'
 import { useAuth } from './AuthContext'
 import { CONQUISTAS, contextoDoJogador, reivindicarConquista, type ContextoConquistas, type DefConquista } from '../lib/conquistas'
 import { formatarCreditos } from '../lib/credits'
-import { paraMillis } from '../lib/status'
-import type { ConquistaResgatada, Estatisticas, Game, Participation } from '../types'
+import type { ConquistaResgatada, Estatisticas } from '../types'
 
 export interface ConquistaDoJogador extends DefConquista {
   /** Atingiu a meta (mesmo que o bônus ainda esteja sendo creditado). */
@@ -37,8 +36,7 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
   const uid = player?.uid
   const [stats, setStats] = useState<Estatisticas | null | undefined>(undefined)
   const [resgatadas, setResgatadas] = useState<Record<string, ConquistaResgatada> | null>(null)
-  const [parts, setParts] = useState<Participation[]>([])
-  const [games, setGames] = useState<Game[]>([])
+  const [sequencia, setSequencia] = useState(0)
   const [avisos, setAvisos] = useState<{ id: string; texto: string }[]>([])
   const ocupado = useRef(false)
   const falhou = useRef(new Set<string>())
@@ -48,7 +46,7 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setStats(undefined)
     setResgatadas(null)
-    setParts([])
+    setSequencia(0)
     setAvisos([])
     falhou.current.clear()
     tentativas.current.clear()
@@ -60,24 +58,15 @@ export function ConquistasProvider({ children }: { children: ReactNode }) {
         s.docs.forEach((d) => (m[(d.data() as ConquistaResgatada).conquista] = d.data() as ConquistaResgatada))
         setResgatadas(m)
       }),
-      onSnapshot(query(collection(db, 'participations'), where('uid', '==', uid)), (s) =>
-        setParts(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation)),
-      ),
-      onSnapshot(collection(db, 'games'), (s) => setGames(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Game))),
+      // mensalidades pagas em sequência (a tesouraria atualiza a cada baixa): alimenta o "1 ano de AACN"
+      onSnapshot(doc(db, 'sequencias', uid), (s) => setSequencia(s.exists() ? Number((s.data() as { meses?: number }).meses ?? 0) : 0), () => setSequencia(0)),
     ]
     return () => unsubs.forEach((u) => u())
   }, [uid])
 
-  // faltas: inscrito, o jogo já passou e nunca fez check-in
-  const faltas = useMemo(() => {
-    const hoje = new Date().toISOString().slice(0, 10)
-    const dataPorJogo = new Map(games.map((g) => [g.id, g.data]))
-    return parts.filter((p) => p.status === 'ativa' && (dataPorJogo.get(p.gameId) ?? '9999') < hoje).length
-  }, [parts, games])
-
   const contexto = useMemo(
-    () => contextoDoJogador({ timeAprovado: !!player?.timeAprovado, role: player?.role ?? 'player', cargos: player?.cargos }, stats ?? null, faltas, paraMillis(player?.criadoEm)),
-    [player?.timeAprovado, player?.role, player?.cargos, player?.criadoEm, stats, faltas],
+    () => contextoDoJogador({ timeAprovado: !!player?.timeAprovado, role: player?.role ?? 'player', cargos: player?.cargos }, stats ?? null, sequencia),
+    [player?.timeAprovado, player?.role, player?.cargos, stats, sequencia],
   )
 
   const conquistas = useMemo<ConquistaDoJogador[]>(

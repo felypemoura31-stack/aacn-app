@@ -110,14 +110,14 @@ service cloud.firestore {
     // ser iguais aos de src/lib/conquistas.ts.
     function bonusConquista(c) {
       return {
-        'primeiro': 5, 'campo': 10, 'veterano': 15, 'lenda': 20, 'assiduo': 20,
+        'primeiro': 5, 'campo': 10, 'veterano': 15, 'lenda': 20,
         'noturno1': 5, 'penumbra': 5, 'escuridao': 10, 'sombras': 20,
         'emdia': 30, 'ano': 100, 'time': 5, 'parceiro': 10
       }.get(c, 0);
     }
 
     function metaJogos(c) {
-      return { 'primeiro': 1, 'campo': 5, 'veterano': 10, 'lenda': 25, 'assiduo': 5 }.get(c, 1000000);
+      return { 'primeiro': 1, 'campo': 5, 'veterano': 10, 'lenda': 25 }.get(c, 1000000);
     }
 
     function metaNoturnos(c) {
@@ -125,15 +125,14 @@ service cloud.firestore {
     }
 
     // Só vale se o jogador de fato atingiu a conquista: os contadores (stats) são gravados apenas
-    // pela organização/tesouraria no check-in e na confirmação de mensalidade. O "assíduo" depende
-    // também das faltas, que o banco não tem como contar: aqui só se exigem os 5 jogos.
+    // pela organização/tesouraria no check-in e na confirmação de mensalidade. O "1 ano de AACN" exige 12
+    // mensalidades seguidas (sequencias/{uid}, que só a tesouraria grava a cada baixa ou estorno).
     function conquistaElegivel(uid, c) {
       return (c == 'time' &&
           get(/databases/$(database)/documents/players/$(uid)).data.timeAprovado == true) ||
         (c == 'ano' &&
-          get(/databases/$(database)/documents/players/$(uid)).data.get('criadoEm', null) is timestamp &&
-          get(/databases/$(database)/documents/players/$(uid)).data.criadoEm + duration.value(365, 'd') <= request.time) ||
-        (c in ['primeiro', 'campo', 'veterano', 'lenda', 'assiduo'] &&
+          get(/databases/$(database)/documents/sequencias/$(uid)).data.get('meses', 0) >= 12) ||
+        (c in ['primeiro', 'campo', 'veterano', 'lenda'] &&
           get(/databases/$(database)/documents/stats/$(uid)).data.get('jogos', 0) >= metaJogos(c)) ||
         (c in ['noturno1', 'penumbra', 'escuridao', 'sombras'] &&
           get(/databases/$(database)/documents/stats/$(uid)).data.get('noturnos', 0) >= metaNoturnos(c)) ||
@@ -468,6 +467,17 @@ service cloud.firestore {
       allow update: if (isFinanceiro() && statsValidos(request.resource.data)) ||
         (isOrganizador() && checkinConta(uid, resource.data.get('jogos', 0), resource.data.get('noturnos', 0), resource.data.get('mensalidades', 0)));
       allow delete: if isAdmin();
+    }
+
+    // Mensalidades pagas em sequência (sem deixar vencer): um documento por jogador, gravado só pela tesouraria no mesmo
+    // lote de cada baixa e de cada estorno. O dono lê o próprio (para mostrar o progresso do "1 ano de AACN") e sai junto
+    // com a conta; o admin apaga (reset e exclusão).
+    match /sequencias/{uid} {
+      allow read: if isOwner(uid) || isFinanceiro();
+      allow create, update: if isFinanceiro() &&
+        request.resource.data.keys().hasOnly(['meses', 'atualizadoEm']) &&
+        request.resource.data.meses is int && request.resource.data.meses >= 0 && request.resource.data.meses <= 1200;
+      allow delete: if isAdmin() || isOwner(uid);
     }
 
     // Conquistas resgatadas: um documento por jogador e conquista ("<uid>_<conquista>"), criado só

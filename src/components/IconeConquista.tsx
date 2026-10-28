@@ -2,7 +2,6 @@ import primeiro from '../assets/conquistas/primeiro.svg'
 import campo from '../assets/conquistas/campo.svg'
 import veterano from '../assets/conquistas/veterano.svg'
 import lenda from '../assets/conquistas/lenda.svg'
-import assiduo from '../assets/conquistas/assiduo.svg'
 import noturno1 from '../assets/conquistas/noturno1.svg'
 import penumbra from '../assets/conquistas/penumbra.svg'
 import escuridao from '../assets/conquistas/escuridao.svg'
@@ -22,7 +21,6 @@ const ICONES: Record<string, string> = {
   campo,
   veterano,
   lenda,
-  assiduo,
   noturno1,
   penumbra,
   escuridao,

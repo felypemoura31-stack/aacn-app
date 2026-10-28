@@ -136,6 +136,7 @@ export async function resetarJogador(uid: string, o: OpcoesReset, quem: { autor:
       }).catch(() => {})
     }
     await setDoc(doc(db, 'stats', uid), { mensalidades: 0, atualizadoEm: serverTimestamp() }, { merge: true })
+    await setDoc(doc(db, 'sequencias', uid), { meses: 0, atualizadoEm: serverTimestamp() })
     feito.push(`Mensalidade: ${pagamentos.length} pagamento(s) apagado(s) e situação voltou para inadimplente.`)
   }
 

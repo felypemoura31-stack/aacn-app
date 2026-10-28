@@ -399,12 +399,12 @@ inscrições; quem já jogou e pagou com créditos recebe o **estorno** no extra
 
 ## Insígnias das conquistas e conquistas na carteirinha
 
-- **Ícones táticos** (os 12 arquivos SVG fornecidos pela associação, em `src/assets/conquistas/`, um por conquista, com o id da conquista no nome: `primeiro.svg`, `campo.svg`, `veterano.svg`, `lenda.svg`, `assiduo.svg`, `noturno1.svg`, `penumbra.svg`, `escuridao.svg`, `sombras.svg`, `emdia.svg`, `ano.svg`, `time.svg`). Para trocar um ícone, basta substituir o arquivo (mantendo o nome). O componente `IconeConquista` os carrega como imagem, então os identificadores internos de um SVG não se misturam com os de outro. Aparecem no histórico, no painel de conquistas, na ficha do admin e na carteirinha.
+- **Ícones táticos** (os 12 arquivos SVG fornecidos pela associação, em `src/assets/conquistas/`, um por conquista, com o id da conquista no nome: `primeiro.svg`, `campo.svg`, `veterano.svg`, `lenda.svg`, `noturno1.svg`, `penumbra.svg`, `escuridao.svg`, `sombras.svg`, `emdia.svg`, `ano.svg`, `time.svg`). Para trocar um ícone, basta substituir o arquivo (mantendo o nome). O componente `IconeConquista` os carrega como imagem, então os identificadores internos de um SVG não se misturam com os de outro. Aparecem no histórico, no painel de conquistas, na ficha do admin e na carteirinha.
 - **Na carteirinha:** na faixa livre **abaixo da foto** (10,5 mm de lado cada ícone, alinhados à esquerda, sem encostar no time nem no QR) o jogador coloca **até 3 conquistas à escolha dele**. Em **Minha carteirinha**, no painel **Conquistas**, ele toca nas insígnias para escolher (a ordem da escolha é a ordem na carteirinha; tocar de novo tira; o quarto avisa que não cabe). As insígnias saem na impressão (admin e tesoureiro imprimindo a carteirinha de outro jogador também as veem). As regras do banco só deixam escolher conquistas que o jogador de fato tem (máximo 3). Se o admin **remove** uma conquista ou faz o reset de conquistas, ela sai da carteirinha também.
 
 ## Conceder e remover conquistas (admin)
 
-Na **ficha do jogador** (Admin → Jogadores → o jogador), o painel **Conquistas** (recolhido, mostra "n/12") traz duas linhas de etiquetas: **Conquistadas** e **Ainda pode conquistar** (cada uma com o bônus em créditos). Clicar numa etiqueta abre a ação logo abaixo: **Conceder conquista** (com a opção de pagar o bônus, que entra no extrato) ou **Remover conquista** (com a opção de retirar do saldo os créditos que ela pagou). **Remover** apaga a conquista de vez: ela volta a ficar igual às outras, "a conquistar", sem nenhuma marca de removida. Se o jogador ainda cumpre a meta, o app dele a concede de novo sozinho na próxima vez que abrir. Em **Admin → Jogadores**, o link **Conferir conquistas pendentes** procura quem já atingiu uma conquista e não recebeu e concede todas de uma vez (o **Assíduo** fica de fora, pois depende de faltas). Só o admin concede/remove, e o bônus é sempre o da conquista (ou zero).
+Na **ficha do jogador** (Admin → Jogadores → o jogador), o painel **Conquistas** (recolhido, mostra "n/12"; são 12 conquistas, a de lojista é exclusiva) traz duas linhas de etiquetas: **Conquistadas** e **Ainda pode conquistar** (cada uma com o bônus em créditos). Clicar numa etiqueta abre a ação logo abaixo: **Conceder conquista** (com a opção de pagar o bônus, que entra no extrato) ou **Remover conquista** (com a opção de retirar do saldo os créditos que ela pagou). **Remover** apaga a conquista de vez: ela volta a ficar igual às outras, "a conquistar", sem nenhuma marca de removida. Se o jogador ainda cumpre a meta, o app dele a concede de novo sozinho na próxima vez que abrir. Em **Admin → Jogadores**, o link **Conferir conquistas pendentes** procura quem já atingiu uma conquista e não recebeu e concede todas de uma vez (o **Assíduo** fica de fora, pois depende de faltas). Só o admin concede/remove, e o bônus é sempre o da conquista (ou zero).
 
 **Por que alguém pode ficar sem a conquista automática:** o resgate é feito pelo app do próprio jogador, quando ele abre o app depois de atingir a meta. Se o aparelho dele está com uma versão antiga do app, ou nunca abriu depois da aprovação no time, o resgate não acontece. O app agora tenta de novo se a primeira tentativa falhar, e a conferência do admin cobre os casos que ficaram para trás.
 
@@ -431,9 +431,8 @@ na carteira (e aparece no extrato como "Bônus") assim que ela é atingida:
 | Em campo | 5 jogos | 10 |
 | Veterano | 10 jogos | 15 |
 | Lenda | 25 jogos | 20 |
-| Assíduo | frequência ≥ 80% (a partir de 5 jogos) | 20 |
 | Em dia | 3 mensalidades pagas | 30 |
-| 1 ano de AACN | 1 ano de associado | 100 |
+| 1 ano de AACN | **12 mensalidades pagas em sequência**, sem atraso | 100 |
 | Parte de um time | membro aprovado de um time | 5 |
 | Primeiro noturno | 1 jogo noturno | 5 |
 | Na penumbra | 5 jogos noturnos | 5 |
@@ -452,8 +451,9 @@ passando de "ativa" para "presente"). O resgate cria o documento `conquistas/{ui
 nunca editado nem apagado), soma exatamente o bônus na carteira e lança no extrato, tudo em um lote que as regras
 amarram. Os valores e metas estão em `src/lib/conquistas.ts` **e** em `firestore.rules` (mude nos dois).
 Se a diretoria remover uma presença, o contador desce, mas bônus já pagos continuam com o jogador.
-Limite conhecido: o banco não consegue contar **faltas**, então no **Assíduo** ele confere só os 5 jogos; o
-percentual de 80% é calculado no app.
+**Conquista "Assíduo" removida:** ela dependia de contar faltas, que o banco não consegue conferir, e foi retirada (do app, das regras e do ícone). Ninguém a tinha recebido; se alguém a tivesse, o bônus que já foi pago continuaria com o jogador.
+
+**"1 ano de AACN" = 12 mensalidades seguidas.** Antes bastava ter a conta há um ano; agora é preciso ter **pago 12 mensalidades consecutivas**. "Consecutivas" quer dizer que **nunca ficou inadimplente entre um pagamento e o outro**: cada baixa conta como um mês e só entra na sequência se o Pix foi pago **até o vencimento** que o pagamento anterior deixou (pagar adiantado vale; deixar vencer e pagar depois **zera a conta e recomeça de 1**). É a mesma regra de vencimento de 30 dias da baixa. A sequência fica em `sequencias/{uid}` (`meses`), gravada **só pela tesouraria no mesmo lote de cada baixa e de cada estorno** (o estorno refaz a conta com as baixas que sobraram; o reset de mensalidades zera; excluir o jogador ou a própria conta apaga). As regras do banco liberam a conquista só com `meses ≥ 12`; o jogador vê o progresso ("5/12") no Histórico. Os jogadores que já tinham pagamentos receberam a sequência calculada a partir deles (hoje todos começam em 1 ou 2). Para uma exceção (por exemplo, quem pagou 12 meses mas atrasou alguns dias), o admin concede a conquista na mão, na ficha do jogador.
 
 ## Barra de navegação
 
@@ -610,14 +610,15 @@ Para **admin, tesoureiro e organizador**. Sorteia os jogadores **presentes** num
 
 - **Check-in** (admin, tesoureiro e organizador), em **Gestão → Jogos → Check-in por QR**: escolher o jogo, **ler o QR** da carteirinha (câmera) ou colar o código, ou tocar em "Fazer check-in" na **lista de inscritos**, e então **debitar os créditos** (o app confere o saldo) ou registrar que recebeu em **dinheiro**. As regras do banco permitem que organizador, tesoureiro e admin façam o check-in com débito (no organizador, amarrado ao jogo, ao saldo exato e à presença no mesmo lote). Quem chegou **sem inscrição** (ou está na lista de espera) pode ser **inscrito e ter a presença confirmada na hora** por **admin e tesoureiro**, debitando créditos ou em dinheiro; o organizador só confirma os inscritos e é avisado de que precisa de um admin ou tesoureiro nesse caso. Cada check-in atualiza o ranking de presença. (O painel chegou a ficar na tela inicial, mas foi retirado: a tela inicial é a carteirinha. O painel é um componente reutilizável, `src/components/PainelCheckin.tsx`.)
 - **Lista de inscritos na aba Jogos (todos os associados):** cada jogo tem o link **"Ver lista de inscritos (N)"**, que abre a lista em ordem alfabética com o **time** de cada um, o selo **presente** de quem já fez check-in e o seu nome destacado ("você"); mostra também quantos estão na lista de espera, **sem os nomes** da espera. A lista só é lida quando a pessoa abre (poucas leituras), e o time vem do cartão público, baixado uma vez por visita. As regras do banco deixam qualquer jogador logado ler as inscrições **ativas** e as **presenças** (a consulta precisa filtrar por status); a **lista de espera e as inscrições removidas continuam privadas** (só a diretoria e o próprio jogador leem).
+- **Enviar a lista no WhatsApp (quem se inscreve):** logo **depois de se inscrever** num jogo, o cartão do jogo mostra "Inscrição feita! Avise o pessoal no WhatsApp:" com o botão **Enviar a lista no WhatsApp**; quem já está inscrito continua vendo o link no cartão. Ele abre o WhatsApp com o **mesmo texto da lista que a diretoria envia** (nome do jogo, local, data, chegada, valores, "Lista de operadores" com **nome e time** na ordem de inscrição, e "Se inscreva pelo link" apontando direto para o jogo) e a pessoa escolhe o grupo. A lista é montada antes do toque (com os inscritos de agora), para o navegador não bloquear; a lista de espera não entra, porque os jogadores não a leem.
 
 ## Testes das regras do Firestore
 
 As regras são verificadas contra o Firebase com a API de testes de regras, caso a caso (o que organizador, tesoureiro, admin e
 jogador podem e não podem fazer). O executor está **no repositório**: `node scripts/testar-regras.cjs` (precisa do
-`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **152 casos**, cobrindo as regras criadas
+`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **178 casos**, cobrindo as regras criadas
 a partir da baixa com log: baixa/estorno, desfazer ajuste, histórico de ações, caixa, prestação de contas, ranking, leitura de
-avisos, foto obrigatória (cadastro e inscrição em jogo), pesos, sorteio de times e a lista de inscritos. `RULES=outro.rules node scripts/testar-regras.cjs`
+avisos, foto obrigatória (cadastro e inscrição em jogo), pesos, sorteio de times, a lista de inscritos, a sequência de mensalidades e o fim do Assíduo. `RULES=outro.rules node scripts/testar-regras.cjs`
 testa uma versão alterada das regras (serve para conferir que um teste realmente "pega" uma falha). **Observação:** a bateria
 anterior (578 casos, que também cobria as regras mais antigas: organizador, check-in, CPF, times, parceiros, conquistas...) ficava
 numa pasta temporária e foi perdida; os casos de regras antigas precisam ser recriados aqui aos poucos, e toda regra nova deve entrar
