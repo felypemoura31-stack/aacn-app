@@ -181,6 +181,8 @@ export interface Participation {
   presenteEm?: number
   checkInPor?: string
   checkInPorNome?: string
+  /** Convidado: não é associado (nem tem cadastro), joga só este jogo e paga em dinheiro. O uid é "convidado_...". */
+  convidado?: boolean
 }
 
 export type LedgerTipo = 'pagamento' | 'jogo' | 'estorno' | 'ajuste' | 'bonus' | 'estorno_pagamento'

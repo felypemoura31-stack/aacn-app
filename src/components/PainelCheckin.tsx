@@ -9,9 +9,11 @@ import {
   adminAdicionarParticipante,
   fazerCheckIn,
   formatarCreditos,
+  inscreverConvidado,
   lerCarteira,
   participationId,
   reais,
+  removerConvidado,
 } from '../lib/credits'
 import { construirRanking } from '../lib/ranking'
 import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../lib/status'
@@ -82,6 +84,8 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
   const [carregando, setCarregando] = useState(false)
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const [convidadoAberto, setConvidadoAberto] = useState(false)
+  const [convidadoNome, setConvidadoNome] = useState('')
 
   useEffect(() => {
     const q = query(collection(db, 'games'), orderBy('data', 'desc'))
@@ -200,6 +204,41 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
     }
   }
 
+  async function incluirConvidado(e: FormEvent) {
+    e.preventDefault()
+    if (!game || !staff) return
+    const nome = convidadoNome.trim().replace(/\s+/g, ' ')
+    if (nome.length < 2) return setAviso({ tipo: 'erro', texto: 'Informe o nome do convidado.' })
+    const repetido = lista.some((p) => p.convidado && p.jogadorNome.toLowerCase() === nome.toLowerCase())
+    if (repetido && !window.confirm(`Já existe um convidado chamado "${nome}" neste jogo. Inscrever outro mesmo assim?`)) return
+    setEnviando(true)
+    setAviso(null)
+    try {
+      await inscreverConvidado(game, nome, { uid: staff.uid, nome: staff.nomeCompleto })
+      setAviso({ tipo: 'ok', texto: `${nome} entrou como convidado, com a presença confirmada (pagou ${reais(game.valor)} em dinheiro).` })
+      setConvidadoNome('')
+      setConvidadoAberto(false)
+    } catch (err) {
+      setAviso({ tipo: 'erro', texto: (err as Error).message || 'Não foi possível inscrever o convidado. Tente de novo.' })
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  async function retirarConvidado(p: Participation) {
+    if (!staff || !window.confirm(`Retirar o convidado ${p.jogadorNome} deste jogo? A vaga volta e o valor sai do caixa.`)) return
+    setEnviando(true)
+    setAviso(null)
+    try {
+      await removerConvidado(p, { uid: staff.uid, nome: staff.nomeCompleto })
+      setAviso({ tipo: 'ok', texto: `O convidado ${p.jogadorNome} foi retirado do jogo.` })
+    } catch (err) {
+      setAviso({ tipo: 'erro', texto: (err as Error).message || 'Não foi possível retirar o convidado. Tente de novo.' })
+    } finally {
+      setEnviando(false)
+    }
+  }
+
   const status = alvo ? statusEfetivo(alvo.cartao) : null
   const jaPresente = alvo?.part?.status === 'presente'
   const cancelada = alvo?.part?.status === 'removida'
@@ -268,6 +307,46 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
           </button>
         </form>
       </div>
+
+      {game && (
+        <div className="mb-6">
+          {!convidadoAberto ? (
+            <button type="button" onClick={() => setConvidadoAberto(true)} className="btn-ghost w-full">
+              Inscrever convidado (não é associado)
+            </button>
+          ) : (
+            <form onSubmit={incluirConvidado} className="panel space-y-3 p-4">
+              <p className="text-sm font-semibold text-ink">Convidado de um jogo só</p>
+              <p className="text-xs text-mute">
+                Para quem não é associado ou não tem cadastro. Ele joga apenas “{game.nome}”, paga <b className="text-ink">obrigatoriamente em dinheiro</b> e
+                não ganha carteirinha, créditos nem ranking. A presença já fica confirmada.
+              </p>
+              {(game.vagas ?? null) !== null && (game.inscritos ?? 0) >= (game.vagas ?? 0) && (
+                <p className="text-xs text-warn">
+                  O jogo já está com as {game.vagas} vagas ocupadas. O convidado entra mesmo assim, acima do limite.
+                </p>
+              )}
+              <label className="block text-sm text-mute">
+                Nome do convidado
+                <input
+                  value={convidadoNome}
+                  onChange={(e) => setConvidadoNome(e.target.value)}
+                  maxLength={80}
+                  autoFocus
+                  placeholder="Nome e sobrenome"
+                  className="input mt-1"
+                />
+              </label>
+              <button type="submit" disabled={enviando || convidadoNome.trim().length < 2} className="btn-primary w-full">
+                Recebi {reais(game.valor)} em dinheiro e confirmar presença
+              </button>
+              <button type="button" onClick={() => { setConvidadoAberto(false); setConvidadoNome('') }} className="text-xs text-mute hover:underline">
+                Cancelar
+              </button>
+            </form>
+          )}
+        </div>
+      )}
 
       {carregando && <p className="mb-4 text-sm text-mute">Consultando carteirinha...</p>}
 
@@ -363,11 +442,19 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
         {lista.length === 0 && <p className="text-sm text-mute/70">Ninguém inscrito neste jogo.</p>}
         {lista.map((p) => (
           <div key={p.id} className="flex items-center justify-between rounded-sm border border-line bg-surface2 px-3 py-2 text-sm">
-            <span className="text-ink">{p.jogadorNome}</span>
+            <span className="text-ink">
+              {p.jogadorNome}
+              {p.convidado && <span className="ml-2 rounded-full border border-line px-1.5 py-0.5 text-[10px] font-semibold text-mute">convidado</span>}
+            </span>
             {p.status === 'presente' ? (
               <span className="text-xs text-ok">
                 presente ·{' '}
                 {p.pagoCom === 'creditos' ? `−${formatarCreditos(p.creditosDebitados)} créditos` : 'dinheiro'}
+                {p.convidado && (podeInscrever || p.checkInPor === staff?.uid) && (
+                  <button type="button" disabled={enviando} onClick={() => retirarConvidado(p)} className="ml-2 text-mute hover:text-danger hover:underline">
+                    retirar
+                  </button>
+                )}
               </span>
             ) : (
               <button onClick={() => processar(p.uid)} className="text-xs text-accent-hi hover:underline">

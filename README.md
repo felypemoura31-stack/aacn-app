@@ -528,6 +528,23 @@ Disponível em **Gestão → Check-in por QR** para admin, tesoureiro e organiza
    toque em **Debitar X créditos e confirmar presença** (ou **Recebi em dinheiro**, quando o saldo
    não cobre). O débito, o extrato e a presença são gravados juntos, uma única vez por jogador.
 4. A lista de inscritos mostra quem já está presente e como pagou.
+5. **Convidado (quem não é associado ou não tem cadastro):** o botão **"Inscrever convidado (não é associado)"**, logo abaixo da leitura do QR,
+   serve para quem vai jogar **só aquele jogo**. Basta digitar o **nome** e tocar em **"Recebi R$ X em dinheiro e confirmar presença"**: o valor
+   é o do jogo e o pagamento é **obrigatoriamente em dinheiro** (o convidado não tem carteira, então não existe a opção de créditos). Vale
+   para admin, tesoureiro **e organizador**.
+   - **O que o convidado é:** uma inscrição **já com presença confirmada** (id `<jogo>_convidado_<código>`, com `convidado: true`). **Não** cria
+     conta, carteirinha, carteira, créditos, conquistas nem ranking. **Conta** como inscrito do jogo (ocupa uma vaga; se o jogo já estiver
+     lotado o app avisa e inscreve mesmo assim), entra na **lista do WhatsApp** ("Fulano - convidado"), na **lista de inscritos** da aba Jogos
+     (marcado "convidado"), no **sorteio de times** (peso 1; dá para desmarcar) e no **caixa** como "Jogos pagos em dinheiro".
+   - **Errou?** Na lista do check-in aparece **"retirar"** ao lado do convidado: a inscrição some, a vaga volta e o dinheiro sai do caixa. O
+     organizador só retira o convidado que **ele mesmo** lançou; admin e tesoureiro retiram qualquer um. Cada inscrição e cada retirada ficam no
+     **Histórico de ações** (ação "Convidado").
+   - **Regras do banco:** o organizador só cria a inscrição se ela vier **presente, paga em dinheiro, sem créditos, com `convidado: true`, id
+     de convidado e a hora do servidor**, assinada por ele, e **no mesmo lote em que o contador de inscritos do jogo sobe 1**; não consegue
+     editar o convidado depois, nem apagar a presença de um associado. O app **não guarda telefone** do convidado de propósito: as presenças
+     são legíveis por todos os associados e o número vazaria.
+   - **Limite:** o convidado não passa pelo termo de responsabilidade do cadastro; confirme com o jogador no campo, como já é feito com
+     quem joga por convite.
 
 O QR da carteirinha é público (é o mesmo link de verificação dos parceiros). Por isso o app
 mostra a foto e o nome para conferência visual antes de cobrar. A câmera exige HTTPS (o site
@@ -541,14 +558,14 @@ O admin delega em **Gestão → Cargos**.
   abrir/encerrar inscrições, ver quem está inscrito e fazer o **check-in por QR** no dia do jogo
   (marca presença e debita os créditos, ou registra que recebeu em dinheiro). Vê o saldo da pessoa
   no momento do check-in.
-- **Não faz:** inscrever ou cancelar jogadores, ajustar saldo, confirmar pagamentos Pix, ver o
+- **Não faz:** inscrever ou cancelar associados (só inscreve e retira o **convidado**, veja "Check-in por QR"), ajustar saldo, confirmar pagamentos Pix, ver o
   extrato, alterar a chave Pix, ver dados pessoais, apagar jogos nem alterar cargos.
 - Alterar o valor de um jogo vale para as próximas inscrições; quem já se inscreveu mantém o que
   foi cobrado.
 
 ## Histórico de ações da diretoria (Admin → Histórico de ações)
 
-Tela só do **admin** com o que a diretoria fez pelo app: **quem fez, o quê e quando**. Cada registro tem a ação (Baixa de Pix, Baixa estornada, Cobrança cancelada, Chave Pix, Ajuste de créditos, Ajuste desfeito, Caixa, Prestação de contas, Jogador excluído, Conta excluída, Dados resetados, Ficha editada, Cargo, Conquista concedida/removida, Representante de time, Jogo excluído, Inscrição removida), uma frase pronta ("Deu baixa no Pix de R$ 15,00 de Fulano (pago em 06/10/2026; +30 créditos)"), o autor e, quando há, o jogador atingido.
+Tela só do **admin** com o que a diretoria fez pelo app: **quem fez, o quê e quando**. Cada registro tem a ação (Baixa de Pix, Baixa estornada, Cobrança cancelada, Chave Pix, Ajuste de créditos, Ajuste desfeito, Caixa, Prestação de contas, Jogador excluído, Conta excluída, Dados resetados, Ficha editada, Cargo, Conquista concedida/removida, Representante de time, Jogo excluído, Inscrição removida, Convidado), uma frase pronta ("Deu baixa no Pix de R$ 15,00 de Fulano (pago em 06/10/2026; +30 créditos)"), o autor e, quando há, o jogador atingido.
 
 - **Filtros:** por grupo (Dinheiro, Pessoas, Jogos), por quem fez, por mês e busca por nome ou texto. Mostra os 100 mais recentes e carrega mais sob demanda.
 - **Quando o registro é gravado:** nas ações que já são um lote (baixa, estorno, ajuste, desfazer, conquista, remover inscrição, excluir jogo, excluir jogador, excluir a própria conta, caixa) o registro vai **no mesmo lote**: não existe a ação sem o registro. Nas demais (cancelar cobrança, mudar a chave Pix, cargos, editar ficha, resetar dados, representante de time) ele é gravado logo depois.
@@ -616,9 +633,9 @@ Para **admin, tesoureiro e organizador**. Sorteia os jogadores **presentes** num
 
 As regras são verificadas contra o Firebase com a API de testes de regras, caso a caso (o que organizador, tesoureiro, admin e
 jogador podem e não podem fazer). O executor está **no repositório**: `node scripts/testar-regras.cjs` (precisa do
-`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **178 casos**, cobrindo as regras criadas
+`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **209 casos**, cobrindo as regras criadas
 a partir da baixa com log: baixa/estorno, desfazer ajuste, histórico de ações, caixa, prestação de contas, ranking, leitura de
-avisos, foto obrigatória (cadastro e inscrição em jogo), pesos, sorteio de times, a lista de inscritos, a sequência de mensalidades e o fim do Assíduo. `RULES=outro.rules node scripts/testar-regras.cjs`
+avisos, foto obrigatória (cadastro e inscrição em jogo), pesos, sorteio de times, a lista de inscritos, a sequência de mensalidades, o fim do Assíduo e o convidado do check-in. `RULES=outro.rules node scripts/testar-regras.cjs`
 testa uma versão alterada das regras (serve para conferir que um teste realmente "pega" uma falha). **Observação:** a bateria
 anterior (578 casos, que também cobria as regras mais antigas: organizador, check-in, CPF, times, parceiros, conquistas...) ficava
 numa pasta temporária e foi perdida; os casos de regras antigas precisam ser recriados aqui aos poucos, e toda regra nova deve entrar

@@ -14,6 +14,7 @@ export function montarListaWhatsapp(
   timePorJogador: Map<string, string | null> = new Map(),
 ): string {
   const nome = (p: Participation) => {
+    if (p.convidado) return `${p.jogadorNome} - convidado`
     const time = timePorJogador.get(p.uid)
     return time ? `${p.jogadorNome} - ${time}` : p.jogadorNome
   }

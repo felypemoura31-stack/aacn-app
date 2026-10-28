@@ -263,7 +263,7 @@ export function AdminGames() {
       `inscritos-${g.nome.replace(/\W+/g, '-').toLowerCase()}-${g.data}.csv`,
       ['Jogador', 'Situação', 'Pagamento', 'Créditos debitados', 'Check-in em', 'Check-in por'],
       lista.map((p) => [
-        p.jogadorNome,
+        p.convidado ? `${p.jogadorNome} (convidado)` : p.jogadorNome,
         p.status === 'presente' ? 'Presente' : p.status === 'espera' ? 'Lista de espera' : 'Inscrito',
         p.pagoCom === 'creditos' ? 'Créditos' : p.pagoCom === 'dinheiro' ? 'Dinheiro' : '',
         p.creditosDebitados,
@@ -346,7 +346,10 @@ export function AdminGames() {
                 <div className="mt-4 space-y-2 border-t border-line pt-3">
                   {lista.map((p) => (
                     <div key={p.id} className="flex items-center justify-between text-sm text-mute">
-                      <span className="text-ink">{p.jogadorNome}</span>
+                      <span className="text-ink">
+                        {p.jogadorNome}
+                        {p.convidado && <span className="ml-2 rounded-full border border-line px-1.5 py-0.5 text-[10px] font-semibold text-mute">convidado</span>}
+                      </span>
                       <span className="flex items-center gap-3">
                         {p.status === 'ativa'
                           ? 'aguardando check-in'

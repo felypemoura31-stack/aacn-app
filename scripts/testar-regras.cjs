@@ -199,6 +199,43 @@ t('foto: SEM foto, NAO entra nem na lista de espera', 'DENY', 'u1', 'create', 'p
   donoSemFoto([mockGet('get', 'games/g1', jogoLotado), mockGet('getAfter', 'games/g1', { ...jogoLotado, espera: 1 })]))
 t('foto: admin ainda inscreve quem esta sem foto (check-in na hora)', 'ALLOW', 'a1', 'create', 'participations/g1_u1', insc, null, adm())
 
+// ===== convidado: quem nao e associado joga so um jogo e paga em dinheiro; o organizador/tesouraria o inscreve ja presente
+const conv = { gameId: 'g1', gameNome: 'Jogo', uid: 'convidado_abc12345xyz9', jogadorNome: 'Visitante da Silva', pagoCom: 'dinheiro', creditosDebitados: 0, status: 'presente', checkInPor: 'o1', checkInPorNome: 'Org', convidado: true }
+const idConv = 'participations/g1_convidado_abc12345xyz9'
+const loteConv = (mocks = org()) => [...mocks, mockGet('get', 'games/g1', jogoV), mockGet('getAfter', 'games/g1', { ...jogoV, inscritos: 4 })]
+const loteSaiConv = (mocks = org()) => [...mocks, mockGet('get', 'games/g1', jogoV), mockGet('getAfter', 'games/g1', { ...jogoV, inscritos: 2 })]
+t('convidado: organizador inscreve ja presente, em dinheiro', 'ALLOW', 'o1', 'create', idConv, conv, null, loteConv())
+t('convidado: tesoureiro inscreve', 'ALLOW', 't1', 'create', idConv, { ...conv, checkInPor: 't1', checkInPorNome: 'Tes' }, null, loteConv(tes()))
+t('convidado: admin inscreve', 'ALLOW', 'a1', 'create', idConv, { ...conv, checkInPor: 'a1', checkInPorNome: 'Adm' }, null, loteConv(adm()))
+t('convidado: jogador NAO inscreve convidado', 'DENY', 'u1', 'create', idConv, { ...conv, checkInPor: 'u1' }, null, loteConv(dono()))
+t('convidado: NAO paga com creditos (nao tem carteira)', 'DENY', 'o1', 'create', idConv, { ...conv, pagoCom: 'creditos', creditosDebitados: 10 }, null, loteConv())
+t('convidado: NAO fica pendente de pagamento', 'DENY', 'o1', 'create', idConv, { ...conv, pagoCom: 'pendente' }, null, loteConv())
+t('convidado: NAO debita creditos junto com o dinheiro', 'DENY', 'o1', 'create', idConv, { ...conv, creditosDebitados: 10 }, null, loteConv())
+t('convidado: NAO entra so como inscrito (a presenca ja vem confirmada)', 'DENY', 'o1', 'create', idConv, { ...conv, status: 'ativa' }, null, loteConv())
+t('convidado: NAO usa o uid de um associado', 'DENY', 'o1', 'create', 'participations/g1_u2', { ...conv, uid: 'u2' }, null, loteConv())
+t('convidado: NAO sem a marca de convidado', 'DENY', 'o1', 'create', idConv, { ...conv, convidado: false }, null, loteConv())
+t('convidado: NAO id diferente de jogo_uid', 'DENY', 'o1', 'create', 'participations/g1_convidado_outro1234', conv, null, loteConv())
+t('convidado: NAO assina o check-in por outra pessoa', 'DENY', 'o1', 'create', idConv, { ...conv, checkInPor: 'a1' }, null, loteConv())
+t('convidado: NAO sem subir o contador de inscritos do jogo', 'DENY', 'o1', 'create', idConv, conv, null, [...org(), mockGet('get', 'games/g1', jogoV), mockGet('getAfter', 'games/g1', jogoV)])
+t('convidado: NAO sobe o contador de 2 em 2', 'DENY', 'o1', 'create', idConv, conv, null, [...org(), mockGet('get', 'games/g1', jogoV), mockGet('getAfter', 'games/g1', { ...jogoV, inscritos: 5 })])
+t('convidado: NAO campo extra na inscricao', 'DENY', 'o1', 'create', idConv, { ...conv, contato: '62999999999' }, null, loteConv())
+t('convidado: NAO nome de uma letra so', 'DENY', 'o1', 'create', idConv, { ...conv, jogadorNome: 'A' }, null, loteConv())
+t('convidado: NAO nome gigante', 'DENY', 'o1', 'create', idConv, { ...conv, jogadorNome: 'A'.repeat(81) }, null, loteConv())
+ts('convidado (estrito): NAO sem a hora do servidor', 'DENY', 'o1', 'create', idConv, conv, null, loteConv())
+ts('convidado (estrito): NAO com hora inventada', 'DENY', 'o1', 'create', idConv, { ...conv, presenteEm: '2020-01-01T00:00:00Z', criadoEm: '2020-01-01T00:00:00Z' }, null, loteConv())
+t('convidado: jogadores veem o convidado na lista de inscritos', 'ALLOW', 'u1', 'get', idConv, null, conv, dono())
+t('convidado: organizador desfaz o que ele mesmo lancou (a vaga volta)', 'ALLOW', 'o1', 'delete', idConv, null, conv, loteSaiConv())
+t('convidado: organizador NAO desfaz convidado lancado por outro', 'DENY', 'o1', 'delete', idConv, null, { ...conv, checkInPor: 'a1' }, loteSaiConv())
+t('convidado: organizador NAO desfaz sem devolver a vaga', 'DENY', 'o1', 'delete', idConv, null, conv, [...org(), mockGet('get', 'games/g1', jogoV), mockGet('getAfter', 'games/g1', jogoV)])
+t('convidado: organizador NAO apaga a presenca de um associado', 'DENY', 'o1', 'delete', 'participations/g1_u2', null, { ...inscDe('presente'), checkInPor: 'o1' }, loteSaiConv())
+t('convidado: jogador NAO apaga convidado', 'DENY', 'u1', 'delete', idConv, null, conv, loteSaiConv(dono()))
+t('convidado: tesoureiro retira convidado de qualquer organizador', 'ALLOW', 't1', 'delete', idConv, null, conv, loteSaiConv(tes()))
+t('convidado: organizador NAO edita a inscricao do convidado', 'DENY', 'o1', 'update', idConv, { ...conv, jogadorNome: 'Outro Nome' }, conv, loteConv())
+t('convidado: organizador NAO passa o convidado para creditos', 'DENY', 'o1', 'update', idConv, { ...conv, pagoCom: 'creditos', creditosDebitados: 10 }, conv, loteConv())
+t('convidado: organizador sobe o contador de inscritos do jogo', 'ALLOW', 'o1', 'update', 'games/g1', { ...jogoV, inscritos: 4 }, jogoV, org())
+t('convidado: organizador registra a acao no historico', 'ALLOW', 'o1', 'create', 'auditoria/r1', { acao: 'convidado', resumo: 'Inscreveu o convidado X no jogo "Jogo" (pagou R$ 10,00 em dinheiro)', porUid: 'o1', porNome: 'Org' }, null, org())
+t('convidado: organizador NAO registra outras acoes no historico', 'DENY', 'o1', 'create', 'auditoria/r1', { acao: 'jogo_excluido', resumo: 'x', porUid: 'o1', porNome: 'Org' }, null, org())
+
 // ===== foto obrigatoria no cadastro
 t('cadastro: nasce com foto', 'ALLOW', 'u1', 'create', 'players/u1', { ...u1, cpf: '', fotoUrl: FOTO_REAL }, null, dono())
 t('cadastro: NAO nasce sem foto', 'DENY', 'u1', 'create', 'players/u1', { ...u1, cpf: '', fotoUrl: null }, null, dono())
@@ -307,7 +344,7 @@ t('assiduo: NAO existe mais (admin nao concede)', 'DENY', 'a1', 'create', 'conqu
   const token = await auth.getAccessToken(cfg.tokens.refresh_token, [])
   const regras = fs.readFileSync(process.env.RULES || path.join(__dirname, '..', 'firestore.rules'), 'utf8')
   // a API de teste nao representa datas: nos casos comuns, "hora do servidor ausente" passa; os casos "ts" rodam nas regras reais
-  const campos = '(confirmadoEm|estornadoEm|criadoEm|editadoEm|publicadoEm|lidoEm|definidoEm)'
+  const campos = '(confirmadoEm|estornadoEm|criadoEm|editadoEm|publicadoEm|lidoEm|definidoEm|presenteEm)'
   const regrasTestaveis = regras.replace(new RegExp("get[(]'" + campos + "', null[)] == request[.]time", 'g'), "get('$1', request.time) == request.time")
   if (regrasTestaveis === regras) throw new Error('substituicao de hora nao aplicada')
   let falhas = 0

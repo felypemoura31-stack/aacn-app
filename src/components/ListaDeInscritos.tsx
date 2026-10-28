@@ -57,7 +57,7 @@ export function ListaDeInscritos({ jogo, meuUid }: { jogo: Game; meuUid: string 
                     <span className="min-w-0 flex-1 truncate">
                       <span className={p.uid === meuUid ? 'font-semibold text-gold' : 'text-ink'}>{p.jogadorNome}</span>
                       {p.uid === meuUid && <span className="ml-1 text-[11px] text-gold">(você)</span>}
-                      {times[p.uid] && <span className="ml-1 text-[11px] text-mute">· {times[p.uid]}</span>}
+                      {p.convidado ? <span className="ml-1 text-[11px] text-mute">· convidado</span> : times[p.uid] && <span className="ml-1 text-[11px] text-mute">· {times[p.uid]}</span>}
                     </span>
                     {p.status === 'presente' && <span className="shrink-0 rounded-full border border-ok/40 bg-ok/15 px-1.5 py-0.5 text-[10px] font-semibold text-ok">presente</span>}
                   </li>

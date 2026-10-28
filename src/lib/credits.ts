@@ -283,8 +283,48 @@ export async function adminAdicionarParticipante(
   await batch.commit()
 }
 
+/**
+ * Convidado: quem não é associado (ou não tem cadastro) e joga só este jogo. Entra JÁ PRESENTE e paga em DINHEIRO, sempre
+ * (não tem carteira nem créditos). Não gera contadores, conquistas nem ranking, mas conta como inscrito do jogo e o valor
+ * entra sozinho no caixa ("Jogos pagos em dinheiro"). Vale para admin, tesoureiro e organizador.
+ */
+export async function inscreverConvidado(game: Game, nome: string, autor: Autor) {
+  const limpo = nome.trim().replace(/\s+/g, ' ')
+  if (limpo.length < 2) throw new Error('Informe o nome do convidado.')
+  const uid = `convidado_${novoId().slice(0, 12)}`
+  const batch = writeBatch(db)
+  batch.update(doc(db, 'games', game.id), { inscritos: increment(1) })
+  batch.set(doc(db, 'participations', participationId(game.id, uid)), {
+    gameId: game.id,
+    gameNome: game.nome,
+    uid,
+    jogadorNome: limpo.slice(0, 80),
+    pagoCom: 'dinheiro',
+    creditosDebitados: 0,
+    status: 'presente',
+    presenteEm: serverTimestamp(),
+    checkInPor: autor.uid,
+    checkInPorNome: autor.nome,
+    criadoEm: serverTimestamp(),
+    convidado: true,
+  })
+  auditar(batch, { acao: 'convidado', resumo: `Inscreveu o convidado ${limpo} no jogo "${game.nome}" (pagou ${reais(game.valor)} em dinheiro)`, autor })
+  await batch.commit()
+}
+
+/** Desfaz o lançamento de um convidado (apaga a inscrição e devolve a vaga). O organizador só desfaz o que ele mesmo lançou. */
+export async function removerConvidado(p: Participation, autor: Autor) {
+  const batch = writeBatch(db)
+  batch.delete(doc(db, 'participations', p.id))
+  batch.update(doc(db, 'games', p.gameId), { inscritos: increment(-1) })
+  auditar(batch, { acao: 'convidado', resumo: `Retirou o convidado ${p.jogadorNome} do jogo "${p.gameNome}"`, autor })
+  await batch.commit()
+}
+
 /** Admin/tesoureiro cancela a inscrição (fica no histórico como "removida") e estorna o que foi debitado. */
 export async function adminRemoverParticipante(p: Participation, admin: Autor) {
+  // o convidado não tem carteira nem estatísticas: a inscrição simplesmente some (a vaga volta e o dinheiro sai do caixa)
+  if (p.convidado) return removerConvidado(p, admin)
   const batch = writeBatch(db)
   if (p.status === 'presente') {
     // a presença deixa de contar (os bônus já resgatados continuam com o jogador)
@@ -406,7 +446,7 @@ export async function excluirJogo(game: Game, admin: Autor) {
           existe: c.existe,
         })
       }
-      await descontar(batch, p.uid, { jogos: 1, noturnos: ehNoturno(game) ? 1 : 0 })
+      if (!p.convidado) await descontar(batch, p.uid, { jogos: 1, noturnos: ehNoturno(game) ? 1 : 0 })
     }
     batch.delete(d.ref)
     await batch.commit()

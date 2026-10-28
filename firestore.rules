@@ -597,6 +597,24 @@ service cloud.firestore {
             getAfter(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.get('espera', 0) ==
               get(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.get('espera', 0) + 1)
         )
+      ) || (
+        // Convidado (não é associado, joga só este jogo): o organizador o inscreve JÁ PRESENTE e pagando em DINHEIRO, sempre
+        // (nunca créditos, porque ele não tem carteira), com o contador de inscritos do jogo subindo no mesmo lote.
+        isOrganizador() &&
+        request.resource.data.keys().hasOnly(['gameId', 'gameNome', 'uid', 'jogadorNome', 'pagoCom', 'creditosDebitados', 'status', 'presenteEm', 'checkInPor', 'checkInPorNome', 'criadoEm', 'convidado']) &&
+        request.resource.data.convidado == true &&
+        request.resource.data.uid is string && request.resource.data.uid.matches('^convidado_[A-Za-z0-9]{8,32}$') &&
+        pid == request.resource.data.gameId + '_' + request.resource.data.uid &&
+        request.resource.data.pagoCom == 'dinheiro' &&
+        request.resource.data.creditosDebitados == 0 &&
+        request.resource.data.status == 'presente' &&
+        request.resource.data.get('presenteEm', null) == request.time &&
+        request.resource.data.get('criadoEm', null) == request.time &&
+        request.resource.data.checkInPor == request.auth.uid &&
+        request.resource.data.checkInPorNome is string && request.resource.data.checkInPorNome.size() <= 120 &&
+        request.resource.data.jogadorNome is string && request.resource.data.jogadorNome.size() >= 2 && request.resource.data.jogadorNome.size() <= 80 &&
+        getAfter(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.get('inscritos', 0) ==
+          get(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.get('inscritos', 0) + 1
       );
 
       // Admin/tesoureiro: qualquer ajuste. Organizador: o check-in (ativa -> presente),
@@ -628,6 +646,13 @@ service cloud.firestore {
       );
 
       allow delete: if isFinanceiro() || (
+        // o organizador desfaz o convidado que ele mesmo lançou (o contador do jogo desce no mesmo lote)
+        isOrganizador() &&
+        resource.data.get('convidado', false) == true &&
+        resource.data.get('checkInPor', '') == request.auth.uid &&
+        getAfter(/databases/$(database)/documents/games/$(resource.data.gameId)).data.get('inscritos', 0) ==
+          get(/databases/$(database)/documents/games/$(resource.data.gameId)).data.get('inscritos', 0) - 1
+      ) || (
         isSignedIn() &&
         resource.data.uid == request.auth.uid &&
         resource.data.pagoCom == 'pendente' &&
@@ -746,7 +771,7 @@ service cloud.firestore {
             'caixa_lancamento', 'caixa_edicao', 'caixa_exclusao', 'caixa_publicacao',
             'jogador_excluido', 'conta_excluida', 'jogador_resetado', 'jogador_editado', 'cargo',
             'conquista_concedida', 'conquista_removida', 'time_representante', 'jogo_excluido', 'inscricao_removida',
-            'sorteio_times', 'peso_sorteio'
+            'sorteio_times', 'peso_sorteio', 'convidado'
           ] &&
           d.resumo is string && d.resumo.size() >= 1 && d.resumo.size() <= 400 &&
           d.porUid == request.auth.uid &&
@@ -760,7 +785,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && registroValido(request.resource.data) && (
         isFinanceiro() ||
         (request.resource.data.acao == 'conta_excluida' && request.resource.data.get('alvoUid', null) == request.auth.uid) ||
-        (request.resource.data.acao == 'sorteio_times' && isOrganizador())
+        (request.resource.data.acao in ['sorteio_times', 'convidado'] && isOrganizador())
       );
       allow update, delete: if false;
     }
