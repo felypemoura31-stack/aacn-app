@@ -39,6 +39,7 @@ import { ConquistasProvider } from './contexts/ConquistasContext'
 import { PedidosProvider } from './contexts/PedidosContext'
 import { AvisosProvider } from './contexts/AvisosContext'
 import { AvisosNaoLidos } from './components/AvisosNaoLidos'
+import { AvisoAniversario } from './components/AvisoAniversario'
 import { AvisoPedidos } from './components/AvisoPedidos'
 import { CadastroExcluido } from './pages/CadastroExcluido'
 
@@ -66,6 +67,7 @@ function App() {
       )}
       <OfflineBanner />
       <Navbar />
+      <AvisoAniversario />
       <AvisosNaoLidos />
       <AvisoPedidos />
       <GuardaCadastro>

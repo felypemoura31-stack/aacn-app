@@ -339,6 +339,85 @@ t('lenda: continua valendo com 25 jogos', 'ALLOW', 'u1', 'create', 'conquistas/u
 t('assiduo: NAO existe mais (jogador nao resgata)', 'DENY', 'u1', 'create', 'conquistas/u1_assiduo', { uid: 'u1', conquista: 'assiduo', creditos: 20 }, null, dono([mockGet('get', 'stats/u1', { jogos: 30 })]))
 t('assiduo: NAO existe mais (admin nao concede)', 'DENY', 'a1', 'create', 'conquistas/u2_assiduo', { uid: 'u2', conquista: 'assiduo', creditos: 20, concedidaPor: 'a1', concedidaPorNome: 'Adm' }, null, adm())
 
+// ===== aniversario: 10 creditos, so no dia (horario de Brasilia, UTC-3), uma vez por ano, e so se o jogador marcar "Lido"
+// th(hora, ...) = t(...) com a hora do pedido trocada (a hora padrao dos casos e 2026-10-05T12:00Z = 05/10 09:00 em Brasilia)
+const th = (hora, ...a) => {
+  t(...a)
+  casos[casos.length - 1].tc.request.time = hora
+}
+const nasc = (data) => [mockGet('get', 'players/u1', { ...u1, dataNascimento: data })]
+const aniv = { uid: 'u1', ano: 2026, creditos: 10 }
+t('aniversario: no dia, o jogador recebe o bonus de 10', 'ALLOW', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1990-10-05'))
+t('aniversario: NAO fora do dia (dia seguinte)', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1990-10-06'))
+t('aniversario: NAO fora do dia (dia anterior)', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1990-10-04'))
+t('aniversario: NAO em outro mes com o mesmo dia', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1990-11-05'))
+t('aniversario: o ano de nascimento nao importa (nasceu em 2005)', 'ALLOW', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('2005-10-05'))
+t('aniversario: NAO sem data de nascimento no cadastro', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc(''))
+t('aniversario: NAO com data de nascimento malformada', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('05/10/1990'))
+t('aniversario: NAO valor diferente de 10 (11)', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', { ...aniv, creditos: 11 }, null, nasc('1990-10-05'))
+t('aniversario: NAO valor zero', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', { ...aniv, creditos: 0 }, null, nasc('1990-10-05'))
+t('aniversario: NAO com o ano de outro ano (id e campo de 2025)', 'DENY', 'u1', 'create', 'aniversarios/u1_2025', { ...aniv, ano: 2025 }, null, nasc('1990-10-05'))
+t('aniversario: NAO com id de um ano e campo de outro', 'DENY', 'u1', 'create', 'aniversarios/u1_2025', aniv, null, nasc('1990-10-05'))
+t('aniversario: NAO ano como texto', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', { ...aniv, ano: '2026' }, null, nasc('1990-10-05'))
+t('aniversario: NAO em nome de outra pessoa', 'DENY', 'u1', 'create', 'aniversarios/u2_2026', { ...aniv, uid: 'u2' }, null, nasc('1990-10-05'))
+t('aniversario: NAO campo extra', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', { ...aniv, bonus: 99 }, null, nasc('1990-10-05'))
+t('aniversario: admin NAO recebe por outra pessoa', 'DENY', 'a1', 'create', 'aniversarios/u1_2026', aniv, null, [...adm(), ...nasc('1990-10-05')])
+t('aniversario: NAO se edita depois', 'DENY', 'u1', 'update', 'aniversarios/u1_2026', { ...aniv, creditos: 20 }, aniv, nasc('1990-10-05'))
+t('aniversario: jogador NAO apaga (para receber de novo)', 'DENY', 'u1', 'delete', 'aniversarios/u1_2026', null, aniv, nasc('1990-10-05'))
+t('aniversario: admin apaga (reset de teste)', 'ALLOW', 'a1', 'delete', 'aniversarios/u1_2026', null, aniv, adm())
+t('aniversario: jogador consulta se ja recebeu (mesmo sem o documento)', 'ALLOW', 'u1', 'get', 'aniversarios/u1_2026', null, null, dono())
+t('aniversario: jogador le o proprio registro', 'ALLOW', 'u1', 'get', 'aniversarios/u1_2026', null, aniv, dono())
+t('aniversario: jogador NAO le o de outro', 'DENY', 'u1', 'get', 'aniversarios/u2_2026', null, { ...aniv, uid: 'u2' }, dono())
+t('aniversario: tesoureiro le', 'ALLOW', 't1', 'get', 'aniversarios/u1_2026', null, aniv, tes())
+t('aniversario: organizador NAO le', 'DENY', 'o1', 'get', 'aniversarios/u1_2026', null, aniv, org())
+ts('aniversario (estrito): NAO sem a hora do servidor', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1990-10-05'))
+ts('aniversario (estrito): NAO com hora inventada', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', { ...aniv, criadoEm: '2020-01-01T00:00:00Z' }, null, nasc('1990-10-05'))
+
+// fuso: a data vale em Brasilia (UTC-3), nao em UTC
+th('2026-10-05T03:00:00Z', 'aniversario (fuso): 00:00 em Brasilia ja e o dia', 'ALLOW', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1990-10-05'))
+th('2026-10-06T02:59:00Z', 'aniversario (fuso): 23:59 em Brasilia ainda e o dia', 'ALLOW', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1990-10-05'))
+th('2026-10-05T02:59:00Z', 'aniversario (fuso): 23:59 da vespera em Brasilia NAO e o dia (mesmo sendo 05/10 em UTC)', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1990-10-05'))
+th('2026-10-06T03:00:00Z', 'aniversario (fuso): 00:00 do dia seguinte em Brasilia NAO e o dia', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1990-10-05'))
+th('2027-01-01T01:00:00Z', 'aniversario (fuso): 31/12 as 22h em Brasilia vale com o ano de 2026', 'ALLOW', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1990-12-31'))
+th('2027-01-01T01:00:00Z', 'aniversario (fuso): 31/12 as 22h em Brasilia NAO vale com o ano de 2027', 'DENY', 'u1', 'create', 'aniversarios/u1_2027', { ...aniv, ano: 2027 }, null, nasc('1990-12-31'))
+// quem nasceu em 29/02 comemora em 28/02 nos anos sem 29/02
+th('2026-02-28T12:00:00Z', 'aniversario (29/02): em ano comum vale em 28/02', 'ALLOW', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1992-02-29'))
+th('2026-03-01T12:00:00Z', 'aniversario (29/02): em ano comum NAO vale em 01/03', 'DENY', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1992-02-29'))
+th('2028-02-28T12:00:00Z', 'aniversario (29/02): em ano bissexto NAO vale em 28/02', 'DENY', 'u1', 'create', 'aniversarios/u1_2028', { ...aniv, ano: 2028 }, null, nasc('1992-02-29'))
+th('2028-02-29T12:00:00Z', 'aniversario (29/02): em ano bissexto vale em 29/02', 'ALLOW', 'u1', 'create', 'aniversarios/u1_2028', { ...aniv, ano: 2028 }, null, nasc('1992-02-29'))
+th('2026-02-28T12:00:00Z', 'aniversario (29/02): quem nasceu em 28/02 tambem vale em 28/02', 'ALLOW', 'u1', 'create', 'aniversarios/u1_2026', aniv, null, nasc('1992-02-28'))
+th('2100-02-28T12:00:00Z', 'aniversario (29/02): 2100 nao e bissexto (28/02 vale)', 'ALLOW', 'u1', 'create', 'aniversarios/u1_2100', { ...aniv, ano: 2100 }, null, nasc('1992-02-29'))
+
+// a carteira soma exatamente o bonus e so junto com o documento do ano
+const cart = { creditos: 5, ultimoJogoId: null }
+const loteAniv = (extra = []) => dono([mockBool('exists', 'aniversarios/u1_2026', false), mockBool('existsAfter', 'aniversarios/u1_2026', true), mockGet('getAfter', 'aniversarios/u1_2026', aniv), ...extra])
+t('aniversario/carteira: soma os 10 junto com o documento do ano', 'ALLOW', 'u1', 'update', 'wallets/u1', { ...cart, creditos: 15, ultimoAniversarioId: '2026' }, cart, loteAniv())
+t('aniversario/carteira: NAO soma mais que o bonus', 'DENY', 'u1', 'update', 'wallets/u1', { ...cart, creditos: 25, ultimoAniversarioId: '2026' }, cart, loteAniv())
+t('aniversario/carteira: NAO soma sem o documento do ano no lote', 'DENY', 'u1', 'update', 'wallets/u1', { ...cart, creditos: 15, ultimoAniversarioId: '2026' }, cart,
+  dono([mockBool('exists', 'aniversarios/u1_2026', false), mockBool('existsAfter', 'aniversarios/u1_2026', false)]))
+t('aniversario/carteira: NAO soma de novo se o documento do ano ja existia', 'DENY', 'u1', 'update', 'wallets/u1', { ...cart, creditos: 15, ultimoAniversarioId: '2026' }, cart,
+  dono([mockBool('exists', 'aniversarios/u1_2026', true), mockBool('existsAfter', 'aniversarios/u1_2026', true), mockGet('getAfter', 'aniversarios/u1_2026', aniv)]))
+t('aniversario/carteira: NAO mexe em outro campo junto', 'DENY', 'u1', 'update', 'wallets/u1', { ...cart, creditos: 15, ultimoAniversarioId: '2026', ultimoJogoId: 'g1' }, cart, loteAniv())
+
+const ledAniv = { uid: 'u1', tipo: 'bonus', creditos: 10, saldoApos: 15, descricao: 'Feliz aniversario', refId: '2026', porUid: 'u1', porNome: 'X' }
+const loteLed = (extra = []) =>
+  dono([
+    mockBool('existsAfter', 'aniversarios/u1_2026', true), mockGet('getAfter', 'aniversarios/u1_2026', aniv),
+    mockGet('get', 'wallets/u1', cart), mockGet('getAfter', 'wallets/u1', { ...cart, creditos: 15, ultimoAniversarioId: '2026' }), ...extra,
+  ])
+t('aniversario/extrato: lanca o bonus amarrado ao documento do ano e a carteira', 'ALLOW', 'u1', 'create', 'ledger/aniversario_u1_2026', ledAniv, null, loteLed())
+t('aniversario/extrato: NAO com id diferente de aniversario_uid_ano', 'DENY', 'u1', 'create', 'ledger/qualquer', ledAniv, null, loteLed())
+t('aniversario/extrato: NAO com valor diferente do bonus', 'DENY', 'u1', 'create', 'ledger/aniversario_u1_2026', { ...ledAniv, creditos: 50, saldoApos: 55 }, null, loteLed())
+t('aniversario/extrato: NAO com saldo que nao bate com a carteira', 'DENY', 'u1', 'create', 'ledger/aniversario_u1_2026', { ...ledAniv, saldoApos: 99 }, null, loteLed())
+t('aniversario/extrato: NAO sem o documento do ano no lote', 'DENY', 'u1', 'create', 'ledger/aniversario_u1_2026', ledAniv, null, dono([mockBool('existsAfter', 'aniversarios/u1_2026', false)]))
+t('aniversario/extrato: NAO em nome de outra pessoa', 'DENY', 'u1', 'create', 'ledger/aniversario_u2_2026', { ...ledAniv, uid: 'u2' }, null, loteLed())
+
+// a data de nascimento nao e trocada pelo proprio jogador depois de informada (senao o bonus seria de qualquer dia)
+t('nascimento: jogador NAO troca a data ja informada', 'DENY', 'u1', 'update', 'players/u1', { ...u1, dataNascimento: '1990-10-05' }, u1, dono())
+t('nascimento: jogador preenche quando o cadastro antigo esta sem a data', 'ALLOW', 'u1', 'update', 'players/u1', { ...u1, dataNascimento: '1990-10-05' }, { ...u1, dataNascimento: '' }, [mockGet('get', 'players/u1', { ...u1, dataNascimento: '' })])
+t('nascimento: jogador salva o resto do perfil com a data igual', 'ALLOW', 'u1', 'update', 'players/u1', { ...u1, endereco: 'Rua Nova' }, u1, dono())
+t('nascimento: admin corrige a data', 'ALLOW', 'a1', 'update', 'players/u1', { ...u1, dataNascimento: '1991-02-03' }, u1, adm())
+
 // ---------- execucao
 ;(async () => {
   const token = await auth.getAccessToken(cfg.tokens.refresh_token, [])

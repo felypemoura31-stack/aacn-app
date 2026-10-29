@@ -36,6 +36,7 @@ export async function excluirJogador(uid: string, opcoes: { manterFinanceiro: bo
 
   const refs = [
     ...(await docsDoJogador('conquistas', uid)),
+    ...(await docsDoJogador('aniversarios', uid)),
     ...(await docsDoJogador('teamJoinRequests', uid, 'jogadorUid')),
     ...(opcoes.manterFinanceiro ? [] : [...(await docsDoJogador('ledger', uid)), ...(await docsDoJogador('payments', uid))]),
   ].map((d) => d.ref)

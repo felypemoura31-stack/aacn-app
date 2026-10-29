@@ -308,8 +308,10 @@ export function Profile() {
             required
             value={dataNascimento}
             onChange={(e) => setDataNascimento(e.target.value)}
-            className="input"
+            disabled={!!player?.dataNascimento}
+            className="input disabled:opacity-60"
           />
+          {!!player?.dataNascimento && <span className="mt-1 block text-xs text-mute">Para corrigir a data de nascimento, fale com a diretoria.</span>}
         </Field>
 
         <div className="grid grid-cols-2 gap-4 sm:col-span-2">

@@ -7,6 +7,7 @@ import { ResumoConta } from '../components/ResumoConta'
 import { SelosConquistas } from '../components/SelosConquistas'
 import { AvisosPanel } from '../components/AvisosPanel'
 import { AvisoMensalidade } from '../components/AvisoMensalidade'
+import { DestaqueAniversario } from '../components/AvisoAniversario'
 import { salvarDestaques } from '../lib/publicCard'
 import { iniciarTelaCheia, useEhCelular } from '../lib/telaCheia'
 import { useTeam } from '../lib/useTeam'
@@ -45,6 +46,7 @@ export function Card() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
+      <DestaqueAniversario />
       <AvisoMensalidade player={player} />
 
       <div className="grid items-start gap-6 lg:grid-cols-[26rem_minmax(0,1fr)]">

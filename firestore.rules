@@ -147,6 +147,30 @@ service cloud.firestore {
       return /databases/$(database)/documents/conquistas/$(uid + '_' + c);
     }
 
+    // ===== Aniversário =====
+    // Bônus de 10 créditos (igual a BONUS_ANIVERSARIO em src/lib/aniversario.ts), uma vez por ano, só NO DIA do aniversário
+    // (data de nascimento do cadastro) e no horário de Brasília (UTC-3). Quem nasceu em 29/02 comemora em 28/02 nos anos sem 29/02.
+    function bonusAniversario() {
+      return 10;
+    }
+
+    function hojeEmBrasilia() {
+      return request.time - duration.time(3, 0, 0, 0);
+    }
+
+    function ehAniversarioHoje(uid) {
+      let nasc = get(/databases/$(database)/documents/players/$(uid)).data.get('dataNascimento', '').split('-');
+      let hoje = hojeEmBrasilia();
+      let bissexto = hoje.year() % 4 == 0 && (hoje.year() % 100 != 0 || hoje.year() % 400 == 0);
+      return nasc.size() == 3 &&
+        ((int(nasc[1]) == hoje.month() && int(nasc[2]) == hoje.day()) ||
+         (int(nasc[1]) == 2 && int(nasc[2]) == 29 && !bissexto && hoje.month() == 2 && hoje.day() == 28));
+    }
+
+    function aniversarioPath(uid, ano) {
+      return /databases/$(database)/documents/aniversarios/$(uid + '_' + ano);
+    }
+
     function cargosFormatoValido(d) {
       return d.get('cargos', []) is list && d.get('cargos', []).size() <= 3 &&
         d.get('cargos', []).hasOnly(['tesoureiro', 'organizador', 'parceiro']);
@@ -221,6 +245,8 @@ service cloud.firestore {
         isOwner(uid) &&
         !request.resource.data.diff(resource.data).affectedKeys()
           .hasAny(['role', 'cargos', 'cargoAlteradoPor', 'cargoAlteradoEm', 'status', 'vencimento', 'ultimoPagamento', 'ultimoEstornoId', 'uid', 'email']) &&
+        // a data de nascimento só pode ser preenchida (cadastro antigo sem ela); depois de informada, só o admin corrige
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['dataNascimento']) || resource.data.get('dataNascimento', '') == '') &&
         fotoValida(request.resource.data.get('fotoUrl', null)) &&
         (resource.data.get('fotoUrl', null) == null || request.resource.data.get('fotoUrl', null) != null) &&
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['aceiteTermosEm']) ||
@@ -432,6 +458,16 @@ service cloud.firestore {
         existsAfter(conquistaPath(uid, request.resource.data.ultimaConquistaId)) &&
         request.resource.data.creditos ==
           resource.data.creditos + getAfter(conquistaPath(uid, request.resource.data.ultimaConquistaId)).data.creditos
+      ) || (
+        // bônus de aniversário: o saldo sobe exatamente o bônus e, no mesmo lote, nasce o documento do ano (não se repete)
+        isOwner(uid) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['creditos', 'ultimoAniversarioId', 'atualizadoEm']) &&
+        request.resource.data.ultimoAniversarioId is string &&
+        !exists(aniversarioPath(uid, request.resource.data.ultimoAniversarioId)) &&
+        existsAfter(aniversarioPath(uid, request.resource.data.ultimoAniversarioId)) &&
+        request.resource.data.creditos ==
+          resource.data.creditos + getAfter(aniversarioPath(uid, request.resource.data.ultimoAniversarioId)).data.creditos
       );
 
       allow delete: if isAdmin();
@@ -506,6 +542,23 @@ service cloud.firestore {
         request.resource.data.get('criadoEm', request.time) == request.time;
       allow update: if false;
       allow delete: if isAdmin(); // o admin remove uma conquista (ela volta a "a conquistar") e o reset de dados de teste
+    }
+
+    // Bônus de aniversário já recebido: um documento por jogador e ano ("<uid>_<ano>"), criado só pelo próprio jogador, só no dia do
+    // aniversário (horário de Brasília), com o valor exato do bônus e a hora do servidor, e nunca editado. O jogador lê só os seus.
+    match /aniversarios/{aid} {
+      allow read: if isFinanceiro() || (isSignedIn() && aid.matches(request.auth.uid + '_[0-9]{4}'));
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasOnly(['uid', 'ano', 'creditos', 'criadoEm']) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.ano is int &&
+        request.resource.data.ano == hojeEmBrasilia().year() &&
+        aid == request.auth.uid + '_' + string(request.resource.data.ano) &&
+        request.resource.data.creditos == bonusAniversario() &&
+        request.resource.data.get('criadoEm', null) == request.time &&
+        ehAniversarioHoje(request.auth.uid);
+      allow update: if false;
+      allow delete: if isAdmin(); // o reset de dados de teste do jogador e a exclusão do cadastro
     }
 
     // Jogos: admin, tesoureiro e organizador criam e editam (inclusive valores e vagas).
@@ -701,6 +754,23 @@ service cloud.firestore {
         request.resource.data.creditos ==
           getAfter(conquistaPath(request.auth.uid, request.resource.data.refId)).data.creditos &&
         getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.ultimaConquistaId == request.resource.data.refId &&
+        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos ==
+          get(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos + request.resource.data.creditos &&
+        request.resource.data.saldoApos ==
+          getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos
+      ) || (
+        // bônus de aniversário: amarrado ao documento do ano e ao aumento exato do próprio saldo
+        isSignedIn() &&
+        request.resource.data.keys().hasOnly(['uid', 'tipo', 'creditos', 'saldoApos', 'descricao', 'refId', 'porUid', 'porNome', 'criadoEm']) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.porUid == request.auth.uid &&
+        request.resource.data.tipo == 'bonus' &&
+        request.resource.data.refId is string &&
+        lid == 'aniversario_' + request.auth.uid + '_' + request.resource.data.refId &&
+        existsAfter(aniversarioPath(request.auth.uid, request.resource.data.refId)) &&
+        request.resource.data.creditos ==
+          getAfter(aniversarioPath(request.auth.uid, request.resource.data.refId)).data.creditos &&
+        getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.ultimoAniversarioId == request.resource.data.refId &&
         getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos ==
           get(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.creditos + request.resource.data.creditos &&
         request.resource.data.saldoApos ==

@@ -94,10 +94,13 @@ export async function resetarJogador(uid: string, o: OpcoesReset, quem: { autor:
   if (o.extrato) {
     const lancamentos = await docsDoJogador('ledger', uid)
     await apagar(lancamentos.map((d) => d.ref))
+    // o bônus de aniversário do ano também volta a poder ser recebido
+    await apagar((await docsDoJogador('aniversarios', uid)).map((d) => d.ref))
     await setDoc(doc(db, 'wallets', uid), {
       creditos: 0,
       ultimoJogoId: null,
       ultimaConquistaId: null,
+      ultimoAniversarioId: null,
       atualizadoEm: serverTimestamp(),
     })
     feito.push(`Extrato: ${lancamentos.length} lançamento(s) apagado(s) e saldo zerado.`)

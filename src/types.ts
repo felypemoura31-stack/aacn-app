@@ -123,6 +123,7 @@ export interface Wallet {
   creditos: number
   ultimoJogoId: string | null
   ultimaConquistaId?: string | null
+  ultimoAniversarioId?: string | null
 }
 
 /** Contadores de confiança (só a organização e a tesouraria incrementam): base das conquistas. */
