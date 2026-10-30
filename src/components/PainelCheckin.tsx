@@ -15,6 +15,7 @@ import {
   reais,
   removerConvidado,
 } from '../lib/credits'
+import { ordemDeInscricao } from '../lib/listaPresenca'
 import { construirRanking } from '../lib/ranking'
 import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../lib/status'
 import type { Game, Participation, PlayerStatus } from '../types'
@@ -116,10 +117,7 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
 
   const game = games.find((g) => g.id === gameId)
   const lista = useMemo(
-    () =>
-      parts
-        .filter((p) => p.status === 'ativa' || p.status === 'presente')
-        .sort((a, b) => a.jogadorNome.localeCompare(b.jogadorNome)),
+    () => parts.filter((p) => p.status === 'ativa' || p.status === 'presente').sort(ordemDeInscricao),
     [parts],
   )
   const presentes = lista.filter((p) => p.status === 'presente').length

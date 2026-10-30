@@ -218,7 +218,7 @@ store.participations['g-1_u-jogador'] = {
   pagoCom: 'pendente',
   creditosDebitados: 0,
   status: 'ativa',
-  criadoEm: now - day,
+  criadoEm: now - day + 3600000, // inscreveu-se depois do Pedro (a lista segue a ordem de inscrição, não a alfabética)
 }
 
 // jogos já realizados (para o ranking de presença)

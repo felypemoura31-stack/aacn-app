@@ -21,7 +21,7 @@ import {
 } from '../../lib/credits'
 import { baixarCsv } from '../../lib/csv'
 import { ehFinanceiro } from '../../lib/roles'
-import { linkEnviarWhatsapp, montarListaWhatsapp } from '../../lib/listaPresenca'
+import { linkEnviarWhatsapp, montarListaWhatsapp, ordemDeInscricao } from '../../lib/listaPresenca'
 import { urlHttp } from '../../lib/redes'
 import { formatarData, paraMillis } from '../../lib/status'
 import type { Game, JogadorResumo, Participation } from '../../types'
@@ -293,10 +293,8 @@ export function AdminGames() {
         {games.length === 0 && <p className="text-sm text-mute/70">Nenhum jogo cadastrado.</p>}
         {games.map((g) => {
           const doJogo = parts.filter((p) => p.gameId === g.id && p.status !== 'removida')
-          const lista = doJogo.filter((p) => p.status !== 'espera')
-          const espera = doJogo
-            .filter((p) => p.status === 'espera')
-            .sort((a, b) => (paraMillis(a.criadoEm) ?? 0) - (paraMillis(b.criadoEm) ?? 0))
+          const lista = doJogo.filter((p) => p.status !== 'espera').sort(ordemDeInscricao)
+          const espera = doJogo.filter((p) => p.status === 'espera').sort(ordemDeInscricao)
           const expandido = aberto === g.id
           return (
             <div key={g.id} className="panel p-4">

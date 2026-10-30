@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { carregarTimes } from '../lib/listaInscritos'
+import { ordemDeInscricao } from '../lib/listaPresenca'
 import type { Game, Participation } from '../types'
 
 /**
- * "Ver lista de inscritos" de um jogo: quem já está inscrito (e quem já fez check-in), em ordem alfabética, com o time.
+ * "Ver lista de inscritos" de um jogo: quem já está inscrito (e quem já fez check-in), na ordem em que se inscreveram, com o time.
  * A lista só é lida quando a pessoa abre. A lista de espera não aparece.
  */
 export function ListaDeInscritos({ jogo, meuUid }: { jogo: Game; meuUid: string }) {
@@ -18,11 +19,7 @@ export function ListaDeInscritos({ jogo, meuUid }: { jogo: Game; meuUid: string 
     // o filtro de status precisa estar na consulta: é ele que as regras do banco conferem
     const q = query(collection(db, 'participations'), where('gameId', '==', jogo.id), where('status', 'in', ['ativa', 'presente']))
     return onSnapshot(q, (snap) =>
-      setLista(
-        snap.docs
-          .map((d) => ({ id: d.id, ...d.data() }) as Participation)
-          .sort((a, b) => a.jogadorNome.localeCompare(b.jogadorNome, 'pt-BR')),
-      ),
+      setLista(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation).sort(ordemDeInscricao)),
     )
   }, [aberto, jogo.id])
 

@@ -7,6 +7,17 @@ export function linkDoJogo(game: Pick<Game, 'id'>, origem: string = window.locat
   return `${origem}/jogos?jogo=${encodeURIComponent(game.id)}`
 }
 
+/**
+ * Ordem em que as pessoas se inscreveram (quem entrou primeiro vem primeiro). Inscrição que acabou de ser gravada e ainda
+ * não tem a hora do servidor vai para o fim, que é onde ela está; empate desempata pelo nome.
+ */
+export function ordemDeInscricao(a: Participation, b: Participation) {
+  const ma = paraMillis(a.criadoEm) ?? Infinity
+  const mb = paraMillis(b.criadoEm) ?? Infinity
+  if (ma === mb) return a.jogadorNome.localeCompare(b.jogadorNome, 'pt-BR')
+  return ma < mb ? -1 : 1
+}
+
 /** Texto da lista de presença para enviar no WhatsApp (inscritos na ordem em que se inscreveram). */
 export function montarListaWhatsapp(
   game: Game,
@@ -18,9 +29,8 @@ export function montarListaWhatsapp(
     const time = timePorJogador.get(p.uid)
     return time ? `${p.jogadorNome} - ${time}` : p.jogadorNome
   }
-  const ordem = (a: Participation, b: Participation) => (paraMillis(a.criadoEm) ?? 0) - (paraMillis(b.criadoEm) ?? 0)
-  const inscritos = participacoes.filter((p) => p.status === 'ativa' || p.status === 'presente').sort(ordem)
-  const espera = participacoes.filter((p) => p.status === 'espera').sort(ordem)
+  const inscritos = participacoes.filter((p) => p.status === 'ativa' || p.status === 'presente').sort(ordemDeInscricao)
+  const espera = participacoes.filter((p) => p.status === 'espera').sort(ordemDeInscricao)
 
   const [a, m, d] = game.data.split('-')
   const linhas: string[] = [game.nome]
