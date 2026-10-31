@@ -66,7 +66,8 @@ export function Games() {
   const d0 = new Date()
   const hojeIso = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`
   const porJogo = new Map(minhas.map((p) => [p.gameId, p]))
-  const abertos = games.filter((g) => g.status === 'aberto' || porJogo.has(g.id))
+  // jogo cancelado aparece para todos enquanto não passou (para ninguém ir ao campo à toa) e para quem estava inscrito
+  const abertos = games.filter((g) => g.status === 'aberto' || porJogo.has(g.id) || (g.status === 'cancelado' && g.data >= hojeIso))
 
   async function agir(g: Game, acao: () => Promise<unknown>) {
     setErro(null)
@@ -97,7 +98,9 @@ export function Games() {
       {jogoDoLink && games.length > 0 && !abertos.some((g) => g.id === jogoDoLink) && (
         <p className="mb-4 rounded-sm border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
           {games.some((g) => g.id === jogoDoLink)
-            ? 'As inscrições deste jogo foram encerradas.'
+            ? games.find((g) => g.id === jogoDoLink)?.status === 'cancelado'
+              ? 'Este jogo foi cancelado.'
+              : 'As inscrições deste jogo foram encerradas.'
             : 'Este jogo não existe mais.'}
         </p>
       )}
@@ -109,12 +112,16 @@ export function Games() {
           const faltam = g.custoCreditos - saldo
           const inscritos = g.inscritos ?? 0
           const lotado = g.vagas != null && inscritos >= g.vagas
+          const cancelado = g.status === 'cancelado'
           return (
-            <div key={g.id} id={`jogo-${g.id}`} className={`panel p-4 ${g.id === jogoDoLink ? 'ring-2 ring-accent-hi' : ''}`}>
+            <div key={g.id} id={`jogo-${g.id}`} className={`panel p-4 ${cancelado ? 'border-danger/50' : ''} ${g.id === jogoDoLink ? 'ring-2 ring-accent-hi' : ''}`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-ink">{g.nome}</p>
-                  <p className="text-xs text-mute">
+                  <p className="font-semibold text-ink">
+                    {g.nome}
+                    {cancelado && <span className="ml-2 rounded-full border border-danger/50 bg-danger/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-danger">Cancelado</span>}
+                  </p>
+                  <p className={`text-xs text-mute ${cancelado ? 'line-through' : ''}`}>
                     {quando(g)} · {reais(g.valor)} ou {formatarCreditos(g.custoCreditos)} créditos
                   </p>
                   {(g.local || g.localLink) && (
@@ -130,30 +137,41 @@ export function Games() {
                       )}
                     </p>
                   )}
-                  <p className="mt-1 text-xs text-gold">
-                    {g.vagas != null ? `${Math.min(inscritos, g.vagas)}/${g.vagas} vagas preenchidas` : `${inscritos} inscritos (sem limite de vagas)`}
-                    {(g.espera ?? 0) > 0 && ` · ${g.espera} na lista de espera`}
-                  </p>
-                  {g.descricao && <p className="mt-2 whitespace-pre-line text-sm text-mute">{g.descricao}</p>}
-                  {recemInscrito === g.id && p?.status === 'ativa' && (
+                  {cancelado && (
+                    <div className="mt-2 rounded-sm border border-danger/40 bg-danger/10 p-3">
+                      <p className="text-sm font-semibold text-danger">Este jogo foi cancelado.</p>
+                      {g.motivoCancelamento && <p className="mt-1 text-sm text-ink">Motivo: {g.motivoCancelamento}</p>}
+                      <p className="mt-1 text-xs text-mute">
+                        {p && p.status !== 'removida' ? 'Sua inscrição fica sem efeito e nada será cobrado.' : 'Nada será cobrado.'} Acompanhe os avisos para a próxima data.
+                      </p>
+                    </div>
+                  )}
+                  {!cancelado && (
+                    <p className="mt-1 text-xs text-gold">
+                      {g.vagas != null ? `${Math.min(inscritos, g.vagas)}/${g.vagas} vagas preenchidas` : `${inscritos} inscritos (sem limite de vagas)`}
+                      {(g.espera ?? 0) > 0 && ` · ${g.espera} na lista de espera`}
+                    </p>
+                  )}
+                  {g.descricao && !cancelado && <p className="mt-2 whitespace-pre-line text-sm text-mute">{g.descricao}</p>}
+                  {recemInscrito === g.id && p?.status === 'ativa' && !cancelado && (
                     <div className="mt-3 rounded-sm border border-ok/40 bg-ok/10 p-3">
                       <p className="mb-2 text-sm font-semibold text-ok">Inscrição feita! Avise o pessoal no WhatsApp:</p>
                       <BotaoListaWhatsapp jogo={g} destaque />
                     </div>
                   )}
-                  {g.data >= hojeIso && <AdicionarAoCalendario jogo={g} />}
-                  <ListaDeInscritos jogo={g} meuUid={player.uid} />
-                  {sorteios[g.id] && <TimesSorteadosDoJogo sorteio={sorteios[g.id]} meuUid={player.uid} />}
+                  {g.data >= hojeIso && !cancelado && <AdicionarAoCalendario jogo={g} />}
+                  {!cancelado && <ListaDeInscritos jogo={g} meuUid={player.uid} />}
+                  {sorteios[g.id] && !cancelado && <TimesSorteadosDoJogo sorteio={sorteios[g.id]} meuUid={player.uid} />}
                 </div>
 
                 <div className="text-right">
-                  {p?.status === 'removida' && <span className="text-xs text-mute">Inscrição cancelada. Fale com a diretoria.</span>}
+                  {!cancelado && p?.status === 'removida' && <span className="text-xs text-mute">Inscrição cancelada. Fale com a diretoria.</span>}
 
                   {p?.status === 'presente' && (
                     <span className="rounded-full border border-ok/40 bg-ok/15 px-3 py-1 text-xs font-semibold text-ok">Presença confirmada</span>
                   )}
 
-                  {p?.status === 'espera' && (
+                  {!cancelado && p?.status === 'espera' && (
                     <>
                       <span className="rounded-full border border-warn/40 bg-warn/15 px-3 py-1 text-xs font-semibold text-warn">Na lista de espera</span>
                       <p className="mt-1 text-[11px] text-mute">A diretoria chama você se abrir uma vaga.</p>
@@ -163,7 +181,7 @@ export function Games() {
                     </>
                   )}
 
-                  {p?.status === 'ativa' && (
+                  {!cancelado && p?.status === 'ativa' && (
                     <>
                       <span className="rounded-full border border-accent-hi/40 bg-accent/15 px-3 py-1 text-xs font-semibold text-accent-hi">Inscrito</span>
                       <p className="mt-1 max-w-[16rem] text-[11px] text-mute">
@@ -182,7 +200,7 @@ export function Games() {
                     </>
                   )}
 
-                  {!p && (
+                  {!cancelado && !p && (
                     <button
                       disabled={busyId === g.id}
                       onClick={() =>

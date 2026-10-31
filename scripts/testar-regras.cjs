@@ -236,6 +236,26 @@ t('convidado: organizador sobe o contador de inscritos do jogo', 'ALLOW', 'o1', 
 t('convidado: organizador registra a acao no historico', 'ALLOW', 'o1', 'create', 'auditoria/r1', { acao: 'convidado', resumo: 'Inscreveu o convidado X no jogo "Jogo" (pagou R$ 10,00 em dinheiro)', porUid: 'o1', porNome: 'Org' }, null, org())
 t('convidado: organizador NAO registra outras acoes no historico', 'DENY', 'o1', 'create', 'auditoria/r1', { acao: 'jogo_excluido', resumo: 'x', porUid: 'o1', porNome: 'Org' }, null, org())
 
+// ===== jogo cancelado
+const jogoCanc = { ...jogoV, status: 'cancelado', motivoCancelamento: 'Chuva forte' }
+const regCanc = { acao: 'jogo_cancelado', resumo: 'Cancelou o jogo "Jogo" de 12/10/2026 (motivo: chuva)', porUid: 'o1', porNome: 'Org' }
+t('cancelado: admin cancela o jogo com motivo', 'ALLOW', 'a1', 'update', 'games/g1', jogoCanc, jogoV, adm())
+t('cancelado: tesoureiro cancela o jogo', 'ALLOW', 't1', 'update', 'games/g1', jogoCanc, jogoV, tes())
+t('cancelado: organizador cancela o jogo', 'ALLOW', 'o1', 'update', 'games/g1', jogoCanc, jogoV, org())
+t('cancelado: reabrir volta para aberto', 'ALLOW', 'o1', 'update', 'games/g1', { ...jogoV, motivoCancelamento: null }, jogoCanc, org())
+t('cancelado: cancela sem motivo', 'ALLOW', 'a1', 'update', 'games/g1', { ...jogoV, status: 'cancelado', motivoCancelamento: null }, jogoV, adm())
+t('cancelado: jogador NAO cancela o jogo', 'DENY', 'u1', 'update', 'games/g1', jogoCanc, jogoV, dono())
+t('cancelado: motivo de ate 200 caracteres', 'ALLOW', 'a1', 'update', 'games/g1', { ...jogoCanc, motivoCancelamento: 'x'.repeat(200) }, jogoV, adm())
+t('cancelado: NAO motivo com mais de 200 caracteres', 'DENY', 'a1', 'update', 'games/g1', { ...jogoCanc, motivoCancelamento: 'x'.repeat(201) }, jogoV, adm())
+t('cancelado: NAO motivo que nao e texto', 'DENY', 'a1', 'update', 'games/g1', { ...jogoCanc, motivoCancelamento: 7 }, jogoV, adm())
+t('cancelado: NAO situacao inventada', 'DENY', 'a1', 'update', 'games/g1', { ...jogoV, status: 'sumiu' }, jogoV, adm())
+t('cancelado: NAO cria jogo com situacao inventada', 'DENY', 'a1', 'create', 'games/g2', { ...jogoV, status: 'sumiu' }, null, adm())
+t('cancelado: jogador NAO se inscreve em jogo cancelado', 'DENY', 'u1', 'create', 'participations/g1_u1', insc, null,
+  dono([mockGet('get', 'games/g1', jogoCanc), mockGet('getAfter', 'games/g1', { ...jogoCanc, inscritos: 4 })]))
+t('cancelado: organizador registra o cancelamento no historico', 'ALLOW', 'o1', 'create', 'auditoria/r1', regCanc, null, org())
+t('cancelado: tesoureiro registra o cancelamento no historico', 'ALLOW', 't1', 'create', 'auditoria/r1', { ...regCanc, porUid: 't1', porNome: 'Tes' }, null, tes())
+t('cancelado: jogador NAO registra o cancelamento no historico', 'DENY', 'u1', 'create', 'auditoria/r1', { ...regCanc, porUid: 'u1', porNome: 'X' }, null, dono())
+
 // ===== foto obrigatoria no cadastro
 t('cadastro: nasce com foto', 'ALLOW', 'u1', 'create', 'players/u1', { ...u1, cpf: '', fotoUrl: FOTO_REAL }, null, dono())
 t('cadastro: NAO nasce sem foto', 'DENY', 'u1', 'create', 'players/u1', { ...u1, cpf: '', fotoUrl: null }, null, dono())

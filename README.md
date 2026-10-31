@@ -302,6 +302,18 @@ celular (abra a carteirinha, ative o modo avião e abra de novo).
 - **Exportar inscritos (CSV)** por jogo: jogador, situação, forma de pagamento, créditos, quando e por quem
   fez o check-in (abre no Excel/Sheets).
 - Se uma disputa de última vaga acontecer ao mesmo tempo, quem perde recebe um aviso e pode entrar na espera.
+- **Cancelar um jogo** (Gestão → Gerenciar jogos → botão **"Cancelar jogo"**, para admin, tesoureiro e organizador): abre um
+  painel com o **motivo** (opcional, até 200 caracteres, que os jogadores leem) e o botão "Confirmar o cancelamento". O jogo passa a
+  ter a situação **cancelado** (etiqueta vermelha "CANCELADO" na gestão e em **Jogos**). Efeitos: ninguém mais consegue se inscrever
+  (as regras do banco só aceitam inscrição em jogo aberto), o **check-in fica bloqueado** (painel de check-in e convidado) e, na aba
+  **Jogos**, todos veem o card "Este jogo foi cancelado", com o motivo e "Nada será cobrado", sem botões de inscrição, lista de
+  inscritos nem calendário. Para quem não estava inscrito o card aparece até a data do jogo passar; para quem estava, continua
+  aparecendo. Nada é cobrado nem estornado no cancelamento: as inscrições ficam como estavam.
+  **"Reabrir"** desfaz o cancelamento (o jogo volta com inscrições abertas e o motivo some). O cancelamento fica no **Histórico de ações**
+  ("Jogo cancelado"). **Jogo com presença já confirmada não pode ser cancelado pelo botão**: o painel avisa e trava o botão até a
+  diretoria remover as presenças em Inscritos → Remover (que devolve os créditos e tira a presença das estatísticas; quem pagou em
+  dinheiro recebe de volta na mão). Jogo que já foi jogado (data passada, com presenças) nem mostra o botão. Os valores aceitos
+  para a situação do jogo (aberto, encerrado, cancelado) e o tamanho do motivo são conferidos pelas regras do banco.
 
 ## Painel e relatórios
 
@@ -565,7 +577,7 @@ O admin delega em **Gestão → Cargos**.
 
 ## Histórico de ações da diretoria (Admin → Histórico de ações)
 
-Tela só do **admin** com o que a diretoria fez pelo app: **quem fez, o quê e quando**. Cada registro tem a ação (Baixa de Pix, Baixa estornada, Cobrança cancelada, Chave Pix, Ajuste de créditos, Ajuste desfeito, Caixa, Prestação de contas, Jogador excluído, Conta excluída, Dados resetados, Ficha editada, Cargo, Conquista concedida/removida, Representante de time, Jogo excluído, Inscrição removida, Convidado), uma frase pronta ("Deu baixa no Pix de R$ 15,00 de Fulano (pago em 06/10/2026; +30 créditos)"), o autor e, quando há, o jogador atingido.
+Tela só do **admin** com o que a diretoria fez pelo app: **quem fez, o quê e quando**. Cada registro tem a ação (Baixa de Pix, Baixa estornada, Cobrança cancelada, Chave Pix, Ajuste de créditos, Ajuste desfeito, Caixa, Prestação de contas, Jogador excluído, Conta excluída, Dados resetados, Ficha editada, Cargo, Conquista concedida/removida, Representante de time, Jogo excluído, Jogo cancelado, Inscrição removida, Convidado), uma frase pronta ("Deu baixa no Pix de R$ 15,00 de Fulano (pago em 06/10/2026; +30 créditos)"), o autor e, quando há, o jogador atingido.
 
 - **Filtros:** por grupo (Dinheiro, Pessoas, Jogos), por quem fez, por mês e busca por nome ou texto. Mostra os 100 mais recentes e carrega mais sob demanda.
 - **Quando o registro é gravado:** nas ações que já são um lote (baixa, estorno, ajuste, desfazer, conquista, remover inscrição, excluir jogo, excluir jogador, excluir a própria conta, caixa) o registro vai **no mesmo lote**: não existe a ação sem o registro. Nas demais (cancelar cobrança, mudar a chave Pix, cargos, editar ficha, resetar dados, representante de time) ele é gravado logo depois.
@@ -645,9 +657,9 @@ No **dia do aniversário** (data de nascimento do cadastro), o associado vê log
 
 As regras são verificadas contra o Firebase com a API de testes de regras, caso a caso (o que organizador, tesoureiro, admin e
 jogador podem e não podem fazer). O executor está **no repositório**: `node scripts/testar-regras.cjs` (precisa do
-`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **261 casos**, cobrindo as regras criadas
+`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **276 casos**, cobrindo as regras criadas
 a partir da baixa com log: baixa/estorno, desfazer ajuste, histórico de ações, caixa, prestação de contas, ranking, leitura de
-avisos, foto obrigatória (cadastro e inscrição em jogo), pesos, sorteio de times, a lista de inscritos, a sequência de mensalidades, o fim do Assíduo, o convidado do check-in e o bônus de aniversário (inclusive o fuso de Brasília e o 29/02). `RULES=outro.rules node scripts/testar-regras.cjs`
+avisos, foto obrigatória (cadastro e inscrição em jogo), pesos, sorteio de times, a lista de inscritos, a sequência de mensalidades, o fim do Assíduo, o convidado do check-in, o bônus de aniversário (inclusive o fuso de Brasília e o 29/02) e o jogo cancelado. `RULES=outro.rules node scripts/testar-regras.cjs`
 testa uma versão alterada das regras (serve para conferir que um teste realmente "pega" uma falha). **Observação:** a bateria
 anterior (578 casos, que também cobria as regras mais antigas: organizador, check-in, CPF, times, parceiros, conquistas...) ficava
 numa pasta temporária e foi perdida; os casos de regras antigas precisam ser recriados aqui aos poucos, e toda regra nova deve entrar

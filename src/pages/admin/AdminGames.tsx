@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import {
   adminAdicionarParticipante,
   adminRemoverParticipante,
+  cancelarJogo,
   excluirJogo,
   formatarCreditos,
   promoverDaEspera,
@@ -120,6 +121,9 @@ export function AdminGames() {
   const [lista, setLista] = useState<{ nome: string; texto: string } | null>(null)
   const [copiado, setCopiado] = useState(false)
 
+  const [cancelando, setCancelando] = useState<string | null>(null) // jogo com o painel "Cancelar jogo" aberto
+  const [motivo, setMotivo] = useState('')
+
   const [novoUid, setNovoUid] = useState('')
   const [novoModo, setNovoModo] = useState<'creditos' | 'dinheiro'>('creditos')
 
@@ -144,6 +148,9 @@ export function AdminGames() {
   const gerenciaInscricoes = ehFinanceiro(admin)
 
   const autor = () => ({ uid: admin!.uid, nome: admin!.nomeCompleto })
+
+  const d0 = new Date()
+  const hojeIso = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`
 
   async function criar(e: FormEvent) {
     e.preventDefault()
@@ -190,7 +197,26 @@ export function AdminGames() {
   }
 
   async function alternar(g: Game) {
-    await updateDoc(doc(db, 'games', g.id), { status: g.status === 'aberto' ? 'encerrado' : 'aberto' })
+    if (g.status === 'cancelado' && !window.confirm(`Reabrir o jogo "${g.nome}"? Ele deixa de aparecer como cancelado e volta a aceitar inscrições.`)) return
+    await updateDoc(doc(db, 'games', g.id), { status: g.status === 'aberto' ? 'encerrado' : 'aberto', motivoCancelamento: null })
+  }
+
+  function abrirCancelamento(g: Game) {
+    setErro(null)
+    setMotivo('')
+    setCancelando(cancelando === g.id ? null : g.id)
+  }
+
+  async function confirmarCancelamento(g: Game, presentes: number) {
+    if (presentes > 0) return setErro('Este jogo já tem presenças confirmadas. Remova-as antes (Inscritos → Remover) para os créditos serem devolvidos.')
+    setErro(null)
+    try {
+      await cancelarJogo(g, motivo, autor())
+      setCancelando(null)
+      setMotivo('')
+    } catch (e) {
+      setErro((e as Error).message || 'Não foi possível cancelar o jogo.')
+    }
   }
 
   async function excluir(g: Game, doJogo: Participation[]) {
@@ -296,18 +322,24 @@ export function AdminGames() {
           const lista = doJogo.filter((p) => p.status !== 'espera').sort(ordemDeInscricao)
           const espera = doJogo.filter((p) => p.status === 'espera').sort(ordemDeInscricao)
           const expandido = aberto === g.id
+          const cancelado = g.status === 'cancelado'
+          const presentes = lista.filter((x) => x.status === 'presente')
           return (
-            <div key={g.id} className="panel p-4">
+            <div key={g.id} className={`panel p-4 ${cancelado ? 'border-danger/50' : ''}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-ink">{g.nome}</p>
+                  <p className="font-semibold text-ink">
+                    {g.nome}
+                    {cancelado && <span className="ml-2 rounded-full border border-danger/50 bg-danger/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-danger">Cancelado</span>}
+                  </p>
                   <p className="text-xs text-mute">
                     {new Date(g.data + 'T12:00').toLocaleDateString('pt-BR')}
                     {g.horario ? ` às ${g.horario}` : ''} · {reais(g.valor)} / {formatarCreditos(g.custoCreditos)} créditos ·{' '}
                     {lista.length}
-                    {g.vagas != null ? `/${g.vagas}` : ''} inscritos ({lista.filter((x) => x.status === 'presente').length} presentes)
-                    {espera.length > 0 ? ` · ${espera.length} na espera` : ''} · {g.status === 'aberto' ? 'inscrições abertas' : 'encerrado'}
+                    {g.vagas != null ? `/${g.vagas}` : ''} inscritos ({presentes.length} presentes)
+                    {espera.length > 0 ? ` · ${espera.length} na espera` : ''} · {g.status === 'aberto' ? 'inscrições abertas' : cancelado ? 'jogo cancelado' : 'encerrado'}
                   </p>
+                  {cancelado && g.motivoCancelamento && <p className="text-xs text-danger">Motivo: {g.motivoCancelamento}</p>}
                   {g.local && <p className="text-xs text-mute/80">{g.local}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -317,6 +349,11 @@ export function AdminGames() {
                   <button onClick={() => alternar(g)} className="btn-ghost">
                     {g.status === 'aberto' ? 'Encerrar' : 'Reabrir'}
                   </button>
+                  {!cancelado && !(g.data < hojeIso && presentes.length > 0) && (
+                    <button onClick={() => abrirCancelamento(g)} className="btn-ghost text-danger">
+                      {cancelando === g.id ? 'Voltar' : 'Cancelar jogo'}
+                    </button>
+                  )}
                   <button onClick={() => setAberto(expandido ? null : g.id)} className="btn-ghost">
                     {expandido ? 'Fechar' : 'Inscritos'}
                   </button>
@@ -327,6 +364,35 @@ export function AdminGames() {
                   )}
                 </div>
               </div>
+
+              {cancelando === g.id && !cancelado && (
+                <div className="mt-4 space-y-3 border-t border-line pt-3">
+                  <p className="text-sm font-semibold text-ink">Cancelar o jogo “{g.nome}”?</p>
+                  <ul className="list-disc space-y-1 pl-5 text-xs text-mute">
+                    <li>Ninguém mais consegue se inscrever e o check-in fica bloqueado.</li>
+                    <li>
+                      Os jogadores veem o jogo como <b className="text-danger">cancelado</b>
+                      {lista.length + espera.length > 0 ? ` (${lista.length + espera.length} inscrito(s) na lista ou na espera, nada é cobrado)` : ''}.
+                    </li>
+                    <li>Dá para desfazer em “Reabrir”.</li>
+                  </ul>
+                  {presentes.length > 0 && (
+                    <p className="rounded-sm border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-warn">
+                      Há {presentes.length} presença(s) já confirmada(s). Antes de cancelar, {gerenciaInscricoes ? 'remova cada uma em' : 'peça a um admin ou tesoureiro para remover cada uma em'}{' '}
+                      <b>Inscritos → Remover</b>: o app devolve os créditos. Quem pagou em dinheiro precisa receber de volta na mão.
+                    </p>
+                  )}
+                  <label className="block text-xs text-mute">
+                    Motivo (opcional, os jogadores leem)
+                    <input value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={200} placeholder="Ex.: chuva forte, poucos inscritos..." className="input mt-1" />
+                  </label>
+                  <button onClick={() => confirmarCancelamento(g, presentes.length)} disabled={presentes.length > 0}
+                    className="rounded-sm bg-danger px-4 py-2 text-sm font-semibold uppercase tracking-wider text-white hover:opacity-90 disabled:opacity-50"
+                  >
+                    Confirmar o cancelamento
+                  </button>
+                </div>
+              )}
 
               {editando === g.id && (
                 <form onSubmit={(e) => salvarEdicao(e, g)} className="mt-4 space-y-3 border-t border-line pt-3">

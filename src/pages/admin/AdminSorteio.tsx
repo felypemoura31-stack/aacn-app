@@ -197,6 +197,7 @@ export function AdminSorteio() {
           {games.map((g) => (
             <option key={g.id} value={g.id}>
               {new Date(g.data + 'T12:00').toLocaleDateString('pt-BR')} · {g.nome}
+              {g.status === 'cancelado' ? ' (CANCELADO)' : ''}
             </option>
           ))}
         </select>

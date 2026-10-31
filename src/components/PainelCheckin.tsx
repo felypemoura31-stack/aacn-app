@@ -95,9 +95,9 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
       setGames(lista)
       setGameId((atual) => {
         if (atual && lista.some((g) => g.id === atual)) return atual
-        // por padrão, o jogo mais próximo de hoje
+        // por padrão, o jogo mais próximo de hoje (jogo cancelado só se não houver outro)
         const hoje = Date.now()
-        const prox = [...lista].sort(
+        const prox = [...lista.filter((g) => g.status !== 'cancelado'), ...lista.filter((g) => g.status === 'cancelado')].sort(
           (a, b) =>
             Math.abs(new Date(a.data + 'T12:00').getTime() - hoje) -
             Math.abs(new Date(b.data + 'T12:00').getTime() - hoje),
@@ -116,6 +116,7 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
   }, [gameId])
 
   const game = games.find((g) => g.id === gameId)
+  const cancelado = game?.status === 'cancelado'
   const lista = useMemo(
     () => parts.filter((p) => p.status === 'ativa' || p.status === 'presente').sort(ordemDeInscricao),
     [parts],
@@ -124,6 +125,7 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
 
   async function processar(texto: string) {
     if (!game) return setAviso({ tipo: 'erro', texto: 'Escolha o jogo primeiro.' })
+    if (cancelado) return setAviso({ tipo: 'erro', texto: 'Este jogo foi cancelado: não dá para fazer check-in.' })
     const uid = extrairUid(texto)
     if (!uid) return setAviso({ tipo: 'erro', texto: 'Esse código não é de uma carteirinha da AACN.' })
 
@@ -204,7 +206,7 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
 
   async function incluirConvidado(e: FormEvent) {
     e.preventDefault()
-    if (!game || !staff) return
+    if (!game || !staff || cancelado) return
     const nome = convidadoNome.trim().replace(/\s+/g, ' ')
     if (nome.length < 2) return setAviso({ tipo: 'erro', texto: 'Informe o nome do convidado.' })
     const repetido = lista.some((p) => p.convidado && p.jogadorNome.toLowerCase() === nome.toLowerCase())
@@ -258,11 +260,17 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
           {games.map((g) => (
             <option key={g.id} value={g.id}>
               {new Date(g.data + 'T12:00').toLocaleDateString('pt-BR')} · {g.nome}
-              {g.status === 'encerrado' ? ' (inscrições encerradas)' : ''}
+              {g.status === 'encerrado' ? ' (inscrições encerradas)' : g.status === 'cancelado' ? ' (CANCELADO)' : ''}
             </option>
           ))}
         </select>
       </label>
+
+      {cancelado && (
+        <p className="mb-4 rounded-sm border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+          Este jogo foi <b>cancelado</b>{game?.motivoCancelamento ? ` (${game.motivoCancelamento})` : ''}. O check-in está bloqueado. Para voltar a usar, reabra o jogo em Gestão → Jogos.
+        </p>
+      )}
 
       {game && (
         <p className="mb-4 text-xs text-mute">
@@ -279,34 +287,36 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
         </p>
       )}
 
-      <div className="panel mb-6 space-y-4 p-4">
-        {camera ? (
-          <>
-            <LeitorQr onLeitura={processar} pausado={carregando || !!alvo} />
-            <button onClick={() => setCamera(false)} className="btn-ghost w-full">
-              Desligar câmera
+      {!cancelado && (
+        <div className="panel mb-6 space-y-4 p-4">
+          {camera ? (
+            <>
+              <LeitorQr onLeitura={processar} pausado={carregando || !!alvo} />
+              <button onClick={() => setCamera(false)} className="btn-ghost w-full">
+                Desligar câmera
+              </button>
+            </>
+          ) : (
+            <button onClick={() => setCamera(true)} disabled={!game} className="btn-primary w-full">
+              Ligar câmera e ler QR
             </button>
-          </>
-        ) : (
-          <button onClick={() => setCamera(true)} disabled={!game} className="btn-primary w-full">
-            Ligar câmera e ler QR
-          </button>
-        )}
+          )}
 
-        <form onSubmit={aoDigitar} className="flex gap-2">
-          <input
-            value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
-            placeholder="Ou cole o link/código do QR"
-            className="input"
-          />
-          <button type="submit" disabled={!game} className="btn-ghost whitespace-nowrap">
-            Buscar
-          </button>
-        </form>
-      </div>
+          <form onSubmit={aoDigitar} className="flex gap-2">
+            <input
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value)}
+              placeholder="Ou cole o link/código do QR"
+              className="input"
+            />
+            <button type="submit" disabled={!game} className="btn-ghost whitespace-nowrap">
+              Buscar
+            </button>
+          </form>
+        </div>
+      )}
 
-      {game && (
+      {game && !cancelado && (
         <div className="mb-6">
           {!convidadoAberto ? (
             <button type="button" onClick={() => setConvidadoAberto(true)} className="btn-ghost w-full">
@@ -455,9 +465,11 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
                 )}
               </span>
             ) : (
-              <button onClick={() => processar(p.uid)} className="text-xs text-accent-hi hover:underline">
-                Fazer check-in
-              </button>
+              !cancelado && (
+                <button onClick={() => processar(p.uid)} className="text-xs text-accent-hi hover:underline">
+                  Fazer check-in
+                </button>
+              )
             )}
           </div>
         ))}

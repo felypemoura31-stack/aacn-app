@@ -99,6 +99,8 @@ service cloud.firestore {
     function jogoValido(d) {
       return textoCurto(d.get('local', null), 120) &&
         textoCurto(d.get('descricao', null), 1000) &&
+        textoCurto(d.get('motivoCancelamento', null), 200) &&
+        d.get('status', 'aberto') in ['aberto', 'encerrado', 'cancelado'] &&
         textoCurto(d.get('horario', null), 5) &&
         (d.get('localLink', null) == null ||
           (d.localLink is string && d.localLink.size() <= 300 && d.localLink.matches('^https?://.*'))) &&
@@ -841,7 +843,7 @@ service cloud.firestore {
             'caixa_lancamento', 'caixa_edicao', 'caixa_exclusao', 'caixa_publicacao',
             'jogador_excluido', 'conta_excluida', 'jogador_resetado', 'jogador_editado', 'cargo',
             'conquista_concedida', 'conquista_removida', 'time_representante', 'jogo_excluido', 'inscricao_removida',
-            'sorteio_times', 'peso_sorteio', 'convidado'
+            'sorteio_times', 'peso_sorteio', 'convidado', 'jogo_cancelado'
           ] &&
           d.resumo is string && d.resumo.size() >= 1 && d.resumo.size() <= 400 &&
           d.porUid == request.auth.uid &&
@@ -855,7 +857,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && registroValido(request.resource.data) && (
         isFinanceiro() ||
         (request.resource.data.acao == 'conta_excluida' && request.resource.data.get('alvoUid', null) == request.auth.uid) ||
-        (request.resource.data.acao in ['sorteio_times', 'convidado'] && isOrganizador())
+        (request.resource.data.acao in ['sorteio_times', 'convidado', 'jogo_cancelado'] && isOrganizador())
       );
       allow update, delete: if false;
     }

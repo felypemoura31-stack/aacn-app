@@ -359,6 +359,23 @@ export async function adminRemoverParticipante(p: Participation, admin: Autor) {
   await batch.commit()
 }
 
+/**
+ * Cancela o jogo (chuva, pouca gente...): ninguém mais se inscreve e os jogadores veem "Jogo cancelado", com o motivo.
+ * Não mexe em créditos: quem já fez check-in é removido antes (Inscritos → Remover), que estorna o que foi debitado.
+ * "Reabrir" volta o jogo para inscrições abertas, com as inscrições como estavam.
+ */
+export async function cancelarJogo(game: Game, motivo: string, autor: Autor) {
+  const limpo = motivo.trim().replace(/s+/g, ' ').slice(0, 200)
+  const batch = writeBatch(db)
+  batch.update(doc(db, 'games', game.id), { status: 'cancelado', motivoCancelamento: limpo || null })
+  auditar(batch, {
+    acao: 'jogo_cancelado',
+    resumo: `Cancelou o jogo "${game.nome}" de ${game.data.split('-').reverse().join('/')}${limpo ? ` (motivo: ${limpo})` : ''}`.slice(0, 400),
+    autor,
+  })
+  await batch.commit()
+}
+
 /** Ajuste manual do admin (positivo ou negativo), sempre com motivo registrado no extrato. */
 export async function adminAjustarSaldo(
   jogador: Pick<Player, 'uid' | 'nomeCompleto'>,

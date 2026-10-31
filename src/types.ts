@@ -144,7 +144,7 @@ export interface ConquistaResgatada {
   concedidaPorNome?: string
 }
 
-export type GameStatus = 'aberto' | 'encerrado'
+export type GameStatus = 'aberto' | 'encerrado' | 'cancelado'
 
 export interface Game {
   id: string
@@ -161,6 +161,7 @@ export interface Game {
   vagas?: number | null // null = sem limite
   inscritos?: number // inscrições ativas + presentes
   espera?: number // lista de espera
+  motivoCancelamento?: string | null // só quando status = 'cancelado'
 }
 
 export type PagoCom = 'creditos' | 'dinheiro' | 'pendente'
