@@ -83,11 +83,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsub
   }, [currentUser])
 
+  // O cartão público é refeito quando falta (cadastro interrompido), é do formato antigo (com a foto dentro, sem `temFoto`)
+  // ou ainda não mostra o time aprovado.
   useEffect(() => {
-    if (!player?.timeAprovado || !player.timeId) return
+    if (!player) return
     getDoc(doc(db, 'publicCards', player.uid))
       .then((snap) => {
-        if (snap.exists() && snap.data().timeId !== player.timeId) return sincronizarCartaoPublico(player)
+        const c = snap.exists() ? (snap.data() as { fotoUrl?: string | null; temFoto?: boolean; timeId?: string | null }) : null
+        const velho = !c || c.fotoUrl != null || (!!player.fotoUrl && c.temFoto !== true)
+        const semTime = !!player.timeAprovado && !!player.timeId && c?.timeId !== player.timeId
+        if (velho || semTime) return sincronizarCartaoPublico(player)
       })
       .catch(() => {})
   }, [player])
@@ -186,14 +191,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       throw cpf && ehNegadoPeloBanco(e) ? new CpfEmUsoError() : e
     }
-    if (!(await getDoc(doc(db, 'wallets', uid))).exists()) {
-      await setDoc(doc(db, 'wallets', uid), {
-        creditos: 0,
-        ultimoJogoId: null,
-        atualizadoEm: serverTimestamp(),
-      })
+    // O cadastro já existe: se a carteira ou o cartão público falharem aqui (internet), a conta NÃO é desfeita.
+    // O cartão é refeito na próxima abertura do app (efeito acima) e a carteira nasce no primeiro lançamento.
+    try {
+      if (!(await getDoc(doc(db, 'wallets', uid))).exists()) {
+        await setDoc(doc(db, 'wallets', uid), {
+          creditos: 0,
+          ultimoJogoId: null,
+          atualizadoEm: serverTimestamp(),
+        })
+      }
+      await sincronizarCartaoPublico(newPlayer)
+    } catch (e) {
+      console.warn('Cadastro criado; a carteira e o cartão público ficam para a próxima abertura', e)
     }
-    await sincronizarCartaoPublico(newPlayer)
   }
 
   async function login(email: string, senha: string) {

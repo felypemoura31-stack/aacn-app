@@ -10,13 +10,13 @@ import {
   PESO_PADRAO,
   ajustarPeso,
   definirPeso,
-  linkWhatsappTexto,
   publicarSorteio,
   salvarSorteio,
   sortearTimes,
   textoDoSorteio,
   type TimeSorteado,
 } from '../../lib/sorteio'
+import { linkEnviarWhatsapp } from '../../lib/listaPresenca'
 import { formatarData, paraMillis } from '../../lib/status'
 import type { Game, Participation } from '../../types'
 
@@ -312,7 +312,7 @@ export function AdminSorteio() {
             <button type="button" onClick={copiar} className="btn-ghost">
               {copiado ? 'Copiado!' : 'Copiar texto'}
             </button>
-            <a href={linkWhatsappTexto(texto)} target="_blank" rel="noopener noreferrer" className="btn-ghost">
+            <a href={linkEnviarWhatsapp(texto)} target="_blank" rel="noopener noreferrer" className="btn-ghost">
               Enviar no WhatsApp
             </a>
           </div>

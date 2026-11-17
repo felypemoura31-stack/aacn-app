@@ -64,6 +64,3 @@ export function linkDaRede(rede: RedeSocial, valor: string): string | null {
   }
 }
 
-export function rotuloDaRede(id: RedeSocial) {
-  return REDES.find((r) => r.id === id)?.label ?? id
-}

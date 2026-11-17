@@ -128,8 +128,10 @@ export function lancar(
   const saldoApos = arredondar(p.saldoAntes + p.delta)
   if (saldoApos < 0) throw new Error('O saldo não pode ficar negativo')
 
+  // increment: o servidor soma sobre o saldo de agora, então um lançamento simultâneo (ex.: o bônus de uma conquista) não se perde.
+  // O saldoApos do extrato sai da leitura; se ela já estava velha, as regras do banco recusam o lançamento do organizador e do jogador.
   const carteira: Record<string, unknown> = {
-    creditos: saldoApos,
+    creditos: increment(arredondar(p.delta)),
     atualizadoEm: serverTimestamp(),
   }
   if (p.ultimoJogoId !== undefined) carteira.ultimoJogoId = p.ultimoJogoId
@@ -229,6 +231,7 @@ export async function fazerCheckIn(
     presenteEm: serverTimestamp(),
     checkInPor: autor.uid,
     checkInPorNome: autor.nome,
+    ...(modo === 'dinheiro' ? { valorPago: game.valor } : {}),
   })
   contar(batch, p.uid, { jogos: 1, noturnos: ehNoturno(game) ? 1 : 0, ultimoJogoId: game.id })
   await batch.commit()
@@ -275,6 +278,7 @@ export async function adminAdicionarParticipante(
     checkInPor: admin.uid,
     checkInPorNome: admin.nome,
     criadoEm: serverTimestamp(),
+    ...(pagoCom === 'dinheiro' ? { valorPago: game.valor } : {}),
   })
   // quem já estava presente (reinclusão) não conta de novo
   if (statusAtual !== 'presente') {
@@ -307,6 +311,7 @@ export async function inscreverConvidado(game: Game, nome: string, autor: Autor)
     checkInPorNome: autor.nome,
     criadoEm: serverTimestamp(),
     convidado: true,
+    valorPago: game.valor,
   })
   auditar(batch, { acao: 'convidado', resumo: `Inscreveu o convidado ${limpo} no jogo "${game.nome}" (pagou ${reais(game.valor)} em dinheiro)`, autor })
   await batch.commit()

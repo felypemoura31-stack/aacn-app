@@ -27,7 +27,7 @@ export async function excluirJogador(uid: string, opcoes: { manterFinanceiro: bo
   const feito: string[] = []
 
   for (const t of await timesQueRepresenta(uid)) {
-    await updateDoc(t.ref, { representanteUid: null, representanteNome: null, representanteEmail: null })
+    await updateDoc(t.ref, { representanteUid: null, representanteNome: null })
     feito.push(`Time "${t.data().nome}" ficou sem representante.`)
   }
 
@@ -48,7 +48,7 @@ export async function excluirJogador(uid: string, opcoes: { manterFinanceiro: bo
   const cadastro = await getDoc(doc(db, 'players', uid))
   const cpf = cadastro.exists() ? ((cadastro.data() as Player).cpf ?? '') : ''
   if (cpf) lote.delete(doc(db, 'cpfs', cpf)) // o CPF fica livre para um novo cadastro
-  for (const col of ['stats', 'sequencias', 'wallets', 'contatos', 'cobrancas', 'leituras', 'publicCards', 'players']) lote.delete(doc(db, col, uid))
+  for (const col of ['stats', 'sequencias', 'wallets', 'contatos', 'cobrancas', 'leituras', 'publicCards', 'publicFotos', 'players']) lote.delete(doc(db, col, uid))
   const nome = cadastro.exists() ? ((cadastro.data() as Player).nomeCompleto ?? 'jogador') : 'jogador'
   auditar(lote, {
     acao: 'jogador_excluido',
@@ -93,7 +93,7 @@ export async function excluirMinhaConta(user: User, player: Player, senha: strin
 
   const lote = writeBatch(db)
   if (player.cpf) lote.delete(doc(db, 'cpfs', player.cpf)) // o CPF fica livre para um novo cadastro
-  for (const col of ['contatos', 'leituras', 'sequencias', 'publicCards', 'players']) lote.delete(doc(db, col, user.uid))
+  for (const col of ['contatos', 'leituras', 'sequencias', 'publicCards', 'publicFotos', 'players']) lote.delete(doc(db, col, user.uid))
   auditar(lote, {
     acao: 'conta_excluida',
     resumo: `${player.nomeCompleto} excluiu a própria conta`,

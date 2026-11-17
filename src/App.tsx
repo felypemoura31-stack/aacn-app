@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Navbar } from './components/Navbar'
@@ -8,29 +9,12 @@ import { Profile } from './pages/Profile'
 import { Card } from './pages/Card'
 import { Verify } from './pages/Verify'
 import { RepresentativeRequests } from './pages/RepresentativeRequests'
-import { AdminDashboard } from './pages/admin/AdminDashboard'
-import { AdminPlayerDetail } from './pages/admin/AdminPlayerDetail'
-import { AdminTeams } from './pages/admin/AdminTeams'
-import { AdminPayments } from './pages/admin/AdminPayments'
-import { AdminGames } from './pages/admin/AdminGames'
 import { Games } from './pages/Games'
-import { AdminCredits } from './pages/admin/AdminCredits'
-import { AdminRoles } from './pages/admin/AdminRoles'
-import { AdminCheckin } from './pages/admin/AdminCheckin'
 import { Teams } from './pages/Teams'
 import { Terms } from './pages/Terms'
-import { AdminCobrancas } from './pages/admin/AdminCobrancas'
-import { AdminCarteirinhas } from './pages/admin/AdminCarteirinhas'
-import { AdminAvisos } from './pages/admin/AdminAvisos'
-import { AdminPanel } from './pages/admin/AdminPanel'
-import { AdminPartners } from './pages/admin/AdminPartners'
 import { Partners } from './pages/Partners'
 import { History } from './pages/History'
 import { Ranking } from './pages/Ranking'
-import { AdminCaixa } from './pages/admin/AdminCaixa'
-import { AdminAuditoria } from './pages/admin/AdminAuditoria'
-import { AdminSorteio } from './pages/admin/AdminSorteio'
-import { AdminPesos } from './pages/admin/AdminPesos'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { OfflineBanner } from './components/OfflineBanner'
 import { TeamProfile } from './pages/TeamProfile'
@@ -42,6 +26,25 @@ import { AvisosNaoLidos } from './components/AvisosNaoLidos'
 import { AvisoAniversario } from './components/AvisoAniversario'
 import { AvisoPedidos } from './components/AvisoPedidos'
 import { CadastroExcluido } from './pages/CadastroExcluido'
+
+// telas de admin carregam sob demanda: um associado comum não baixa o código do caixa, do sorteio...
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })))
+const AdminPlayerDetail = lazy(() => import('./pages/admin/AdminPlayerDetail').then((m) => ({ default: m.AdminPlayerDetail })))
+const AdminTeams = lazy(() => import('./pages/admin/AdminTeams').then((m) => ({ default: m.AdminTeams })))
+const AdminPayments = lazy(() => import('./pages/admin/AdminPayments').then((m) => ({ default: m.AdminPayments })))
+const AdminGames = lazy(() => import('./pages/admin/AdminGames').then((m) => ({ default: m.AdminGames })))
+const AdminCredits = lazy(() => import('./pages/admin/AdminCredits').then((m) => ({ default: m.AdminCredits })))
+const AdminRoles = lazy(() => import('./pages/admin/AdminRoles').then((m) => ({ default: m.AdminRoles })))
+const AdminCheckin = lazy(() => import('./pages/admin/AdminCheckin').then((m) => ({ default: m.AdminCheckin })))
+const AdminCobrancas = lazy(() => import('./pages/admin/AdminCobrancas').then((m) => ({ default: m.AdminCobrancas })))
+const AdminCarteirinhas = lazy(() => import('./pages/admin/AdminCarteirinhas').then((m) => ({ default: m.AdminCarteirinhas })))
+const AdminAvisos = lazy(() => import('./pages/admin/AdminAvisos').then((m) => ({ default: m.AdminAvisos })))
+const AdminPanel = lazy(() => import('./pages/admin/AdminPanel').then((m) => ({ default: m.AdminPanel })))
+const AdminPartners = lazy(() => import('./pages/admin/AdminPartners').then((m) => ({ default: m.AdminPartners })))
+const AdminCaixa = lazy(() => import('./pages/admin/AdminCaixa').then((m) => ({ default: m.AdminCaixa })))
+const AdminAuditoria = lazy(() => import('./pages/admin/AdminAuditoria').then((m) => ({ default: m.AdminAuditoria })))
+const AdminSorteio = lazy(() => import('./pages/admin/AdminSorteio').then((m) => ({ default: m.AdminSorteio })))
+const AdminPesos = lazy(() => import('./pages/admin/AdminPesos').then((m) => ({ default: m.AdminPesos })))
 
 /** Páginas que continuam abertas mesmo quando o cadastro de quem está logado foi excluído. */
 const PUBLICAS = ['/validar', '/verificar/', '/termos']
@@ -71,6 +74,7 @@ function App() {
       <AvisosNaoLidos />
       <AvisoPedidos />
       <GuardaCadastro>
+      <Suspense fallback={<p className="px-4 py-8 text-center text-sm text-mute">Carregando...</p>}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Register />} />
@@ -309,6 +313,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
       </GuardaCadastro>
       </AvisosProvider>
       </PedidosProvider>

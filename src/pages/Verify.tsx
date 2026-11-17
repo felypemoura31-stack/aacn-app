@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '../firebase'
+import { lerCartaoPublico } from '../lib/publicCard'
 import { CartaoVerificado, type CartaoPublico } from '../components/CartaoVerificado'
 
 export function Verify() {
@@ -10,9 +9,7 @@ export function Verify() {
 
   useEffect(() => {
     if (!uid) return
-    getDoc(doc(db, 'publicCards', uid)).then((snap) => {
-      setCard(snap.exists() ? (snap.data() as CartaoPublico) : null)
-    })
+    lerCartaoPublico<CartaoPublico>(uid).then(setCard)
   }, [uid])
 
   return (

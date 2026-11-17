@@ -11,13 +11,21 @@ jogadores, times e status de pagamento.
 - React + Vite + TypeScript + Tailwind CSS
 - Firebase Auth (e-mail/senha) e Firestore (banco de dados)
 - `vite-plugin-pwa` para instalação no celular
-- `react-qr-code` para gerar o QR code da carteirinha
+- `react-qr-code` para gerar o QR code da carteirinha (e `jsqr` para ler o QR no check-in)
+- `vitest` para os testes das funções do app (`npm test`)
 
 > **Foto 3x4 sem Firebase Storage.** O Storage exige o plano pago Blaze, então o jogador enquadra
 > o rosto (arrasta e dá zoom, com um oval de guia), e a foto é reduzida para 240x320 (JPEG, ~20 KB)
 > no próprio navegador e guardada como
 > texto no Firestore (campo `fotoUrl`). Fica no plano gratuito. Se um dia migrarem para o
 > Blaze, dá para trocar para o Storage mudando só `src/components/PhotoUploader.tsx`.
+
+> **A foto pública fica fora do cartão público.** O cartão público (`publicCards/{uid}`, lido pela página do QR, pelo validador de parceiros e por
+> várias listas) tem só nome, time, situação, vencimento e insígnias (`temFoto` diz se há foto). A foto pública vai para `publicFotos/{uid}`:
+> quem precisa dela lê **uma de cada vez** (`lerCartaoPublico`, `useFotoPublica`); só admin e tesoureiro listam todas (tela de **Carteirinhas**).
+> Antes, as telas **Times** e "Ver lista de inscritos" baixavam as fotos de todos os associados (uns 20 KB cada) só para contar membros ou ler o nome do time.
+> Cartões antigos (com a foto dentro) são migrados sozinhos: quando o dono abre o app e quando um admin abre o **Painel**
+> (`migrarFotosDosCartoes`, migração única). Excluir o cadastro ou a conta apaga também a foto pública.
 
 ## 1. Criar o projeto no Firebase
 
@@ -61,22 +69,12 @@ Depois, publique as regras e os índices já configurados neste repositório
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 
-## 5. Notificação por e-mail ao representante do time
+## 5. Aviso de pedido de entrada no time (sem e-mail)
 
-O envio de e-mail usa a extensão oficial **Trigger Email**
-(`firestore-send-email`) do Firebase, que observa a coleção `mail` (o app já
-grava os documentos lá em `src/lib/mailer.ts`).
-
-1. No console do Firebase, vá em **Build > Extensions** e instale
-   **Trigger Email** (`firebase/firestore-send-email`).
-2. Configure com um servidor SMTP (ex: um e-mail Gmail com senha de app, ou um
-   serviço como SendGrid/Mailgun/Brevo — todos têm planos gratuitos
-   suficientes para uma associação pequena).
-3. Use `mail` como nome da coleção observada (valor padrão).
-
-Sem essa extensão instalada, o cadastro dos documentos em `mail` continua
-funcionando, mas nenhum e-mail é realmente enviado — só é necessário
-configurar antes de ir para produção.
+O representante é avisado **dentro do app** (faixa "quer entrar no time", aviso no aparelho e a tela **Solicitações do time**).
+O app **não envia e-mail**: a coleção `mail` e a extensão "Trigger Email" foram retiradas (sem a extensão nada era enviado, e a coleção
+deixava qualquer logado gravar um e-mail com o destinatário e o texto que quisesse, em nome da associação). O e-mail do representante também
+deixou de ser guardado em `teams` (todo associado conseguia ler); os times antigos são limpos sozinhos quando o admin abre **Admin: Times**.
 
 ## 6. Administradores e cargos
 
@@ -119,7 +117,7 @@ HTTPS), basta abrir a URL do app:
 1. Um admin cadastra o time em **Admin: Times** e define o representante
    (precisa ser alguém já cadastrado como jogador).
 2. Um jogador escolhe o time em **Meus dados**. Isso cria uma solicitação
-   pendente e envia e-mail ao representante.
+   pendente e avisa o representante dentro do app.
 3. O representante acessa **Solicitações do time** e aprova ou recusa. Só
    depois de aprovado o time aparece na carteirinha do jogador.
 
@@ -375,7 +373,7 @@ O **representante** tira do time quem já não faz parte, em **Solicitações do
 ## Consistência: ficha do admin e aprovação de time
 
 - A **ficha do jogador** (admin) grava **só os campos que foram alterados** (dados pessoais, situação e vencimento) e nunca regrava cargo, time ou o resto do cadastro. Antes ela regravava o cadastro inteiro a partir da cópia da tela: uma ficha aberta antes de o representante aprovar o jogador, e salva depois, **desfazia a aprovação** (o jogador voltava a "pendente" no time e sumia da lista de membros). Depois de salvar, o cartão público é refeito a partir do cadastro atual.
-- A aprovação de um jogador pelo representante tem vários passos (pedido, cadastro, cartão público). A tela **Solicitações do time** refaz sozinha, ao abrir, a aprovação de quem foi aprovado mas não aparece como membro.
+- A aprovação de um jogador pelo representante (pedido, cadastro e cartão público), a recusa e o pedido de entrada vão **num lote só**: ou grava tudo ou nada (antes eram escritas separadas, e uma falha no meio deixava o pedido "aprovado" sem o jogador aprovado). A tela **Solicitações do time** ainda refaz sozinha, ao abrir, a aprovação de quem ficou assim antes dessa mudança.
 
 ## Excluir jogador, excluir a própria conta e excluir jogo
 
@@ -587,6 +585,8 @@ Tela só do **admin** com o que a diretoria fez pelo app: **quem fez, o quê e q
 
 ## Caixa da associação e prestação de contas (Admin → Caixa)
 
+> **Dinheiro dos jogos:** o valor pago em dinheiro fica gravado na inscrição (`valorPago`), no check-in e no convidado, e é esse valor que entra no caixa. Mudar o preço do jogo depois **não reescreve** o que já foi recebido (inscrições antigas, sem `valorPago`, valem o preço atual do jogo). O valor digitado entende `1.250` como mil duzentos e cinquenta e recusa sinal de menos.
+
 Para **admin e tesoureiro**. Mostra, por mês (ou todo o período): **entradas, saídas, saldo do mês e saldo do caixa**, o movimento, os totais **por categoria** e os últimos meses. Dá para **exportar em CSV**.
 
 - **Entram sozinhas** (não se lançam à mão, e não podem ser lançadas de novo por engano): as **mensalidades por Pix** (baixas confirmadas, já sem as estornadas, pelo dia do pagamento) e o que foi **pago em dinheiro no check-in dos jogos** (valor do jogo × presença em dinheiro).
@@ -606,6 +606,7 @@ Para **todos os associados**:
 - **Presença por jogo:** barras com os últimos jogos do período.
 - **Como funciona (e o custo):** o ranking é **um único documento** (`ranking/presencas`), montado por quem pode ler as presenças (admin, tesoureiro e organizador) a partir dos check-ins; o associado lê **só esse documento** (uma leitura), em vez de todas as presenças de todo mundo, o que protege a cota gratuita do Firebase. Só entram jogadores que ainda têm cadastro. Ele se atualiza sozinho **quando a equipe abre o Ranking** (se tem mais de 30 minutos) e **90 segundos depois do último check-in** (ou ao sair da tela de check-in); há também o botão **"Atualizar agora"** para a equipe. Os associados veem a hora da última atualização. Se a cota um dia apertar (milhares de presenças), a montagem pode passar a ser incremental.
 - Aparecem **nome, time e contagem de jogos**; nada de pagamento.
+- **Custo de leituras:** cada montagem relê só as presenças dos **2 últimos meses** e aproveita o resto do documento já salvo (meses fechados não mudam); sem isso, cada rodada de check-ins leria todas as presenças da história e, depois de uns 2 ou 3 anos, estouraria a cota gratuita de 50 mil leituras por dia. O botão **Atualizar** do Ranking relê tudo (para acertar um jogo antigo editado ou apagado).
 
 ## Adicionar o jogo ao calendário
 
@@ -651,15 +652,32 @@ No **dia do aniversário** (data de nascimento do cadastro), o associado vê log
 - **Fuso e dia:** vale o dia **em Brasília (UTC-3)**, não o relógio do aparelho. Quem nasceu em **29/02** comemora em **28/02** nos anos sem 29/02. Se a pessoa não abrir o app naquele dia, não há bônus (o dia passa).
 - **Regras do banco (nada depende do app estar certo):** o jogador só cria o registro do ano se, pelo horário do servidor em Brasília, **hoje é o aniversário da data de nascimento do cadastro**, com o ano certo, o valor exato (10) e a hora do servidor; a carteira só soma os 10 no **mesmo lote** em que nasce esse registro (que não se repete), e o lançamento do extrato é amarrado a ele. O registro não se edita; só o admin apaga (o reset do extrato de um jogador e a exclusão do cadastro também apagam). Admin e tesoureiro leem; cada jogador lê só o seu.
 - **Data de nascimento travada:** para o bônus não valer em qualquer dia (bastaria trocar a data), o jogador **só preenche a data de nascimento uma vez**. Depois de informada, o campo em "Meus dados" fica bloqueado ("Para corrigir a data de nascimento, fale com a diretoria") e quem corrige é o **admin**, na ficha do jogador. Cadastros antigos que estão sem data continuam podendo preencher. Isso também impede um menor de idade de trocar a data para fugir da autorização do responsável.
+- **Conta com mais de 30 dias:** o bônus só vale para quem se cadastrou há mais de 30 dias (regra do banco `contaComMaisDe30Dias`); senão bastaria preencher a data de nascimento com o dia de hoje para ganhar 10 créditos no cadastro. O aviso nem aparece para conta nova.
 - **Limite honesto:** o app não envia notificação (push) de aniversário; o aviso aparece quando a pessoa abre o app naquele dia.
+
+## Segurança e desempenho do site (revisão geral)
+
+- **Cabeçalhos** no Hosting: `X-Frame-Options: DENY` (o app não abre dentro de quadro de outro site), `X-Content-Type-Options: nosniff` e `Referrer-Policy: strict-origin-when-cross-origin`.
+- **Cobrança Pix:** as regras só aceitam a cobrança do jogador com o **valor da mensalidade** (`config/pix`) e só com os campos esperados; antes ele escolhia o valor, e a baixa gerava créditos e caixa a partir dele.
+- **Hora da inscrição:** é a do servidor (a ordem da lista e da espera não se fura com uma data inventada).
+- **Cartão público:** nome, time e insígnias precisam ser os do cadastro quando mudam (o admin acerta qualquer coisa).
+- **Saldo de créditos:** os lançamentos somam com `increment` (o servidor soma sobre o saldo de agora): duas operações ao mesmo tempo, como a baixa de um Pix e o resgate de uma conquista, não perdem créditos.
+- **Cadastro:** se a internet cair depois do cadastro criado, a conta **não** é apagada (antes a conta de acesso sumia e o CPF ficava preso); o cartão público é refeito quando o app abre.
+- **Trocar a chave Pix** e o registro no histórico de ações vão no mesmo lote.
+- **Leituras do banco:** as telas de admin leem só as inscrições dos jogos recentes (Gerenciar jogos: últimos 45 dias e futuros; Painel: os 6 últimos), o ranking relê só os últimos meses e os associados baixam só os 50 avisos mais recentes. Ainda leem a coleção inteira, por serem telas só da diretoria e de uso raro, os **pagamentos** (Painel, Pagamentos, Caixa) e os cadastros (Jogadores, Cargos).
+- **Telas de admin** carregam sob demanda (`React.lazy`); o ganho no primeiro carregamento é pequeno (uns 30 KB comprimidos), porque o peso está no Firebase e no React.
+
+## Testes das funções do app (npm test)
+
+`npm test` roda o **vitest** sobre as contas que mexem com dinheiro, datas e sorteio, sem precisar de internet nem de login: Pix "copia e cola" (CRC e tamanho dos campos), vencimento da mensalidade, sequência de 12 meses, leitura de valores do caixa, entradas automáticas do caixa, aniversário (fuso e 29/02), ordem de inscrição, lista do WhatsApp, sorteio de times por peso, ranking, links de redes e CPF. Os testes ficam ao lado do código (`src/lib/*.test.ts`); quem importa o Firebase usa `vi.mock('../firebase')`. As regras do banco continuam com o teste abaixo (`npm run test:regras`).
 
 ## Testes das regras do Firestore
 
 As regras são verificadas contra o Firebase com a API de testes de regras, caso a caso (o que organizador, tesoureiro, admin e
-jogador podem e não podem fazer). O executor está **no repositório**: `node scripts/testar-regras.cjs` (precisa do
-`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **276 casos**, cobrindo as regras criadas
+jogador podem e não podem fazer). O executor está **no repositório**: `npm run test:regras` (ou `node scripts/testar-regras.cjs`) (precisa do
+`firebase-tools` global e de `firebase login`; não grava nada no banco). Hoje tem **324 casos**, cobrindo as regras criadas
 a partir da baixa com log: baixa/estorno, desfazer ajuste, histórico de ações, caixa, prestação de contas, ranking, leitura de
-avisos, foto obrigatória (cadastro e inscrição em jogo), pesos, sorteio de times, a lista de inscritos, a sequência de mensalidades, o fim do Assíduo, o convidado do check-in, o bônus de aniversário (inclusive o fuso de Brasília e o 29/02) e o jogo cancelado. `RULES=outro.rules node scripts/testar-regras.cjs`
+avisos, foto obrigatória (cadastro e inscrição em jogo), pesos, sorteio de times, a lista de inscritos, a sequência de mensalidades, o fim do Assíduo, o convidado do check-in, o bônus de aniversário (inclusive o fuso de Brasília e o 29/02), o jogo cancelado, a cobrança Pix com o valor da mensalidade, a hora do servidor na inscrição, o cartão e a foto públicos e o valor pago em dinheiro. **Limite:** a API de testes não representa datas gravadas no banco, então a regra dos 30 dias de conta (que compara a data de criação) só é conferida na compilação das regras; os demais casos de data usam a hora da requisição. `RULES=outro.rules node scripts/testar-regras.cjs`
 testa uma versão alterada das regras (serve para conferir que um teste realmente "pega" uma falha). **Observação:** a bateria
 anterior (578 casos, que também cobria as regras mais antigas: organizador, check-in, CPF, times, parceiros, conquistas...) ficava
 numa pasta temporária e foi perdida; os casos de regras antigas precisam ser recriados aqui aos poucos, e toda regra nova deve entrar

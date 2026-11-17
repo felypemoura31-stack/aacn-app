@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, writeBatch } from 'firebase/firestore'
+import { collection, doc, limit, onSnapshot, orderBy, query, serverTimestamp, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from './AuthContext'
 import { paraMillis } from '../lib/status'
@@ -32,7 +32,7 @@ export function AvisosProvider({ children }: { children: ReactNode }) {
     setAvisos(null)
     setLidosIds(null)
     if (!uid) return
-    const u1 = onSnapshot(query(collection(db, 'avisos'), orderBy('criadoEm', 'desc')), (snap) =>
+    const u1 = onSnapshot(query(collection(db, 'avisos'), orderBy('criadoEm', 'desc'), limit(50)), (snap) =>
       setAvisos(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Aviso)),
     )
     const u2 = onSnapshot(

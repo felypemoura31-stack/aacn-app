@@ -169,6 +169,13 @@ service cloud.firestore {
          (int(nasc[1]) == 2 && int(nasc[2]) == 29 && !bissexto && hoje.month() == 2 && hoje.day() == 28));
     }
 
+    // Conta criada há mais de 30 dias: quem acabou de se cadastrar não escolhe "hoje" como aniversário para levar o bônus.
+    // Cadastros antigos, sem a hora de criação gravada como data, valem como antigos.
+    function contaComMaisDe30Dias(uid) {
+      let criada = get(/databases/$(database)/documents/players/$(uid)).data.get('criadoEm', null);
+      return !(criada is timestamp) || request.time > criada + duration.value(30, 'd');
+    }
+
     function aniversarioPath(uid, ano) {
       return /databases/$(database)/documents/aniversarios/$(uid + '_' + ano);
     }
@@ -325,26 +332,77 @@ service cloud.firestore {
     // médicas), lido sem login pela página de verificação via QR code.
     // "get" é público (a página do QR abre sem login); listar a coleção inteira só logado.
     match /publicCards/{uid} {
+      function jogador() {
+        return getAfter(/databases/$(database)/documents/players/$(uid)).data;
+      }
+
+      // O cartão público NÃO guarda a foto (ela vai em publicFotos/{uid}): assim as listas de associados não baixam
+      // as fotos de todo mundo. Cartões antigos ainda com o campo fotoUrl só podem mantê-lo ou tirá-lo.
+      function cartaoComum() {
+        return request.resource.data.get('destaques', []) is list && request.resource.data.get('destaques', []).size() <= 3 &&
+          request.resource.data.get('temFoto', false) is bool &&
+          request.resource.data.get('timeId', null) ==
+            (jogador().get('timeAprovado', false) == true ? jogador().get('timeId', null) : null) &&
+          request.resource.data.status == get(/databases/$(database)/documents/players/$(uid)).data.status &&
+          request.resource.data.vencimento == get(/databases/$(database)/documents/players/$(uid)).data.vencimento;
+      }
+
+      function nomeTimeInsigniasIguais() {
+        return request.resource.data.nomeCompleto == jogador().nomeCompleto &&
+          request.resource.data.get('timeNome', null) ==
+            (jogador().get('timeAprovado', false) == true ? jogador().get('timeNome', null) : null) &&
+          request.resource.data.get('destaques', []) == jogador().get('destaques', []);
+      }
+
+      // Quem pode gravar: o dono, o admin, o representante do time do jogador e o tesoureiro (só situação e vencimento).
+      function quemGrava() {
+        return isOwner(uid) ||
+          isAdmin() ||
+          isRepresentativeOfTeam(get(/databases/$(database)/documents/players/$(uid)).data.timeId) ||
+          (isTesoureiro() &&
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'vencimento', 'atualizadoEm']));
+      }
+
       allow get: if true;
       allow list: if isSignedIn();
 
       allow delete: if isOwner(uid) || isAdmin();
 
-      allow create, update: if isSignedIn() &&
-        fotoValida(request.resource.data.get('fotoUrl', null)) &&
-        request.resource.data.get('destaques', []) is list && request.resource.data.get('destaques', []).size() <= 3 &&
-        request.resource.data.get('timeId', null) ==
-          (getAfter(/databases/$(database)/documents/players/$(uid)).data.get('timeAprovado', false) == true
-            ? getAfter(/databases/$(database)/documents/players/$(uid)).data.get('timeId', null) : null) &&
-        request.resource.data.status == get(/databases/$(database)/documents/players/$(uid)).data.status &&
-        request.resource.data.vencimento == get(/databases/$(database)/documents/players/$(uid)).data.vencimento && (
-          isOwner(uid) ||
-          isAdmin() ||
-          isRepresentativeOfTeam(get(/databases/$(database)/documents/players/$(uid)).data.timeId) ||
-          (isTesoureiro() &&
-            request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['status', 'vencimento', 'atualizadoEm']))
-        );
+      // Nome, time e insígnias do cartão têm de ser os do cadastro (o admin pode acertar qualquer coisa).
+      allow create: if isSignedIn() &&
+        request.resource.data.get('fotoUrl', null) == null &&
+        cartaoComum() &&
+        (isAdmin() || nomeTimeInsigniasIguais()) &&
+        quemGrava();
+
+      // Na atualização só se confere o que mudou (um cartão que já estava fora de sincronia não trava quem só mexe em outro campo).
+      allow update: if isSignedIn() &&
+        (request.resource.data.get('fotoUrl', null) == null ||
+          request.resource.data.get('fotoUrl', null) == resource.data.get('fotoUrl', null)) &&
+        cartaoComum() &&
+        (isAdmin() || (
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['nomeCompleto']) ||
+            request.resource.data.nomeCompleto == jogador().nomeCompleto) &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['timeNome']) ||
+            request.resource.data.get('timeNome', null) ==
+              (jogador().get('timeAprovado', false) == true ? jogador().get('timeNome', null) : null)) &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['destaques']) ||
+            request.resource.data.get('destaques', []) == jogador().get('destaques', []))
+        )) &&
+        quemGrava();
+    }
+
+    // A foto 3x4 pública (carteirinha e página do QR): lida de uma pessoa por vez, por quem tem o link. Só a diretoria financeira
+    // (admin e tesoureiro) lista todas, na tela de carteirinhas. Grava o dono ou o admin.
+    match /publicFotos/{uid} {
+      allow get: if true;
+      allow list: if isFinanceiro();
+      allow create, update: if (isOwner(uid) || isAdmin()) &&
+        request.resource.data.keys().hasOnly(['fotoUrl', 'atualizadoEm']) &&
+        request.resource.data.fotoUrl is string &&
+        fotoValida(request.resource.data.fotoUrl);
+      allow delete: if isOwner(uid) || isAdmin();
     }
 
     // Times: qualquer associado logado pode ver a lista (para escolher seu
@@ -389,8 +447,10 @@ service cloud.firestore {
     match /payments/{paymentId} {
       allow read: if isFinanceiro() || (isSignedIn() && resource.data.uid == request.auth.uid);
       allow create: if isSignedIn() &&
+        request.resource.data.keys().hasOnly(['uid', 'jogadorNome', 'valor', 'txid', 'status', 'criadoEm', 'confirmadoEm', 'dataPagamento']) &&
         request.resource.data.uid == request.auth.uid &&
-        request.resource.data.status == 'pendente';
+        request.resource.data.status == 'pendente' &&
+        request.resource.data.valor == get(/databases/$(database)/documents/config/pix).data.valor;
       // Só dois passos, e cada um assinado por quem o faz (o log de "quem deu a baixa" e "quem estornou" não se reescreve):
       //  - baixa: pendente -> confirmado, com quem confirmou e a hora do servidor;
       //  - estorno: confirmado -> estornado, com quem estornou, a hora do servidor e o motivo.
@@ -558,7 +618,8 @@ service cloud.firestore {
         aid == request.auth.uid + '_' + string(request.resource.data.ano) &&
         request.resource.data.creditos == bonusAniversario() &&
         request.resource.data.get('criadoEm', null) == request.time &&
-        ehAniversarioHoje(request.auth.uid);
+        ehAniversarioHoje(request.auth.uid) &&
+        contaComMaisDe30Dias(request.auth.uid);
       allow update: if false;
       allow delete: if isAdmin(); // o reset de dados de teste do jogador e a exclusão do cadastro
     }
@@ -635,6 +696,8 @@ service cloud.firestore {
         pid == request.resource.data.gameId + '_' + request.auth.uid &&
         request.resource.data.pagoCom == 'pendente' &&
         request.resource.data.creditosDebitados == 0 &&
+        // a hora da inscrição é a do servidor: a ordem da lista e da espera não se fura com uma data inventada
+        request.resource.data.get('criadoEm', null) == request.time &&
         // a foto 3x4 é obrigatória para ter a carteirinha e jogar: sem foto, nada de inscrição (nem pelo lado do servidor)
         get(/databases/$(database)/documents/players/$(request.auth.uid)).data.get('fotoUrl', null) != null &&
         get(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.status == 'aberto' &&
@@ -656,12 +719,14 @@ service cloud.firestore {
         // Convidado (não é associado, joga só este jogo): o organizador o inscreve JÁ PRESENTE e pagando em DINHEIRO, sempre
         // (nunca créditos, porque ele não tem carteira), com o contador de inscritos do jogo subindo no mesmo lote.
         isOrganizador() &&
-        request.resource.data.keys().hasOnly(['gameId', 'gameNome', 'uid', 'jogadorNome', 'pagoCom', 'creditosDebitados', 'status', 'presenteEm', 'checkInPor', 'checkInPorNome', 'criadoEm', 'convidado']) &&
+        request.resource.data.keys().hasOnly(['gameId', 'gameNome', 'uid', 'jogadorNome', 'pagoCom', 'creditosDebitados', 'status', 'presenteEm', 'checkInPor', 'checkInPorNome', 'criadoEm', 'convidado', 'valorPago']) &&
         request.resource.data.convidado == true &&
         request.resource.data.uid is string && request.resource.data.uid.matches('^convidado_[A-Za-z0-9]{8,32}$') &&
         pid == request.resource.data.gameId + '_' + request.resource.data.uid &&
         request.resource.data.pagoCom == 'dinheiro' &&
         request.resource.data.creditosDebitados == 0 &&
+        (!('valorPago' in request.resource.data) ||
+          request.resource.data.valorPago == get(/databases/$(database)/documents/games/$(request.resource.data.gameId)).data.valor) &&
         request.resource.data.status == 'presente' &&
         request.resource.data.get('presenteEm', null) == request.time &&
         request.resource.data.get('criadoEm', null) == request.time &&
@@ -679,12 +744,15 @@ service cloud.firestore {
         resource.data.status == 'ativa' &&
         request.resource.data.status == 'presente' &&
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['status', 'pagoCom', 'creditosDebitados', 'presenteEm', 'checkInPor', 'checkInPorNome']) &&
+          .hasOnly(['status', 'pagoCom', 'creditosDebitados', 'presenteEm', 'checkInPor', 'checkInPorNome', 'valorPago']) &&
         request.resource.data.checkInPor == request.auth.uid &&
         (
-          (request.resource.data.pagoCom == 'dinheiro' && request.resource.data.creditosDebitados == 0) ||
+          (request.resource.data.pagoCom == 'dinheiro' && request.resource.data.creditosDebitados == 0 &&
+            (!('valorPago' in request.resource.data) ||
+              request.resource.data.valorPago == get(/databases/$(database)/documents/games/$(resource.data.gameId)).data.valor)) ||
           (
             request.resource.data.pagoCom == 'creditos' &&
+            !('valorPago' in request.resource.data) &&
             request.resource.data.creditosDebitados ==
               get(/databases/$(database)/documents/games/$(resource.data.gameId)).data.custoCreditos &&
             getAfter(/databases/$(database)/documents/wallets/$(resource.data.uid)).data.ultimoJogoId == resource.data.gameId &&
@@ -997,14 +1065,6 @@ service cloud.firestore {
         parceiroValido(request.resource.data)
       );
       allow delete: if isAdmin();
-    }
-
-    // Fila de e-mails consumida pela extensão "Trigger Email" (Firebase
-    // Extensions). O backend da extensão usa Admin SDK e ignora estas regras;
-    // aqui só liberamos a criação pelo cliente.
-    match /mail/{mailId} {
-      allow create: if isSignedIn();
-      allow read, update, delete: if false;
     }
   }
 }

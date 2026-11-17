@@ -1,4 +1,4 @@
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
+import { doc, getDoc, increment, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { auditar } from './auditoria'
 import { lancar, lerCarteira } from './credits'
@@ -133,7 +133,7 @@ export async function reivindicarConquista(player: Pick<Player, 'uid' | 'nomeCom
 
   const batch = writeBatch(db)
   batch.update(doc(db, 'wallets', player.uid), {
-    creditos: saldoApos,
+    creditos: increment(c.bonus),
     ultimaConquistaId: c.id,
     atualizadoEm: serverTimestamp(),
   })

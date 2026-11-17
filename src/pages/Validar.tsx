@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '../firebase'
+import { lerCartaoPublico } from '../lib/publicCard'
 import { LeitorQr } from '../components/LeitorQr'
 import { CartaoVerificado, type CartaoPublico } from '../components/CartaoVerificado'
 
@@ -36,8 +35,8 @@ export function Validar() {
     setCarregando(true)
     setResultado(null)
     try {
-      const snap = await getDoc(doc(db, 'publicCards', uid))
-      setResultado(snap.exists() ? { card: snap.data() as CartaoPublico } : { erro: 'Carteirinha não encontrada.' })
+      const card = await lerCartaoPublico<CartaoPublico>(uid)
+      setResultado(card ? { card } : { erro: 'Carteirinha não encontrada.' })
     } catch {
       setResultado({ erro: 'Não consegui consultar agora. Verifique a internet e tente de novo.' })
     } finally {

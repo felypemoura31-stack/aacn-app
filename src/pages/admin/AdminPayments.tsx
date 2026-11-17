@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, onSnapshot, orderBy, query, writeBatch } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
-import { registrarAuditoria } from '../../lib/auditoria'
+import { auditar, registrarAuditoria } from '../../lib/auditoria'
 import { confirmarPagamento } from '../../lib/payments'
 import { HistoricoBaixas } from '../../components/HistoricoBaixas'
 import { formatarTelefone, telefoneValido } from '../../lib/cadastro'
@@ -47,8 +47,9 @@ export function AdminPayments() {
     }
     // grava a chave já no formato que os bancos esperam (e-mail em minúsculas, CPF só com números…)
     const chave = normalizarChavePix(cfg.chave)
-    await setDoc(doc(db, 'config', 'pix'), { ...cfg, chave, valor: Number(cfg.valor) })
     const antes = cfgSalva.current
+    const lote = writeBatch(db)
+    lote.set(doc(db, 'config', 'pix'), { ...cfg, chave, valor: Number(cfg.valor) })
     if (admin) {
       const mudou: string[] = []
       if ((antes?.chave ?? '') !== chave) mudou.push(`a chave de "${antes?.chave ?? ''}" para "${chave}"`)
@@ -56,10 +57,10 @@ export function AdminPayments() {
       if ((antes?.cidade ?? '') !== cfg.cidade) mudou.push(`a cidade para "${cfg.cidade}"`)
       if (Number(antes?.valor ?? 0) !== Number(cfg.valor)) mudou.push(`o valor da mensalidade de ${reais(Number(antes?.valor ?? 0))} para ${reais(Number(cfg.valor))}`)
       if ((antes?.whatsapp ?? '') !== (cfg.whatsapp ?? '')) mudou.push(`o WhatsApp do tesoureiro para "${cfg.whatsapp ?? ''}"`)
-      if (mudou.length > 0) {
-        await registrarAuditoria({ acao: 'chave_pix', resumo: `Mudou na configuração do Pix: ${mudou.join('; ')}`, autor: { uid: admin.uid, nome: admin.nomeCompleto } })
-      }
+      // a troca e o registro dela vão juntos: a chave Pix decide para onde vai o dinheiro de todos
+      if (mudou.length > 0) auditar(lote, { acao: 'chave_pix', resumo: `Mudou na configuração do Pix: ${mudou.join('; ')}`, autor: { uid: admin.uid, nome: admin.nomeCompleto } })
     }
+    await lote.commit()
     setCfg((c) => ({ ...c, chave }))
     setCfgMsg('Configuração salva.')
   }

@@ -4,6 +4,7 @@ import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import {
   BONUS_ANIVERSARIO,
+  contaApta,
   ehAniversarioHoje,
   hojeEmBrasilia,
   mensagemDeAniversario,
@@ -27,7 +28,7 @@ function useAniversario() {
 
   const uid = currentUser?.uid
   const ano = hojeEmBrasilia(agora).ano
-  const hoje = !!uid && !!player && !cadastroExcluido && ehAniversarioHoje(player.dataNascimento, agora)
+  const hoje = !!uid && !!player && !cadastroExcluido && ehAniversarioHoje(player.dataNascimento, agora) && contaApta(player.criadoEm, agora)
 
   useEffect(() => {
     setRecebido(null)

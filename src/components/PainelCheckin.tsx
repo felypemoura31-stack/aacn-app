@@ -16,6 +16,7 @@ import {
   removerConvidado,
 } from '../lib/credits'
 import { ordemDeInscricao } from '../lib/listaPresenca'
+import { lerCartaoPublico } from '../lib/publicCard'
 import { construirRanking } from '../lib/ranking'
 import { STATUS_COLORS, STATUS_LABELS, formatarData, statusEfetivo } from '../lib/status'
 import type { Game, Participation, PlayerStatus } from '../types'
@@ -133,8 +134,8 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
     setAviso(null)
     setAlvo(null)
     try {
-      const cartaoSnap = await getDoc(doc(db, 'publicCards', uid))
-      if (!cartaoSnap.exists()) {
+      const cartao = await lerCartaoPublico<Cartao>(uid)
+      if (!cartao) {
         setAviso({ tipo: 'erro', texto: 'Carteirinha não encontrada.' })
         return
       }
@@ -144,7 +145,7 @@ export function PainelCheckin({ compacto = false }: { compacto?: boolean }) {
       ])
       setAlvo({
         uid,
-        cartao: cartaoSnap.data() as Cartao,
+        cartao,
         part: partSnap.exists() ? ({ id: partSnap.id, ...partSnap.data() } as Participation) : null,
         saldo: carteira.saldo,
       })

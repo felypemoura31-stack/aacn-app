@@ -46,12 +46,12 @@ export function Ranking() {
     return onSnapshot(doc(db, 'ranking', 'presencas'), (s) => setR(s.exists() ? (s.data() as RankingDoc) : null))
   }, [])
 
-  async function atualizar() {
+  async function atualizar(completo = false) {
     if (!player) return
     setAtualizando(true)
     setErro(null)
     try {
-      await construirRanking({ uid: player.uid, nome: player.nomeCompleto })
+      await construirRanking({ uid: player.uid, nome: player.nomeCompleto }, { completo })
     } catch {
       setErro('Não consegui atualizar o ranking agora.')
     } finally {
@@ -99,7 +99,7 @@ export function Ranking() {
         <div className="flex items-center gap-3 text-[11px] text-mute">
           {r && <span>Atualizado em {quando(r.atualizadoEm)}</span>}
           {equipe && (
-            <button type="button" disabled={atualizando} onClick={atualizar} className="btn-ghost">
+            <button type="button" disabled={atualizando} onClick={() => atualizar(true)} className="btn-ghost">
               {atualizando ? 'Atualizando...' : 'Atualizar agora'}
             </button>
           )}

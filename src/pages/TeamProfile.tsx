@@ -7,6 +7,7 @@ import { removerMembroDoTime } from '../lib/teams'
 import { TeamEditor } from '../components/TeamEditor'
 import { TeamLogo } from './Teams'
 import { useTeam } from '../lib/useTeam'
+import { useFotoPublica } from '../lib/useFotoPublica'
 import { REDES, linkDaRede } from '../lib/redes'
 import type { JogadorResumo, RedeSocial } from '../types'
 
@@ -23,6 +24,19 @@ function tempoDeExistencia(iso: string) {
   if (anos >= 1) return `${anos} ${anos === 1 ? 'ano' : 'anos'}`
   const meses = Math.max(0, (hoje.getFullYear() - ini.getFullYear()) * 12 + hoje.getMonth() - ini.getMonth())
   return `${meses} ${meses === 1 ? 'mês' : 'meses'}`
+}
+
+function FotoDoMembro({ membro }: { membro: JogadorResumo }) {
+  const foto = useFotoPublica(membro.uid, membro.fotoUrl)
+  return (
+    <div className="mx-auto mb-2 h-24 w-[4.5rem] overflow-hidden rounded-sm border border-line bg-surface2">
+      {foto ? (
+        <img src={foto} alt={membro.nomeCompleto} className="h-full w-full object-cover" />
+      ) : (
+        <span className="flex h-full items-center justify-center text-[10px] text-mute/70">sem foto</span>
+      )}
+    </div>
+  )
 }
 
 export function TeamProfile() {
@@ -144,16 +158,9 @@ export function TeamProfile() {
       {lista?.length === 0 && <p className="text-sm text-mute/70">Este time ainda não tem membros aprovados.</p>}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {lista?.map((m) => {
-          const foto = m.fotoUrl
           return (
             <div key={m.uid} className="panel p-3 text-center">
-              <div className="mx-auto mb-2 h-24 w-[4.5rem] overflow-hidden rounded-sm border border-line bg-surface2">
-                {foto ? (
-                  <img src={foto} alt={m.nomeCompleto} className="h-full w-full object-cover" />
-                ) : (
-                  <span className="flex h-full items-center justify-center text-[10px] text-mute/70">sem foto</span>
-                )}
-              </div>
+              <FotoDoMembro membro={m} />
               <p className="text-sm font-medium leading-tight text-ink">{m.nomeCompleto}</p>
               {team.representanteUid === m.uid && <p className="mt-1 text-[10px] uppercase tracking-widest text-gold">Representante</p>}
               {(ehAdmin || ehRepresentante) && team.representanteUid !== m.uid && (

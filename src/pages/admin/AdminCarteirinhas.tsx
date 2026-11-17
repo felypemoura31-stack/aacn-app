@@ -21,6 +21,7 @@ export function AdminCarteirinhas() {
   const { player: staff } = useAuth()
   const ehAdmin = staff?.role === 'admin'
   const [cartoes, setCartoes] = useState<Cartao[] | null>(null)
+  const [fotos, setFotos] = useState<Record<string, string>>({})
   const [times, setTimes] = useState<Record<string, Team>>({})
   const [busca, setBusca] = useState('')
   const [cadastro, setCadastro] = useState<Pick<Player, 'dataNascimento' | 'criadoEm'> | null>(null)
@@ -31,6 +32,17 @@ export function AdminCarteirinhas() {
       setCartoes(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as Cartao)),
     )
   }, [])
+
+  useEffect(() => {
+    return onSnapshot(collection(db, 'publicFotos'), (snap) => {
+      const m: Record<string, string> = {}
+      snap.docs.forEach((d) => (m[d.id] = (d.data() as { fotoUrl: string }).fotoUrl))
+      setFotos(m)
+    })
+  }, [])
+
+  // cartões antigos ainda trazem a foto dentro; os novos a têm em publicFotos
+  const fotoDe = (c: Cartao) => c.fotoUrl ?? fotos[c.uid] ?? null
 
   useEffect(() => {
     return onSnapshot(collection(db, 'teams'), (snap) => {
@@ -95,7 +107,7 @@ export function AdminCarteirinhas() {
           <CarteirinhaImpressao
             player={{
               nomeCompleto: escolhido.nomeCompleto,
-              fotoUrl: escolhido.fotoUrl ?? null,
+              fotoUrl: fotoDe(escolhido),
               dataNascimento: dados.dataNascimento,
               criadoEm: dados.criadoEm,
               timeAprovado: !!escolhido.timeId,
@@ -105,13 +117,13 @@ export function AdminCarteirinhas() {
             timeLogoUrl={time?.logoUrl ?? null}
             destaques={escolhido.destaques}
           />
-          {!escolhido.fotoUrl && (
+          {!fotoDe(escolhido) && (
             <p className="no-print mx-auto mt-4 max-w-md rounded-sm border border-danger/40 bg-danger/10 px-3 py-2 text-center text-sm text-danger">
               {escolhido.nomeCompleto.split(' ')[0]} ainda não enviou a foto 3x4. A carteirinha só pode ser impressa com foto: peça para a pessoa enviar em Meus dados.
             </p>
           )}
           <div className="no-print mt-6 flex flex-wrap justify-center gap-2">
-            <button onClick={() => window.print()} disabled={!escolhido.fotoUrl} className="btn-primary">
+            <button onClick={() => window.print()} disabled={!fotoDe(escolhido)} className="btn-primary">
               Imprimir carteirinha de {escolhido.nomeCompleto.split(' ')[0]}
             </button>
             <button onClick={() => navigate('/admin/carteirinhas')} className="btn-ghost">
@@ -150,7 +162,7 @@ export function AdminCarteirinhas() {
                 <PreviaCarteirinha
                   player={{
                     nomeCompleto: c.nomeCompleto,
-                    fotoUrl: c.fotoUrl ?? null,
+                    fotoUrl: fotoDe(c),
                     dataNascimento: contatos[c.uid]?.dataNascimento ?? '',
                     criadoEm: contatos[c.uid]?.criadoEm as number,
                     timeAprovado: !!c.timeId,
@@ -161,7 +173,7 @@ export function AdminCarteirinhas() {
                   destaques={c.destaques}
                 />
                 <div className="mt-1.5 flex items-center justify-end gap-1.5">
-                  {!c.fotoUrl && <span className="rounded-full border border-danger/40 bg-danger/15 px-2 py-0.5 text-[10px] font-semibold text-danger">Sem foto</span>}
+                  {!fotoDe(c) && <span className="rounded-full border border-danger/40 bg-danger/15 px-2 py-0.5 text-[10px] font-semibold text-danger">Sem foto</span>}
                   <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[st]}`}>{STATUS_LABELS[st]}</span>
                 </div>
               </div>

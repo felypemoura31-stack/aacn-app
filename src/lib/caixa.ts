@@ -20,12 +20,14 @@ export interface Movimento {
   categoria: string
 }
 
-/** "12,50", "1.250,00" e "12.5" viram número; o que não for um valor positivo vira null. */
+/** "12,50", "1.250,00", "1.250" (mil duzentos e cinquenta) e "12.5" viram número; o que não for um valor positivo vira null. */
 export function lerValor(txt: string): number | null {
+  if (txt.trim().startsWith('-')) return null // o tipo (entrada ou saída) já diz o sentido; um sinal de menos não pode virar valor positivo
   const s = txt.trim().replace(/[^\d.,]/g, '')
   if (!s) return null
-  // com vírgula, o ponto é separador de milhar; sem vírgula, o ponto é o decimal
-  const n = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s)
+  // com vírgula, o ponto é separador de milhar; sem vírgula, o ponto é o decimal, a não ser que só separe grupos de 3 dígitos ("1.250")
+  const milhar = /^\d{1,3}(\.\d{3})+$/.test(s)
+  const n = Number(s.includes(',') || milhar ? s.replace(/\./g, '').replace(',', '.') : s)
   return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null
 }
 
@@ -67,7 +69,7 @@ export function movimentosAutomaticos(pagamentos: Payment[], presencas: Particip
   for (const pr of presencas) {
     const g = jogoPorId.get(pr.gameId)
     if (pr.status === 'presente' && pr.pagoCom === 'dinheiro' && g && g.valor > 0) {
-      out.push({ tipo: 'entrada', valor: g.valor, data: g.data, categoria: CAT_JOGOS_DINHEIRO })
+      out.push({ tipo: 'entrada', valor: pr.valorPago ?? g.valor, data: g.data, categoria: CAT_JOGOS_DINHEIRO })
     }
   }
   return out

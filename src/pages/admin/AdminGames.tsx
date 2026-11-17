@@ -4,10 +4,12 @@ import {
   collection,
   doc,
   onSnapshot,
+  getDocs,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  where,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
@@ -109,7 +111,8 @@ function Campos({ f, set, editando }: { f: FormJogo; set: (f: FormJogo) => void;
 export function AdminGames() {
   const { player: admin } = useAuth()
   const [games, setGames] = useState<Game[]>([])
-  const [parts, setParts] = useState<Participation[]>([])
+  const [partsRecentes, setPartsRecentes] = useState<Participation[]>([])
+  const [partsAberto, setPartsAberto] = useState<Participation[]>([])
   const [players, setPlayers] = useState<JogadorResumo[]>([])
   const [aberto, setAberto] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
@@ -131,15 +134,11 @@ export function AdminGames() {
     const unsubG = onSnapshot(query(collection(db, 'games'), orderBy('data', 'desc')), (snap) =>
       setGames(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Game)),
     )
-    const unsubP = onSnapshot(collection(db, 'participations'), (snap) =>
-      setParts(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation)),
-    )
     const unsubJ = onSnapshot(query(collection(db, 'publicCards'), orderBy('nomeCompleto')), (snap) =>
       setPlayers(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as JogadorResumo)),
     )
     return () => {
       unsubG()
-      unsubP()
       unsubJ()
     }
   }, [])
@@ -150,7 +149,27 @@ export function AdminGames() {
   const autor = () => ({ uid: admin!.uid, nome: admin!.nomeCompleto })
 
   const d0 = new Date()
-  const hojeIso = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const hojeIso = iso(d0)
+
+  // Só as inscrições dos jogos dos últimos 45 dias (e dos futuros) ficam abertas; as de um jogo mais antigo só enquanto ele está
+  // expandido. Ler todas as inscrições de sempre gasta a cota diária de leituras do banco.
+  const corteIso = iso(new Date(d0.getTime() - 45 * 86_400_000))
+  const recentes = games.filter((g) => g.data >= corteIso).slice(0, 30).map((g) => g.id).join(',')
+  const abertoAntigo = aberto && !recentes.split(',').includes(aberto) ? aberto : null
+  useEffect(() => {
+    if (!recentes) return setPartsRecentes([])
+    return onSnapshot(query(collection(db, 'participations'), where('gameId', 'in', recentes.split(','))), (snap) =>
+      setPartsRecentes(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation)),
+    )
+  }, [recentes])
+  useEffect(() => {
+    if (!abertoAntigo) return setPartsAberto([])
+    return onSnapshot(query(collection(db, 'participations'), where('gameId', '==', abertoAntigo)), (snap) =>
+      setPartsAberto(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation)),
+    )
+  }, [abertoAntigo])
+  const parts = [...partsRecentes, ...partsAberto]
 
   async function criar(e: FormEvent) {
     e.preventDefault()
@@ -219,7 +238,11 @@ export function AdminGames() {
     }
   }
 
-  async function excluir(g: Game, doJogo: Participation[]) {
+  async function excluir(g: Game) {
+    // lê as inscrições agora: o jogo pode ser antigo, e a tela só mantém abertas as dos jogos recentes
+    const doJogo = (await getDocs(query(collection(db, 'participations'), where('gameId', '==', g.id)))).docs
+      .map((d) => ({ id: d.id, ...d.data() }) as Participation)
+      .filter((p) => p.status !== 'removida')
     const presentes = doJogo.filter((p) => p.status === 'presente')
     const estornos = presentes.reduce((s, p) => s + (p.creditosDebitados ?? 0), 0)
     const aviso =
@@ -324,6 +347,7 @@ export function AdminGames() {
           const expandido = aberto === g.id
           const cancelado = g.status === 'cancelado'
           const presentes = lista.filter((x) => x.status === 'presente')
+          const carregado = g.data >= corteIso || g.id === abertoAntigo
           return (
             <div key={g.id} className={`panel p-4 ${cancelado ? 'border-danger/50' : ''}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -335,9 +359,9 @@ export function AdminGames() {
                   <p className="text-xs text-mute">
                     {new Date(g.data + 'T12:00').toLocaleDateString('pt-BR')}
                     {g.horario ? ` às ${g.horario}` : ''} · {reais(g.valor)} / {formatarCreditos(g.custoCreditos)} créditos ·{' '}
-                    {lista.length}
-                    {g.vagas != null ? `/${g.vagas}` : ''} inscritos ({presentes.length} presentes)
-                    {espera.length > 0 ? ` · ${espera.length} na espera` : ''} · {g.status === 'aberto' ? 'inscrições abertas' : cancelado ? 'jogo cancelado' : 'encerrado'}
+                    {carregado ? lista.length : (g.inscritos ?? 0)}
+                    {g.vagas != null ? `/${g.vagas}` : ''} inscritos{carregado ? ` (${presentes.length} presentes)` : ''}
+                    {(carregado ? espera.length : (g.espera ?? 0)) > 0 ? ` · ${carregado ? espera.length : g.espera} na espera` : ''} · {g.status === 'aberto' ? 'inscrições abertas' : cancelado ? 'jogo cancelado' : 'encerrado'}
                   </p>
                   {cancelado && g.motivoCancelamento && <p className="text-xs text-danger">Motivo: {g.motivoCancelamento}</p>}
                   {g.local && <p className="text-xs text-mute/80">{g.local}</p>}
@@ -349,7 +373,7 @@ export function AdminGames() {
                   <button onClick={() => alternar(g)} className="btn-ghost">
                     {g.status === 'aberto' ? 'Encerrar' : 'Reabrir'}
                   </button>
-                  {!cancelado && !(g.data < hojeIso && presentes.length > 0) && (
+                  {!cancelado && g.data >= hojeIso && (
                     <button onClick={() => abrirCancelamento(g)} className="btn-ghost text-danger">
                       {cancelando === g.id ? 'Voltar' : 'Cancelar jogo'}
                     </button>
@@ -358,7 +382,7 @@ export function AdminGames() {
                     {expandido ? 'Fechar' : 'Inscritos'}
                   </button>
                   {gerenciaInscricoes && (
-                    <button onClick={() => excluir(g, doJogo)} className="btn-ghost text-danger">
+                    <button onClick={() => excluir(g)} className="btn-ghost text-danger">
                       Excluir
                     </button>
                   )}

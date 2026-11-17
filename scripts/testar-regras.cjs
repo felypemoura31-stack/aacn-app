@@ -65,6 +65,7 @@ const cartaoBase = { nomeCompleto: 'X', fotoUrl: null, timeNome: null, timeId: n
 const FOTO_REAL = 'data:image/jpeg;base64,' + 'A'.repeat(600)
 
 const insc = { gameId: 'g1', gameNome: 'Jogo', uid: 'u1', jogadorNome: 'A', pagoCom: 'pendente', creditosDebitados: 0, status: 'ativa', criadoEm: 1 }
+const inscNova = Object.fromEntries(Object.entries(insc).filter(([k]) => k !== 'criadoEm'))
 const jogoV = { nome: 'Jogo', data: '2026-10-12', valor: 10, custoCreditos: 10, status: 'aberto', criadoEm: 1, vagas: 5, inscritos: 3, espera: 0 }
 const jogoLotado = { ...jogoV, inscritos: 5 }
 
@@ -193,9 +194,9 @@ t('inscritos: jogador NAO apaga inscricao de outro', 'DENY', 'u1', 'delete', 'pa
 const donoSemFoto = (extra = []) => [mockGet('get', 'players/u1', { ...u1, fotoUrl: null }), ...extra]
 const donoComFoto = (extra = []) => [mockGet('get', 'players/u1', { ...u1, fotoUrl: FOTO_REAL }), ...extra]
 const jogoCont = [mockGet('get', 'games/g1', jogoV), mockGet('getAfter', 'games/g1', { ...jogoV, inscritos: 4 })]
-t('foto: com foto, o jogador se inscreve', 'ALLOW', 'u1', 'create', 'participations/g1_u1', insc, null, donoComFoto(jogoCont))
-t('foto: SEM foto, o jogador NAO se inscreve', 'DENY', 'u1', 'create', 'participations/g1_u1', insc, null, donoSemFoto(jogoCont))
-t('foto: SEM foto, NAO entra nem na lista de espera', 'DENY', 'u1', 'create', 'participations/g1_u1', { ...insc, status: 'espera' }, null,
+t('foto: com foto, o jogador se inscreve', 'ALLOW', 'u1', 'create', 'participations/g1_u1', inscNova, null, donoComFoto(jogoCont))
+t('foto: SEM foto, o jogador NAO se inscreve', 'DENY', 'u1', 'create', 'participations/g1_u1', inscNova, null, donoSemFoto(jogoCont))
+t('foto: SEM foto, NAO entra nem na lista de espera', 'DENY', 'u1', 'create', 'participations/g1_u1', { ...inscNova, status: 'espera' }, null,
   donoSemFoto([mockGet('get', 'games/g1', jogoLotado), mockGet('getAfter', 'games/g1', { ...jogoLotado, espera: 1 })]))
 t('foto: admin ainda inscreve quem esta sem foto (check-in na hora)', 'ALLOW', 'a1', 'create', 'participations/g1_u1', insc, null, adm())
 
@@ -250,7 +251,7 @@ t('cancelado: NAO motivo com mais de 200 caracteres', 'DENY', 'a1', 'update', 'g
 t('cancelado: NAO motivo que nao e texto', 'DENY', 'a1', 'update', 'games/g1', { ...jogoCanc, motivoCancelamento: 7 }, jogoV, adm())
 t('cancelado: NAO situacao inventada', 'DENY', 'a1', 'update', 'games/g1', { ...jogoV, status: 'sumiu' }, jogoV, adm())
 t('cancelado: NAO cria jogo com situacao inventada', 'DENY', 'a1', 'create', 'games/g2', { ...jogoV, status: 'sumiu' }, null, adm())
-t('cancelado: jogador NAO se inscreve em jogo cancelado', 'DENY', 'u1', 'create', 'participations/g1_u1', insc, null,
+t('cancelado: jogador NAO se inscreve em jogo cancelado', 'DENY', 'u1', 'create', 'participations/g1_u1', inscNova, null,
   dono([mockGet('get', 'games/g1', jogoCanc), mockGet('getAfter', 'games/g1', { ...jogoCanc, inscritos: 4 })]))
 t('cancelado: organizador registra o cancelamento no historico', 'ALLOW', 'o1', 'create', 'auditoria/r1', regCanc, null, org())
 t('cancelado: tesoureiro registra o cancelamento no historico', 'ALLOW', 't1', 'create', 'auditoria/r1', { ...regCanc, porUid: 't1', porNome: 'Tes' }, null, tes())
@@ -437,6 +438,69 @@ t('nascimento: jogador NAO troca a data ja informada', 'DENY', 'u1', 'update', '
 t('nascimento: jogador preenche quando o cadastro antigo esta sem a data', 'ALLOW', 'u1', 'update', 'players/u1', { ...u1, dataNascimento: '1990-10-05' }, { ...u1, dataNascimento: '' }, [mockGet('get', 'players/u1', { ...u1, dataNascimento: '' })])
 t('nascimento: jogador salva o resto do perfil com a data igual', 'ALLOW', 'u1', 'update', 'players/u1', { ...u1, endereco: 'Rua Nova' }, u1, dono())
 t('nascimento: admin corrige a data', 'ALLOW', 'a1', 'update', 'players/u1', { ...u1, dataNascimento: '1991-02-03' }, u1, adm())
+
+// ===== auditoria de seguranca: mail fechado, cobranca Pix com o valor da mensalidade, fila de inscricao, cartao e foto publicos
+t('mail: jogador NAO grava e-mail (a colecao nao existe mais)', 'DENY', 'u1', 'create', 'mail/m1', { to: ['x@x.com'], message: { subject: 'a', html: '<b>a</b>' } }, null, dono())
+t('mail: nem o admin grava', 'DENY', 'a1', 'create', 'mail/m1', { to: ['x@x.com'], message: { subject: 'a', html: 'a' } }, null, adm())
+
+const cfgPix = [mockGet('get', 'config/pix', { chave: 'x', nome: 'AACN', cidade: 'CALDAS NOVAS', valor: 15 })]
+const cobJog = { uid: 'u1', jogadorNome: 'A', valor: 15, txid: 'AACN1', status: 'pendente', criadoEm: 1, confirmadoEm: null, dataPagamento: null }
+t('cobranca: jogador gera o Pix com o valor da mensalidade', 'ALLOW', 'u1', 'create', 'payments/p9', cobJog, null, cfgPix)
+t('cobranca: NAO com valor maior que a mensalidade (150)', 'DENY', 'u1', 'create', 'payments/p9', { ...cobJog, valor: 150 }, null, cfgPix)
+t('cobranca: NAO com valor menor que a mensalidade (1)', 'DENY', 'u1', 'create', 'payments/p9', { ...cobJog, valor: 1 }, null, cfgPix)
+t('cobranca: NAO com o valor como texto', 'DENY', 'u1', 'create', 'payments/p9', { ...cobJog, valor: '15' }, null, cfgPix)
+t('cobranca: NAO com campo extra (creditos ja prontos)', 'DENY', 'u1', 'create', 'payments/p9', { ...cobJog, creditosGerados: 999 }, null, cfgPix)
+t('cobranca: NAO ja confirmada', 'DENY', 'u1', 'create', 'payments/p9', { ...cobJog, status: 'confirmado' }, null, cfgPix)
+t('cobranca: NAO em nome de outra pessoa', 'DENY', 'u1', 'create', 'payments/p9', { ...cobJog, uid: 'u2' }, null, cfgPix)
+
+ts('inscricao (estrito): NAO sem a hora do servidor (fila)', 'DENY', 'u1', 'create', 'participations/g1_u1', inscNova, null, donoComFoto(jogoCont))
+ts('inscricao (estrito): NAO com hora inventada para furar a fila', 'DENY', 'u1', 'create', 'participations/g1_u1', { ...inscNova, criadoEm: '2020-01-01T00:00:00Z' }, null, donoComFoto(jogoCont))
+
+const ativaU1 = { ...inscNova, criadoEm: 1 }
+const checkinDin = { ...ativaU1, status: 'presente', pagoCom: 'dinheiro', creditosDebitados: 0, checkInPor: 'o1', checkInPorNome: 'Org' }
+t('valor pago: organizador faz o check-in em dinheiro (sem informar o valor)', 'ALLOW', 'o1', 'update', 'participations/g1_u1', checkinDin, ativaU1, org())
+t('valor pago: organizador grava o valor do jogo', 'ALLOW', 'o1', 'update', 'participations/g1_u1', { ...checkinDin, valorPago: 10 }, ativaU1, org([mockGet('get', 'games/g1', jogoV)]))
+t('valor pago: NAO um valor diferente do jogo', 'DENY', 'o1', 'update', 'participations/g1_u1', { ...checkinDin, valorPago: 1 }, ativaU1, org([mockGet('get', 'games/g1', jogoV)]))
+t('valor pago: convidado entra com o valor do jogo', 'ALLOW', 'o1', 'create', idConv, { ...conv, valorPago: 10 }, null, loteConv())
+t('valor pago: NAO convidado com valor diferente do jogo', 'DENY', 'o1', 'create', idConv, { ...conv, valorPago: 1 }, null, loteConv())
+
+// cartao publico: nome, time e insignias sao os do cadastro; a foto fica em publicFotos
+const cartaoU = { nomeCompleto: 'X', temFoto: true, timeNome: null, timeId: null, status: 'inadimplente', vencimento: null, destaques: [] }
+t('cartao: o dono cria o cartao igual ao cadastro', 'ALLOW', 'u1', 'create', 'publicCards/u1', cartaoU, null, dono())
+t('cartao: NAO com o nome de outra pessoa', 'DENY', 'u1', 'create', 'publicCards/u1', { ...cartaoU, nomeCompleto: 'Fulano Famoso' }, null, dono())
+t('cartao: NAO com time que o jogador nao tem aprovado', 'DENY', 'u1', 'create', 'publicCards/u1', { ...cartaoU, timeNome: 'Time Elite' }, null, dono())
+t('cartao: NAO com insignias que o jogador nao tem', 'DENY', 'u1', 'create', 'publicCards/u1', { ...cartaoU, destaques: ['lenda'] }, null, dono())
+t('cartao: NAO com a foto dentro do cartao', 'DENY', 'u1', 'create', 'publicCards/u1', { ...cartaoU, fotoUrl: FOTO_REAL }, null, dono())
+t('cartao: admin acerta o cartao de qualquer jogador', 'ALLOW', 'a1', 'create', 'publicCards/u1', { ...cartaoU, nomeCompleto: 'Nome Corrigido' }, null, [...adm(), mockGet('get', 'players/u1', u1)])
+const u1Time = { ...u1, timeId: 'tm1', timeNome: 'Alpha', timeAprovado: true, destaques: ['lenda'] }
+t('cartao: com time aprovado e insignias do cadastro', 'ALLOW', 'u1', 'create', 'publicCards/u1', { ...cartaoU, timeId: 'tm1', timeNome: 'Alpha', destaques: ['lenda'] }, null, [mockGet('get', 'players/u1', u1Time)])
+t('cartao: dono muda o nome para o do cadastro novo', 'ALLOW', 'u1', 'update', 'publicCards/u1', { ...cartaoU, nomeCompleto: 'Novo Nome' }, cartaoU, [mockGet('get', 'players/u1', { ...u1, nomeCompleto: 'Novo Nome' })])
+t('cartao: dono NAO muda o nome para um que o cadastro nao tem', 'DENY', 'u1', 'update', 'publicCards/u1', { ...cartaoU, nomeCompleto: 'Fulano Famoso' }, cartaoU, dono())
+t('cartao: dono NAO troca o nome do time', 'DENY', 'u1', 'update', 'publicCards/u1', { ...cartaoU, timeNome: 'Time Rival' }, cartaoU, dono())
+t('cartao: dono NAO inclui insignia que nao tem', 'DENY', 'u1', 'update', 'publicCards/u1', { ...cartaoU, destaques: ['lenda'] }, cartaoU, dono())
+t('cartao: tesoureiro atualiza a situacao mesmo com o nome do cartao desatualizado', 'ALLOW', 't1', 'update', 'publicCards/u1', { ...cartaoU, nomeCompleto: 'Nome Antigo', status: 'pago', vencimento: 999 }, { ...cartaoU, nomeCompleto: 'Nome Antigo' },
+  tes([mockGet('get', 'players/u1', { ...u1, status: 'pago', vencimento: 999 })]))
+t('cartao: tesoureiro NAO muda o nome', 'DENY', 't1', 'update', 'publicCards/u1', { ...cartaoU, nomeCompleto: 'Outro' }, cartaoU, tes([mockGet('get', 'players/u1', u1)]))
+t('cartao: cartao antigo com foto continua valendo em outra atualizacao', 'ALLOW', 'u1', 'update', 'publicCards/u1', { ...cartaoU, fotoUrl: FOTO_REAL, temFoto: false }, { ...cartaoU, fotoUrl: FOTO_REAL, temFoto: false }, dono())
+t('cartao: tirar a foto antiga do cartao (migracao)', 'ALLOW', 'u1', 'update', 'publicCards/u1', cartaoU, { ...cartaoU, fotoUrl: FOTO_REAL }, dono())
+t('cartao: NAO colocar foto de volta no cartao', 'DENY', 'u1', 'update', 'publicCards/u1', { ...cartaoU, fotoUrl: FOTO_REAL }, cartaoU, dono())
+t('cartao: qualquer um le o cartao de um jogador (pagina do QR)', 'ALLOW', null, 'get', 'publicCards/u1', null, cartaoU, [])
+t('cartao: sem login NAO lista os cartoes', 'DENY', null, 'list', 'publicCards/u1', null, cartaoU, [])
+
+t('foto publica: qualquer um le a foto de um jogador (pagina do QR)', 'ALLOW', null, 'get', 'publicFotos/u1', null, { fotoUrl: FOTO_REAL }, [])
+t('foto publica: logado comum NAO lista as fotos', 'DENY', 'u1', 'list', 'publicFotos/u1', null, { fotoUrl: FOTO_REAL }, dono())
+t('foto publica: admin lista as fotos', 'ALLOW', 'a1', 'list', 'publicFotos/u1', null, { fotoUrl: FOTO_REAL }, adm())
+t('foto publica: tesoureiro lista as fotos (imprime carteirinhas)', 'ALLOW', 't1', 'list', 'publicFotos/u1', null, { fotoUrl: FOTO_REAL }, tes())
+t('foto publica: organizador NAO lista as fotos', 'DENY', 'o1', 'list', 'publicFotos/u1', null, { fotoUrl: FOTO_REAL }, org())
+t('foto publica: o dono grava a propria foto', 'ALLOW', 'u1', 'create', 'publicFotos/u1', { fotoUrl: FOTO_REAL }, null, dono())
+t('foto publica: o dono troca a propria foto', 'ALLOW', 'u1', 'update', 'publicFotos/u1', { fotoUrl: FOTO_REAL + 'B' }, { fotoUrl: FOTO_REAL }, dono())
+t('foto publica: admin grava a foto de um jogador (migracao)', 'ALLOW', 'a1', 'create', 'publicFotos/u1', { fotoUrl: FOTO_REAL }, null, adm())
+t('foto publica: NAO grava a foto de outra pessoa', 'DENY', 'u2', 'create', 'publicFotos/u1', { fotoUrl: FOTO_REAL }, null, [mockGet('get', 'players/u2', u2)])
+t('foto publica: NAO campo extra', 'DENY', 'u1', 'create', 'publicFotos/u1', { fotoUrl: FOTO_REAL, nome: 'x' }, null, dono())
+t('foto publica: NAO sem ser texto', 'DENY', 'u1', 'create', 'publicFotos/u1', { fotoUrl: 123 }, null, dono())
+t('foto publica: NAO gigante', 'DENY', 'u1', 'create', 'publicFotos/u1', { fotoUrl: 'A'.repeat(90000) }, null, dono())
+t('foto publica: o dono apaga a propria foto', 'ALLOW', 'u1', 'delete', 'publicFotos/u1', null, { fotoUrl: FOTO_REAL }, dono())
+t('foto publica: NAO apaga a de outro', 'DENY', 'u2', 'delete', 'publicFotos/u1', null, { fotoUrl: FOTO_REAL }, [mockGet('get', 'players/u2', u2)])
 
 // ---------- execucao
 ;(async () => {

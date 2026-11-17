@@ -8,7 +8,8 @@ export interface JogadorResumo {
   nomeCompleto: string
   timeNome: string | null
   timeId?: string | null
-  fotoUrl?: string | null
+  fotoUrl?: string | null // só em cartões antigos: a foto agora fica em publicFotos/{uid}
+  temFoto?: boolean
   destaques?: string[]
 }
 
@@ -56,7 +57,6 @@ export interface Team {
   nome: string
   representanteUid: string | null
   representanteNome: string | null
-  representanteEmail: string | null
   logoUrl?: string | null
   dataCriacao?: string | null // yyyy-mm-dd
   cidade?: string | null
@@ -178,6 +178,8 @@ export interface Participation {
   jogadorNome: string
   pagoCom: PagoCom
   creditosDebitados: number
+  /** Quanto foi pago em dinheiro (R$), gravado no check-in; inscrições antigas não têm e valem o preço atual do jogo. */
+  valorPago?: number
   status: ParticipationStatus
   criadoEm: number
   presenteEm?: number

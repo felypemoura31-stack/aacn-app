@@ -122,10 +122,6 @@ export function textoDoSorteio(jogo: Pick<Game, 'nome' | 'data'>, times: { nome:
   return `🎯 *Times sorteados* — ${jogo.nome} (${quando})\n\n${blocos.join('\n\n')}`
 }
 
-export function linkWhatsappTexto(texto: string) {
-  return `https://wa.me/?text=${encodeURIComponent(texto)}`
-}
-
 // ---------- gravação
 
 /** Grava (ou refaz) o sorteio do jogo como RASCUNHO: os jogadores só veem depois de "Publicar". Sem pesos no documento. */

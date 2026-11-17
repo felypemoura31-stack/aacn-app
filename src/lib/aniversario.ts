@@ -1,6 +1,7 @@
-import { doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore'
+import { doc, increment, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { lerCarteira } from './credits'
+import { paraMillis } from './status'
 import type { Player } from '../types'
 
 /** Igual a bonusAniversario() em firestore.rules. */
@@ -23,6 +24,16 @@ export function ehAniversarioHoje(dataNascimento: string | undefined, agora = Da
   const hoje = hojeEmBrasilia(agora)
   if (mes === hoje.mes && dia === hoje.dia) return true
   return mes === 2 && dia === 29 && !ehBissexto(hoje.ano) && hoje.mes === 2 && hoje.dia === 28
+}
+
+/**
+ * Igual a contaComMaisDe30Dias() em firestore.rules: quem acabou de se cadastrar não ganha o bônus (senão bastava escolher
+ * "hoje" como data de nascimento). Sem a data de criação conhecida, a conta vale como antiga.
+ */
+export const DIAS_CONTA_MINIMA = 30
+export function contaApta(criadoEm: unknown, agora = Date.now()) {
+  const ms = paraMillis(criadoEm)
+  return ms == null || agora - ms > DIAS_CONTA_MINIMA * 86_400_000
 }
 
 export const primeiroNome = (nomeCompleto: string) => nomeCompleto.trim().split(/\s+/)[0] || 'associado'
@@ -65,7 +76,7 @@ export async function receberBonusAniversario(player: Pick<Player, 'uid' | 'nome
 
   const batch = writeBatch(db)
   batch.update(doc(db, 'wallets', player.uid), {
-    creditos: saldoApos,
+    creditos: increment(BONUS_ANIVERSARIO),
     ultimoAniversarioId: String(ano),
     atualizadoEm: serverTimestamp(),
   })

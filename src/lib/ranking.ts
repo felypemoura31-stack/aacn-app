@@ -1,25 +1,60 @@
-import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { ehNoturno, type Autor } from './credits'
 import { paraMillis } from './status'
 import type { Game, Participation, RankingDoc, RankingJogador, RankingJogo } from '../types'
 
+/** Quantos meses (o atual e os anteriores) o ranking relê a cada montagem; os mais antigos vêm do que já estava salvo. */
+const MESES_RELIDOS = 2
+
+/** "2026-10" de N meses atrás. */
+function mesAtras(n: number) {
+  const d = new Date()
+  d.setDate(1)
+  d.setMonth(d.getMonth() - n)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 /**
  * O ranking de presença é UM documento (`ranking/presencas`) que quem lê as presenças (admin, tesoureiro e
  * organizador) monta a partir dos check-ins. Assim cada associado lê só esse documento (uma leitura), em vez de
  * todas as presenças de todo mundo. Só entram jogadores que ainda têm cadastro.
+ * Montar relendo todas as presenças de sempre gastaria a cota diária de leituras do banco: por padrão só os últimos meses
+ * são relidos e os anteriores vêm do documento salvo (os meses fechados não mudam). `completo` relê tudo (botão "Atualizar" do
+ * Ranking, para acertar um jogo antigo editado ou apagado).
  */
-export async function construirRanking(autor: Autor) {
-  const [presencas, jogos, cartoes] = await Promise.all([
-    getDocs(query(collection(db, 'participations'), where('status', '==', 'presente'))),
+export async function construirRanking(autor: Autor, opcoes: { completo?: boolean } = {}) {
+  const [jogos, cartoes, salvo] = await Promise.all([
     getDocs(collection(db, 'games')),
     getDocs(collection(db, 'publicCards')),
+    getDoc(doc(db, 'ranking', 'presencas')),
   ])
+  const anterior = salvo.exists() ? (salvo.data() as RankingDoc) : null
+  const corte = opcoes.completo || !anterior ? '' : mesAtras(MESES_RELIDOS - 1) // meses a partir daqui são refeitos
   const jogoPorId = new Map(jogos.docs.map((d) => [d.id, { id: d.id, ...d.data() } as Game]))
+  const idsRelidos = [...jogoPorId.values()].filter((g) => g.data.slice(0, 7) >= corte).map((g) => g.id)
+  const consultas = corte
+    ? Array.from({ length: Math.ceil(idsRelidos.length / 30) }, (_, i) =>
+        getDocs(query(collection(db, 'participations'), where('gameId', 'in', idsRelidos.slice(i * 30, i * 30 + 30)), where('status', '==', 'presente'))),
+      )
+    : [getDocs(query(collection(db, 'participations'), where('status', '==', 'presente')))]
+  const presencas = { docs: (await Promise.all(consultas)).flatMap((s) => s.docs) }
   const cartaoPorUid = new Map(cartoes.docs.map((d) => [d.id, d.data() as { nomeCompleto: string; timeNome?: string | null; timeId?: string | null }]))
 
   const porJogo = new Map<string, RankingJogo>()
   const jogadores: Record<string, RankingJogador> = {}
+
+  // meses antigos: do documento salvo (só de jogos e jogadores que ainda existem)
+  if (anterior && corte) {
+    for (const g of anterior.jogos) if (g.data.slice(0, 7) < corte && jogoPorId.has(g.id)) porJogo.set(g.id, g)
+    for (const [uid, j] of Object.entries(anterior.jogadores)) {
+      const c = cartaoPorUid.get(uid)
+      if (!c) continue
+      const velhos = (m: Record<string, number>) => Object.fromEntries(Object.entries(m).filter(([mes]) => mes < corte))
+      const m = velhos(j.m)
+      if (Object.keys(m).length) jogadores[uid] = { n: c.nomeCompleto, t: c.timeNome ?? null, ti: c.timeId ?? null, m, nt: velhos(j.nt) }
+    }
+  }
 
   for (const d of presencas.docs) {
     const p = d.data() as Participation

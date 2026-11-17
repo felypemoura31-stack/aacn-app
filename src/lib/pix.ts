@@ -19,7 +19,7 @@ function textoDoCodigo(s: string, max: number) {
     .trim()
 }
 
-function crc16(payload: string) {
+export function crc16(payload: string) {
   let crc = 0xffff
   for (let i = 0; i < payload.length; i++) {
     crc ^= payload.charCodeAt(i) << 8

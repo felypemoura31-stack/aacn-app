@@ -32,6 +32,10 @@ export function AdminTeams() {
     const qTeams = query(collection(db, 'teams'), orderBy('nome'))
     const unsubTeams = onSnapshot(qTeams, (snap) => {
       setTeams(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Team))
+      // limpeza única: o e-mail do representante não é mais usado nem guardado (todo associado conseguia ler)
+      snap.docs.forEach((d) => {
+        if (d.data().representanteEmail != null) void updateDoc(d.ref, { representanteEmail: null }).catch(() => {})
+      })
     })
     const qPlayers = query(collection(db, 'players'), orderBy('nomeCompleto'))
     const unsubPlayers = onSnapshot(qPlayers, (snap) => {
@@ -52,7 +56,6 @@ export function AdminTeams() {
         nome: novoNome.trim(),
         representanteUid: null,
         representanteNome: null,
-        representanteEmail: null,
         logoUrl: null,
         criadoEm: serverTimestamp(),
       })
@@ -67,7 +70,6 @@ export function AdminTeams() {
     await updateDoc(doc(db, 'teams', team.id), {
       representanteUid: uid || null,
       representanteNome: jogador ? jogador.nomeCompleto : null,
-      representanteEmail: jogador ? jogador.email : null,
       // Quem vira representante já entra como responsável, se o time ainda não tem um.
       ...(jogador && !team.responsavelNome ? { responsavelNome: jogador.nomeCompleto } : {}),
     })

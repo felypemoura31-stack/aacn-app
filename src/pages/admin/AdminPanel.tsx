@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
-import { collection, getDocs, onSnapshot } from 'firebase/firestore'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { reais } from '../../lib/credits'
 import { formatarCpf } from '../../lib/cadastro'
 import { baixarCsv } from '../../lib/csv'
+import { migrarFotosDosCartoes } from '../../lib/publicCard'
 import { DIA_MS, STATUS_LABELS, formatarData, paraMillis, statusEfetivo } from '../../lib/status'
 import type { Game, JogadorResumo, Participation, Payment, PlayerStatus, Player, Team } from '../../types'
 
@@ -43,17 +44,37 @@ export function AdminPanel() {
   const [parts, setParts] = useState<Participation[]>([])
   const [teams, setTeams] = useState<Team[]>([])
   const [exportando, setExportando] = useState(false)
+  const migrou = useRef(false)
+
+  // migração única das fotos dos cartões antigos para publicFotos (ver migrarFotosDosCartoes)
+  useEffect(() => {
+    const antigos = cartoes.filter((c) => c.fotoUrl)
+    if (migrou.current || staff?.role !== 'admin' || antigos.length === 0) return
+    migrou.current = true
+    void migrarFotosDosCartoes(antigos)
+  }, [cartoes, staff])
 
   useEffect(() => {
     const unsubs = [
       onSnapshot(collection(db, 'publicCards'), (s) => setCartoes(s.docs.map((d) => ({ uid: d.id, ...d.data() }) as Cartao))),
       onSnapshot(collection(db, 'payments'), (s) => setPayments(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Payment))),
       onSnapshot(collection(db, 'games'), (s) => setGames(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Game))),
-      onSnapshot(collection(db, 'participations'), (s) => setParts(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation))),
       onSnapshot(collection(db, 'teams'), (s) => setTeams(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Team))),
     ]
     return () => unsubs.forEach((u) => u())
   }, [])
+
+  // só as inscrições dos 6 jogos mais recentes (os que o painel mostra): ler todas as inscrições de sempre gasta a cota do banco
+  const ultimosJogos = useMemo(
+    () => [...games].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 6).map((g) => g.id).join(','),
+    [games],
+  )
+  useEffect(() => {
+    if (!ultimosJogos) return
+    return onSnapshot(query(collection(db, 'participations'), where('gameId', 'in', ultimosJogos.split(','))), (s) =>
+      setParts(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Participation)),
+    )
+  }, [ultimosJogos])
 
   const resumo = useMemo(() => {
     const agora = Date.now()
@@ -135,12 +156,14 @@ export function AdminPanel() {
     )
   }
 
-  function exportarPresenca() {
+  async function exportarPresenca() {
     const gamePorId = new Map(games.map((g) => [g.id, g]))
+    // todas as inscrições, lidas só agora (a tela não as mantém abertas)
+    const todas = (await getDocs(collection(db, 'participations'))).docs.map((d) => ({ id: d.id, ...d.data() }) as Participation)
     baixarCsv(
       `presenca-por-jogo-${new Date().toISOString().slice(0, 10)}.csv`,
       ['Jogo', 'Data', 'Jogador', 'Situação', 'Pagamento', 'Créditos debitados', 'Check-in por'],
-      [...parts]
+      todas
         .filter((p) => p.status !== 'removida')
         .sort((a, b) => (gamePorId.get(b.gameId)?.data ?? '').localeCompare(gamePorId.get(a.gameId)?.data ?? ''))
         .map((p) => [
